@@ -1,0 +1,16 @@
+# frontend junk
+rider-web/node_modules
+rider-web/dist
+rider-web/.vite
+
+# general junk
+node_modules
+.git
+.gitignore
+__pycache__
+*.pyc
+*.log
+
+# local env
+.env
+.env.*
