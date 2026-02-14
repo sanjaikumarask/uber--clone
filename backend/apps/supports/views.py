@@ -21,12 +21,20 @@ class CreateSupportTicketView(APIView):
     def post(self, request, ride_id):
         ride = get_object_or_404(Ride, id=ride_id)
 
-        ticket = open_support_ticket(
-            ride=ride,
-            user=request.user,
-            reason=request.data.get("reason"),
-            description=request.data.get("description", ""),
-        )
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        
+        try:
+            ticket = open_support_ticket(
+                ride=ride,
+                user=request.user,
+                reason=request.data.get("reason"),
+                description=request.data.get("description", ""),
+            )
+        except DjangoValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         return Response(
             {"ticket_id": ticket.id, "status": ticket.status},

@@ -68,7 +68,7 @@ def match_and_assign_driver(event: dict):
             # ATOMIC ASSIGNMENT
             # -------------------------------------------------
             ride.driver = driver
-            ride.status = Ride.Status.ASSIGNED
+            ride.status = Ride.Status.OFFERED
             ride.search_attempt = attempt
             ride.save(update_fields=["driver", "status", "search_attempt", "updated_at"])
 
@@ -82,7 +82,7 @@ def match_and_assign_driver(event: dict):
                 countdown=DRIVER_ACCEPT_TIMEOUT,
             )
 
-            print(f"✅ Ride {ride.id} assigned to Driver {driver.id}")
+            print(f"✅ Ride {ride.id} offered to Driver {driver.id}")
             return
 
         print(f"❌ No available drivers for ride {ride.id}")

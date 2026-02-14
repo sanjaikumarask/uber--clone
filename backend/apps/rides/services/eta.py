@@ -23,3 +23,9 @@ def haversine_km(lat1, lng1, lat2, lng2) -> float:
 def calculate_eta_minutes(distance_km: float) -> int:
     hours = distance_km / AVERAGE_SPEED_KMPH
     return max(1, int(hours * 60))
+
+
+def calculate_eta(lat1, lng1, lat2, lng2) -> int:
+    """Helper used by eta_updater.py"""
+    dist_km = haversine_km(lat1, lng1, lat2, lng2)
+    return calculate_eta_minutes(dist_km)

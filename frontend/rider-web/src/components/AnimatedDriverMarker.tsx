@@ -33,9 +33,11 @@ export default function AnimatedDriverMarker({
       markerRef.current = new google.maps.marker.AdvancedMarkerElement({
         position: from,
         content: img,
-        map: window.google.maps.Map.prototype,
+        map: (window as any).__ACTIVE_MAP__, // injected globally
       });
     }
+
+    if (!window.google?.maps || !markerRef.current) return;
 
     if (isStatic) {
       markerRef.current.position = from;
@@ -43,15 +45,23 @@ export default function AnimatedDriverMarker({
     }
 
     const start = performance.now();
-    const bearing = getBearing(from, to);
+    const bearing = getBearing(from.lat, from.lng, to.lat, to.lng);
     const img = markerRef.current.content as HTMLImageElement;
 
+    // Guard against element being removed or unmounted
+    if (!img) return;
+
     const animate = (now: number) => {
+      // Check ref again inside RAF loop
+      if (!markerRef.current) return;
+
       const progress = Math.min((now - start) / duration, 1);
       const pos = interpolate(from, to, progress);
 
-      markerRef.current!.position = pos;
-      img.style.transform = `rotate(${bearing}deg)`;
+      markerRef.current.position = pos;
+      if (img && img.style) {
+        img.style.transform = `rotate(${bearing}deg)`;
+      }
 
       if (progress < 1) requestAnimationFrame(animate);
     };

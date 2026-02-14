@@ -1,24 +1,12 @@
-import { Navigate } from "react-router-dom";
-import { useAuthStore } from "../store/auth.store";
-import { useEffect, useState } from "react";
+import { Navigate, Outlet } from "react-router-dom";
+import { useAuthStore } from "../domains/auth/auth.store";
 
-export default function RequireAuth({
-  children,
-}: {
-  children: JSX.Element;
-}) {
-  const token = useAuthStore((s) => s.token);
-  const [ready, setReady] = useState(false);
+export default function RequireAuth() {
+  const user = useAuthStore((s) => s.user);
 
-  useEffect(() => {
-    setReady(true);
-  }, []);
-
-  if (!ready) return null;
-
-  if (!token) {
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  return children;
+  return <Outlet />;
 }

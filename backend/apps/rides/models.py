@@ -11,6 +11,7 @@ from apps.drivers.models import Driver
 class Ride(models.Model):
     class Status(models.TextChoices):
         SEARCHING = "SEARCHING"
+        OFFERED = "OFFERED"
         ASSIGNED = "ASSIGNED"
         ARRIVED = "ARRIVED"
         ONGOING = "ONGOING"
@@ -58,6 +59,10 @@ class Ride(models.Model):
     candidate_driver_ids = models.JSONField(
         default=list,
         help_text="Ordered list of nearby driver IDs for matching",
+    )
+    rejected_driver_ids = models.JSONField(
+        default=list,
+        help_text="List of drivers who rejected or timed out",
     )
 
     search_attempt = models.PositiveIntegerField(default=0)
@@ -122,7 +127,8 @@ class Ride(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     ALLOWED_TRANSITIONS = {
-        Status.SEARCHING: {Status.ASSIGNED, Status.CANCELLED},
+        Status.SEARCHING: {Status.OFFERED, Status.CANCELLED},
+        Status.OFFERED: {Status.ASSIGNED, Status.SEARCHING, Status.CANCELLED},
         Status.ASSIGNED: {Status.ARRIVED, Status.CANCELLED},
         Status.ARRIVED: {Status.ONGOING, Status.NO_SHOW, Status.CANCELLED},
         Status.ONGOING: {Status.COMPLETED},

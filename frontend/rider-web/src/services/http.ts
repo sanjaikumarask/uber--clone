@@ -1,18 +1,34 @@
 import axios from "axios";
-import { useAuthStore } from "../store/auth.store";
 
-const http = axios.create({
-  baseURL: "http://localhost:8000/api",
+export const api = axios.create({
+  baseURL: "/api",
+  withCredentials: true,
 });
 
-http.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().token;
-
+// ===============================
+// REQUEST INTERCEPTOR (JWT)
+// ===============================
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("access");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-
   return config;
 });
 
-export default http;
+// ===============================
+// RESPONSE INTERCEPTOR (401)
+// ===============================
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      // ⚠️ DO NOT clear user unless token is truly invalid
+      localStorage.removeItem("access");
+      localStorage.removeItem("refresh");
+      localStorage.removeItem("user");
+      window.location.href = "/login";
+    }
+    return Promise.reject(err);
+  }
+);

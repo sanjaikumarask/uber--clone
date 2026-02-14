@@ -1,8 +1,6 @@
-version: "3.9"
-
 services:
   # ============================
-  # POSTGRES
+  # INFRASTRUCTURE
   # ============================
   postgres:
     image: postgres:15
@@ -11,30 +9,20 @@ services:
       POSTGRES_DB: uber
       POSTGRES_USER: uber
       POSTGRES_PASSWORD: uber
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U uber -d uber"]
+      test: [ "CMD-SHELL", "pg_isready -U uber -d uber" ]
       interval: 5s
       timeout: 5s
       retries: 5
     restart: unless-stopped
 
-  # ============================
-  # REDIS
-  # ============================
   redis:
     image: redis:7
     container_name: uber_redis
-    ports:
-      - "6379:6379"
     restart: unless-stopped
 
-  # ============================
-  # ZOOKEEPER
-  # ============================
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.3
     container_name: uber_zookeeper
@@ -43,75 +31,82 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     restart: unless-stopped
 
-  # ============================
-  # KAFKA
-  # ============================
   kafka:
     image: confluentinc/cp-kafka:7.5.3
     container_name: uber_kafka
     depends_on:
       zookeeper:
         condition: service_started
-    ports:
-      - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    healthcheck:
-      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     restart: unless-stopped
 
   # ============================
-  # DJANGO BACKEND (ASGI)
+  # FRONTEND BUILDS
+  # ============================
+  rider-web:
+    build:
+      context: ./frontend/rider-web
+      dockerfile: Dockerfile
+    container_name: uber_rider_web
+    volumes:
+      - rider_build:/usr/share/nginx/html
+    restart: "no"
+
+  admin-dashboard:
+    build:
+      context: ./admin-dashboard
+      dockerfile: Dockerfile
+    container_name: uber_admin_dashboard
+    volumes:
+      - admin_build:/usr/share/nginx/html
+    restart: "no"
+
+  # ============================
+  # DJANGO BACKEND
   # ============================
   backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     container_name: uber_backend
     command: daphne -b 0.0.0.0 -p 8000 config.asgi:application
+    expose:
+      - "8000"
     volumes:
-      - .:/app
-      - static_data:/app/staticfiles   # ✅ STATIC FILES LIVE HERE
-    ports:
-      - "8000:8000"
+      - ./backend:/app
+      - static_data:/app/staticfiles
+      - media_data:/app/media
     env_file:
       - .env
     environment:
-      PYTHONUNBUFFERED: "1"
-      PYTHONPATH: "/app"
+      PYTHONPATH: /app
+      DJANGO_SETTINGS_MODULE: config.settings
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_started
       kafka:
-        condition: service_healthy
+        condition: service_started
     restart: unless-stopped
 
-  # ============================
-  # CELERY WORKER
-  # ============================
   celery:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ./backend
     container_name: uber_celery
     command: celery -A config worker -l info
     volumes:
-      - .:/app
-      - static_data:/app/staticfiles   # ✅ SAME STATIC VOLUME
+      - ./backend:/app
     env_file:
       - .env
     environment:
-      PYTHONUNBUFFERED: "1"
-      PYTHONPATH: "/app"
+      PYTHONPATH: /app
+      DJANGO_SETTINGS_MODULE: config.settings
     depends_on:
       postgres:
         condition: service_healthy
@@ -119,35 +114,59 @@ services:
         condition: service_started
     restart: unless-stopped
 
-  # ============================
-  # KAFKA CONSUMER
-  # ============================
   kafka-consumer:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ./backend
     container_name: uber_kafka_consumer
-    command: >
-      sh -c "
-      export PYTHONPATH=/app &&
-      python -u consumers/ride_events.py
-      "
+    command: python -u consumers/ride_events.py
     volumes:
-      - .:/app
+      - ./backend:/app
     env_file:
       - .env
     environment:
-      PYTHONUNBUFFERED: "1"
-      PYTHONPATH: "/app"
+      PYTHONPATH: /app
+      DJANGO_SETTINGS_MODULE: config.settings
     depends_on:
       kafka:
-        condition: service_healthy
+        condition: service_started
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_started
     restart: unless-stopped
+
+  # ============================
+  # NGINX (REVERSE PROXY)
+  # ============================
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: uber_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./backend/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+      # ✅ Rider app at root
+      - rider_build:/usr/share/nginx/rider:ro
+
+      # ✅ Admin app in separate directory
+      - admin_build:/usr/share/nginx/admin:ro
+
+      - static_data:/static:ro
+      - media_data:/media:ro
+    depends_on:
+      - backend
+      - rider-web
+      - admin-dashboard
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   postgres_data:
   static_data:
+  media_data:
+  rider_build:
+  admin_build:

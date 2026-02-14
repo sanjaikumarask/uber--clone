@@ -1,25 +1,75 @@
-from django.db.models import Sum, Case, When, DecimalField
 from decimal import Decimal
+from django.db.models import Sum
 
 from apps.payments.models import LedgerEntry
 
 
+ZERO = Decimal("0.00")
+
+
 def get_wallet_balance(user) -> Decimal:
     """
-    Wallet balance = SUM(CREDIT) - SUM(DEBIT)
+    Total wallet balance:
+    CREDIT - DEBIT
+    (HOLD does NOT reduce wallet balance)
     """
 
-    agg = LedgerEntry.objects.filter(
-        user=user
-    ).aggregate(
-        balance=Sum(
-            Case(
-                When(entry_type=LedgerEntry.Type.CREDIT, then="amount"),
-                When(entry_type=LedgerEntry.Type.DEBIT, then=-1 * "amount"),
-                default=0,
-                output_field=DecimalField(),
-            )
+    credits = (
+        LedgerEntry.objects
+        .filter(
+            user=user,
+            entry_type=LedgerEntry.Type.CREDIT,
         )
+        .aggregate(total=Sum("amount"))["total"]
+        or ZERO
     )
 
-    return agg["balance"] or Decimal("0.00")
+    debits = (
+        LedgerEntry.objects
+        .filter(
+            user=user,
+            entry_type=LedgerEntry.Type.DEBIT,
+        )
+        .aggregate(total=Sum("amount"))["total"]
+        or ZERO
+    )
+
+    return credits - debits
+
+
+def get_held_balance(user) -> Decimal:
+    """
+    Funds locked for payouts:
+    HOLD - RELEASE
+    """
+
+    holds = (
+        LedgerEntry.objects
+        .filter(
+            user=user,
+            entry_type=LedgerEntry.Type.HOLD,
+        )
+        .aggregate(total=Sum("amount"))["total"]
+        or ZERO
+    )
+
+    releases = (
+        LedgerEntry.objects
+        .filter(
+            user=user,
+            entry_type=LedgerEntry.Type.RELEASE,
+        )
+        .aggregate(total=Sum("amount"))["total"]
+        or ZERO
+    )
+
+    return holds - releases
+
+
+def get_available_balance(user) -> Decimal:
+    """
+    Spendable balance:
+    wallet_balance - held_balance
+    """
+
+    return get_wallet_balance(user) - get_held_balance(user)

@@ -1,20 +1,26 @@
 import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "../store/auth.store";
 
-export default function Home(): JSX.Element {
-  const logout = useAuthStore((s) => s.logout);
+export default function Home() {
   const navigate = useNavigate();
 
-  const onLogout = () => {
-    logout();
-    navigate("/login", { replace: true });
-  };
-
   return (
-    <div>
-      <h2>Rider Home</h2>
-      <button onClick={() => navigate("/book")}>Book Ride</button>
-      <button onClick={onLogout}>Logout</button>
+    <div className="container" style={{ alignItems: "center", justifyContent: "center", height: "80vh" }}>
+      <div className="card text-center" style={{ width: "100%", padding: "var(--spacing-xl)" }}>
+        <h1 className="text-h1" style={{ marginBottom: "var(--spacing-md)" }}>
+          Where to?
+        </h1>
+        <p className="text-body" style={{ color: "var(--color-text-muted)", marginBottom: "var(--spacing-lg)" }}>
+          Get a reliable ride in minutes.
+        </p>
+
+        <button
+          onClick={() => navigate("/book")}
+          className="btn btn-primary"
+          style={{ fontSize: "var(--font-size-lg)", padding: "var(--spacing-md) var(--spacing-xl)" }}
+        >
+          Request a Ride
+        </button>
+      </div>
     </div>
   );
 }

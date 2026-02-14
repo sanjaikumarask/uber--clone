@@ -33,5 +33,5 @@ class IsAdmin(BasePermission):
         return bool(
             user
             and user.is_authenticated
-            and getattr(user, "role", None) == "admin"
+            and user.is_admin
         )

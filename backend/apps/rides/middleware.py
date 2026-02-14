@@ -1,50 +1,48 @@
-import logging
 from urllib.parse import parse_qs
+
+from channels.middleware import BaseMiddleware
+from channels.db import database_sync_to_async
 from django.contrib.auth.models import AnonymousUser
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.exceptions import InvalidToken
-from django.db import close_old_connections
-from channels.db import database_sync_to_async
-
-logger = logging.getLogger(__name__)
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
 
-class JwtAuthMiddleware:
-    def __init__(self, inner):
-        self.inner = inner
-
+class JwtAuthMiddleware(BaseMiddleware):
     async def __call__(self, scope, receive, send):
-        close_old_connections()
-        logger.info("WS middleware entered")
+        scope["user"] = AnonymousUser()
 
-        try:
-            query_string = scope.get("query_string", b"").decode()
-            query_params = parse_qs(query_string)
-            token_list = query_params.get("token")
+        token = None
 
-            if not token_list:
-                logger.warning("WS no token")
-                scope["user"] = AnonymousUser()
-                return await self.inner(scope, receive, send)
+        # 1️⃣ Try query string (?token=...)
+        query_string = scope.get("query_string", b"").decode()
+        if query_string:
+            qs = parse_qs(query_string)
+            token = qs.get("token", [None])[0]
 
-            token = token_list[0]
-            validated = JWTAuthentication().get_validated_token(token)
+        # 2️⃣ Fallback: Authorization header
+        if not token:
+            headers = dict(scope.get("headers", []))
+            auth_header = headers.get(b"authorization")
+            if auth_header:
+                try:
+                    name, value = auth_header.decode().split()
+                    if name.lower() == "bearer":
+                        token = value
+                except ValueError:
+                    pass
 
-            user = await self.get_user(validated)
-            scope["user"] = user
+        if token:
+            user = await self.get_user(token)
+            if user:
+                scope["user"] = user
 
-            logger.info("WS authenticated user=%s", user.id)
-
-        except InvalidToken:
-            logger.exception("WS invalid token")
-            scope["user"] = AnonymousUser()
-
-        except Exception:
-            logger.exception("WS middleware crash")
-            raise  # IMPORTANT: surface the error
-
-        return await self.inner(scope, receive, send)
+        return await super().__call__(scope, receive, send)
 
     @database_sync_to_async
-    def get_user(self, validated_token):
-        return JWTAuthentication().get_user(validated_token)
+    def get_user(self, token):
+        jwt_auth = JWTAuthentication()
+        try:
+            validated_token = jwt_auth.get_validated_token(token)
+            return jwt_auth.get_user(validated_token)
+        except (InvalidToken, TokenError):
+            return None

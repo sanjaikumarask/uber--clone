@@ -1,59 +1,69 @@
 import { useState } from "react";
-import { login } from "../auth/auth.service";
-import { useAuthStore } from "../store/auth.store";
 import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../domains/auth/auth.store";
 
-
-
-export default function Login(): JSX.Element {
-  const [username, setUsername] = useState(""); // phone OR username
+export default function Login() {
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const setToken = useAuthStore((s) => s.setToken);
   const navigate = useNavigate();
+  const loginStore = useAuthStore((s) => s.login);
 
-  const submit = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  async function handleLogin() {
+    const res = await fetch("/api/users/login/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, password }),
+    });
 
-      const res = await login(username, password);
-
-      // SimpleJWT access token
-      setToken(res.data.access);
-
-      navigate("/home");
-    } catch {
-      setError("Invalid username or password");
-    } finally {
-      setLoading(false);
+    if (!res.ok) {
+      alert("Invalid credentials");
+      return;
     }
-  };
+
+    const data = await res.json();
+
+    // 🔥 THIS WAS MISSING OR WRONG
+    loginStore(data);
+
+    // 🔥 THIS WAS MISSING
+    navigate("/home", { replace: true });
+  }
 
   return (
-    <div>
-      <h2>Rider Login</h2>
+    <div className="container" style={{ justifyContent: "center", minHeight: "80vh" }}>
+      <div className="card">
+        <h1 className="text-h1" style={{ marginBottom: "var(--spacing-lg)", textAlign: "center" }}>
+          Login
+        </h1>
 
-      <input
-        placeholder="Phone or Username"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-      />
+        <div className="input-group">
+          <input
+            className="input"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Phone Number"
+            autoFocus
+          />
+        </div>
 
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
+        <div className="input-group">
+          <input
+            className="input"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+          />
+        </div>
 
-      <button disabled={loading} onClick={submit}>
-        {loading ? "Logging in..." : "Login"}
-      </button>
-
-      {error && <p style={{ color: "red" }}>{error}</p>}
+        <button
+          onClick={handleLogin}
+          className="btn btn-primary"
+          style={{ marginTop: "var(--spacing-md)" }}
+        >
+          Login
+        </button>
+      </div>
     </div>
   );
 }

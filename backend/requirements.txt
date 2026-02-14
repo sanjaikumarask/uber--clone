@@ -13,6 +13,8 @@ daphne>=4.0
 razorpay
 requests>=2.31.0
 django-cors-headers==4.3.1
+twilio>=9.0.0
+
 
 
 pytest

@@ -1,36 +1,37 @@
 import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
 import { useEffect, useRef } from "react";
-import { useRideStore } from "../store/ride.store";
+import { useRideStore } from "../domains/rides/ride.store";
 import AnimatedDriverMarker from "./AnimatedDriverMarker";
 
-const LIBRARIES: ("marker")[] = ["marker"]; // ✅ STATIC
+const LIBRARIES: ("marker")[] = ["marker"];
 
 interface Props {
   center: { lat: number; lng: number };
 }
 
 export default function MapView({ center }: Props) {
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_KEY as string;
-
-  if (!apiKey) {
-    console.error("❌ Google Maps API key missing");
-  }
+  // ✅ FIXED ENV VARIABLE NAME
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string;
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: apiKey,
-    libraries: LIBRARIES, // ✅ STABLE reference
+    libraries: LIBRARIES,
   });
 
   const mapRef = useRef<google.maps.Map | null>(null);
 
   const driverLocation = useRideStore((s) => s.driverLocation);
-  const prevDriverLocation = useRideStore((s) => s.prevDriverLocation);
   const status = useRideStore((s) => s.status);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    (window as any).__ACTIVE_MAP__ = mapRef.current;
+  }, [isLoaded]);
 
   useEffect(() => {
     if (!mapRef.current || !driverLocation) return;
 
-    if (["ASSIGNED", "ARRIVED", "ONGOING"].includes(status)) {
+    if (["ASSIGNED", "ARRIVED", "ONGOING"].includes(status ?? "")) {
       mapRef.current.panTo(driverLocation);
     }
   }, [driverLocation, status]);
@@ -39,7 +40,9 @@ export default function MapView({ center }: Props) {
 
   return (
     <GoogleMap
-      onLoad={(map) => (mapRef.current = map)}
+      onLoad={(map) => {
+        mapRef.current = map;
+      }}
       center={center}
       zoom={15}
       mapContainerStyle={{ width: "100%", height: "400px" }}
@@ -49,7 +52,6 @@ export default function MapView({ center }: Props) {
         gestureHandling: "greedy",
       }}
     >
-      {/* Rider (static marker) */}
       <AnimatedDriverMarker
         from={center}
         to={center}
@@ -57,10 +59,9 @@ export default function MapView({ center }: Props) {
         icon="/car.png"
       />
 
-      {/* Driver (animated marker) */}
-      {driverLocation && prevDriverLocation && (
+      {driverLocation && (
         <AnimatedDriverMarker
-          from={prevDriverLocation}
+          from={driverLocation}
           to={driverLocation}
           duration={800}
         />

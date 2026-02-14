@@ -1,17 +1,28 @@
+# apps/payments/views_wallet.py
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.payments.services.wallet import get_wallet_balance
+from apps.payments.services.wallet import (
+    get_wallet_balance,
+    get_held_balance,
+    get_available_balance,
+)
 
 
 class WalletBalanceView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        balance = get_wallet_balance(request.user)
+        user = request.user
+
+        total = get_wallet_balance(user)
+        held = get_held_balance(user)
+        available = get_available_balance(user)
 
         return Response({
-            "balance": str(balance),
+            "total_balance": str(total),
+            "held_balance": str(held),
+            "available_balance": str(available),
             "currency": "INR",
         })

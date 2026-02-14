@@ -1,31 +1,16 @@
-import { Navigate } from "react-router-dom";
-import { useRideStore } from "../store/ride.store";
-import { ReactNode } from "react";
+import { Navigate, Outlet } from "react-router-dom";
+import { useRideStore } from "../domains/rides/ride.store";
 
-type RideStatus = "SEARCHING" | "ASSIGNED" | "ARRIVED" | "ONGOING";
+interface Props {
+  allow: string[];
+}
 
-export default function RideGuard({
-  allow,
-  children,
-}: {
-  allow: RideStatus[];
-  children: ReactNode;
-}) {
+export default function RideGuard({ allow }: Props) {
   const status = useRideStore((s) => s.status);
 
-  // No active ride → kick out
-  if (!status) {
+  if (!status || !allow.includes(status)) {
     return <Navigate to="/home" replace />;
   }
 
-  // Wrong page for this state → redirect correctly
-  if (!allow.includes(status)) {
-    if (status === "SEARCHING") {
-      return <Navigate to="/ride/searching" replace />;
-    }
-
-    return <Navigate to="/ride/tracking" replace />;
-  }
-
-  return <>{children}</>;
+  return <Outlet />;
 }

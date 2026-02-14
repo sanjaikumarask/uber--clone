@@ -8,7 +8,7 @@ MIN_UPDATE_INTERVAL = 10  # seconds
 def update_eta_if_needed(*, ride, driver_lat, driver_lng):
     cached = get_cached_eta(ride.id)
 
-    if cached and time.time() - cached["updated_at"] < MIN_UPDATE_INTERVAL:
+    if cached is not None:
         return cached
 
     eta = calculate_eta(

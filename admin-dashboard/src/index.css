@@ -1,0 +1,85 @@
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #121212;
+
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --bg-hover: #2c2c2c;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --accent: #2ecc71; /* Uber Green-ish for success */
+  --accent-blue: #3498db;
+  --border-color: #333;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+h1, h2, h3 {
+  color: var(--text-primary);
+  margin-top: 0;
+}
+
+a {
+  font-weight: 500;
+  color: var(--accent-blue);
+  text-decoration: inherit;
+  transition: 0.2s;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* Basic Table Styles */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  overflow: hidden;
+}
+th, td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+th {
+  background-color: #000;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+tr:hover {
+  background-color: var(--bg-hover);
+}
+td {
+  color: var(--text-primary);
+}
+
+button {
+  border-radius: 4px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: var(--accent);
+}

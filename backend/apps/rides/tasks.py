@@ -30,7 +30,7 @@ def driver_accept_timeout(self, ride_id: int, driver_id: int):
         ride = Ride.objects.select_for_update().filter(
             id=ride_id,
             driver_id=driver_id,
-            status=Ride.Status.ASSIGNED,
+            status=Ride.Status.OFFERED,
         ).first()
 
         if not ride:
@@ -42,9 +42,16 @@ def driver_accept_timeout(self, ride_id: int, driver_id: int):
             ride.pickup_lng,
         )
 
-        # rollback assignment
         ride.driver = None
         ride.transition_to(Ride.Status.SEARCHING)
+
+        # Mark as rejected/timeout
+        rejected = ride.rejected_driver_ids or []
+        rejected.append(driver_id)
+        ride.rejected_driver_ids = rejected
+
+        # We must save rejected_driver_ids as well
+        ride.save(update_fields=["driver", "status", "rejected_driver_ids", "updated_at"])
 
         increment_demand(cell_id)
         increment_supply(cell_id)
