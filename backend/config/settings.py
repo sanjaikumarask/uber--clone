@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "apps.supports",
     "apps.notifications",
     "apps.admin_dashboard",
+    # "apps.offers",
 
 ]
 
