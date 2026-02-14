@@ -70,7 +70,7 @@ export default function Payments() {
                 <tr key={p.id} style={{ borderBottom: "1px solid #333" }}>
                   <td style={{ padding: "16px", color: "#fff" }}>{p.id}</td>
                   <td style={{ padding: "16px", color: "#fff" }}>{p.user_phone}</td>
-                  <td style={{ padding: "16px", color: "#fff", fontWeight: 600 }}>₹{p.amount.toFixed(2)}</td>
+                  <td style={{ padding: "16px", color: "#fff", fontWeight: 600 }}>₹{parseFloat(p.amount as any).toFixed(2)}</td>
                   <td style={{ padding: "16px" }}>
                     <span
                       style={{

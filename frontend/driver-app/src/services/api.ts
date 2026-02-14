@@ -7,8 +7,8 @@ import { Platform } from "react-native";
 const YOUR_COMPUTER_IP = "192.169.1.137";
 
 const HOST = YOUR_COMPUTER_IP;
-export const API_URL = `http://${HOST}:8000/api`;
-export const WS_URL = `ws://${HOST}:8000/ws`;
+export const API_URL = `http://${HOST}/api`;
+export const WS_URL = `ws://${HOST}/ws`;
 
 console.log("📡 API Configuration:");
 console.log("   Platform:", Platform.OS);

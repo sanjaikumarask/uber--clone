@@ -23,8 +23,12 @@ export default function NotificationsScreen({ navigation }: any) {
             setLoading(true);
             const res = await api.get("/notifications/");
             setNotifications(res.data.results || res.data || []);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Failed to fetch notifications", err);
+            // Don't show error for 401/404 - user might not be logged in yet
+            if (err.response?.status !== 401 && err.response?.status !== 404) {
+                console.error("Unexpected error:", err.response?.status);
+            }
         } finally {
             setLoading(false);
         }

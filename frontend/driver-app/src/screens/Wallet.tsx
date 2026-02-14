@@ -18,9 +18,12 @@ export default function WalletScreen({ navigation }: any) {
             setBalance(res.data.balance);
             // Assuming transactions are at /payments/wallet/transactions/ or part of wallet response
             // For now, let's just show balance.
-        } catch (err) {
+        } catch (err: any) {
             console.error("Failed to fetch wallet", err);
-            Alert.alert("Error", "Could not load wallet details");
+            // Don't show alert for 401 - user might not be logged in yet
+            if (err.response?.status !== 401) {
+                Alert.alert("Error", "Could not load wallet details");
+            }
         } finally {
             setLoading(false);
         }
