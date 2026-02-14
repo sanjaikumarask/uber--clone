@@ -135,8 +135,13 @@ export default function RideTrackingScreen({ navigation, route }: any) {
 
                 {ride.driver && (
                     <View style={styles.driverInfo}>
-                        <Text style={styles.driverName}>Driver: {ride.driver.user?.first_name || "Driver"}</Text>
-                        <Text>Vehicle: {ride.driver.vehicle_model} ({ride.driver.vehicle_number})</Text>
+                        <Text style={styles.driverName}>
+                            Driver: {ride.driver.user?.first_name ? `${ride.driver.user.first_name} ${ride.driver.user.last_name || ""}`.trim() : "Unknown Driver"}
+                        </Text>
+                        <Text>
+                            Vehicle: {ride.driver.vehicle_model || "Unknown Model"}{" "}
+                            {ride.driver.vehicle_number ? `(${ride.driver.vehicle_number})` : ""}
+                        </Text>
                     </View>
                 )}
 
