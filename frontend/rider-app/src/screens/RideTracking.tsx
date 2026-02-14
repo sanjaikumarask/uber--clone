@@ -35,7 +35,7 @@ export default function RideTrackingScreen({ navigation, route }: any) {
             ws.onmessage = (e) => {
                 const data = JSON.parse(e.data);
                 console.log("WS Message:", data);
-                if (data.type === "ride_update") {
+                if (data.type === "ride_update" || data.type === "WS_CONNECTED") {
                     const rideData = data.payload?.ride || data.ride;
                     if (rideData) {
                         setRide(rideData);

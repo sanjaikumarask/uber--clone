@@ -56,11 +56,14 @@ class RideConsumer(AsyncJsonWebsocketConsumer):
             self.ride_id,
         )
 
-        # Optional: initial handshake message
+        # Optional: initial handshake message with current ride state
+        ride_data = await self.get_ride_data(self.ride_id)
         await self.send_json({
             "type": "WS_CONNECTED",
             "ride_id": self.ride_id,
-            "payload": {},
+            "payload": {
+                "ride": ride_data
+            },
         })
 
     async def disconnect(self, close_code):
@@ -108,3 +111,9 @@ class RideConsumer(AsyncJsonWebsocketConsumer):
             models.Q(rider=user)
             | models.Q(driver__user=user)
         ).exists()
+
+    @database_sync_to_async
+    def get_ride_data(self, ride_id: int):
+        from .serializers import RideDetailSerializer
+        ride = Ride.objects.get(id=ride_id)
+        return RideDetailSerializer(ride).data
