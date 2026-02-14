@@ -3,14 +3,32 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Dim
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 import { useAuth } from "../contexts/AuthContext";
+// import MapViewDirections from "react-native-maps-directions"; // Maybe later
+import { GOOGLE_MAPS_APIKEY } from "../config";
 
 const { width, height } = Dimensions.get("window");
 
-export default function HomeScreen({ navigation }: any) {
+export default function HomeScreen({ navigation, route }: any) {
     const [location, setLocation] = useState<Location.LocationObject | null>(null);
     const [loading, setLoading] = useState(true);
     const mapRef = useRef<MapView>(null);
     const { logout } = useAuth();
+
+    // Check for destination from Params
+    const destination = route.params?.destination;
+
+    useEffect(() => {
+        if (destination && location && mapRef.current) {
+            // Fit to coordinates
+            mapRef.current.fitToCoordinates([
+                { latitude: location.coords.latitude, longitude: location.coords.longitude },
+                { latitude: destination.lat, longitude: destination.lng }
+            ], {
+                edgePadding: { top: 100, right: 50, bottom: 50, left: 50 },
+                animated: true
+            });
+        }
+    }, [destination, location]);
 
     useEffect(() => {
         (async () => {
@@ -55,16 +73,35 @@ export default function HomeScreen({ navigation }: any) {
                     showsMyLocationButton={true}
                     showsCompass={true}
                 >
-                    {/* Add markers later */}
+                    {destination && (
+                        <Marker
+                            coordinate={{ latitude: destination.lat, longitude: destination.lng }}
+                            title={destination.description}
+                        />
+                    )}
                 </MapView>
             )}
 
             <View style={styles.searchContainer}>
-                <Text style={styles.greeting}>Where to?</Text>
-                <TouchableOpacity style={styles.searchBox}>
-                    <Text style={styles.placeholder}>Search destination</Text>
+                <Text style={styles.greeting}>{destination ? "To:" : "Where to?"}</Text>
+                <TouchableOpacity
+                    style={styles.searchBox}
+                    onPress={() => navigation.navigate("DestinationSearch")}
+                >
+                    <Text style={styles.placeholder} numberOfLines={1}>
+                        {destination ? destination.description : "Search destination"}
+                    </Text>
                 </TouchableOpacity>
             </View>
+
+            {destination && (
+                <TouchableOpacity
+                    style={styles.confirmButton}
+                    onPress={() => navigation.navigate("ConfirmRide", { destination })}
+                >
+                    <Text style={styles.confirmText}>Confirm Ride</Text>
+                </TouchableOpacity>
+            )}
 
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
                 <Text style={styles.logoutText}>Logout</Text>
@@ -114,6 +151,22 @@ const styles = StyleSheet.create({
     placeholder: {
         color: "#666",
         fontSize: 16,
+    },
+    confirmButton: {
+        position: "absolute",
+        bottom: 100,
+        left: 20,
+        right: 20,
+        backgroundColor: "#000",
+        padding: 15,
+        borderRadius: 8,
+        alignItems: "center",
+        elevation: 5,
+    },
+    confirmText: {
+        color: "#fff",
+        fontSize: 18,
+        fontWeight: "bold",
     },
     logoutButton: {
         position: "absolute",

@@ -5,6 +5,11 @@ import { ActivityIndicator, View } from "react-native";
 import LoginScreen from "../screens/Login";
 import HomeScreen from "../screens/Home";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
+import DestinationSearchScreen from "../screens/DestinationSearch";
+import { Text } from "react-native";
+
+// Placeholder for ConfirmRideScreen until created
+const ConfirmRideScreen = () => <View><Text>Confirm Ride (TODO)</Text></View>;
 
 const Stack = createStackNavigator();
 
@@ -25,7 +30,11 @@ function AppStack() {
                 {!isAuthenticated ? (
                     <Stack.Screen name="Login" component={LoginScreen} />
                 ) : (
-                    <Stack.Screen name="Home" component={HomeScreen} />
+                    <>
+                        <Stack.Screen name="Home" component={HomeScreen} />
+                        <Stack.Screen name="DestinationSearch" component={DestinationSearchScreen} />
+                        <Stack.Screen name="ConfirmRide" component={ConfirmRideScreen} />
+                    </>
                 )}
             </Stack.Navigator>
         </NavigationContainer>
