@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, Alert, Dimensions, TouchableOpacity } from "react-native";
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
 import { api, WS_URL } from "../services/api";
+import { Storage } from "../services/storage";
 import { useAuth } from "../contexts/AuthContext";
 
 const { width, height } = Dimensions.get("window");
@@ -15,30 +16,43 @@ export default function RideTrackingScreen({ navigation, route }: any) {
     const { isAuthenticated } = useAuth(); // Just to access context if needed
 
     useEffect(() => {
-        // Initial Fetch
-        fetchRideDetails();
+        let ws: WebSocket | null = null;
 
-        // Setup WebSocket
-        const ws = new WebSocket(`${WS_URL}/rides/${rideId}/`);
-        ws.onopen = () => console.log("Ride WS Connected");
-        ws.onmessage = (e) => {
-            const data = JSON.parse(e.data);
-            console.log("WS Message:", data);
-            if (data.type === "ride_update") {
-                const rideData = data.payload?.ride || data.ride;
-                if (rideData) {
-                    setRide(rideData);
-                    setStatus(rideData.status);
-                }
+        const setup = async () => {
+            // Initial Fetch
+            fetchRideDetails();
+
+            // Get Token
+            const token = await Storage.getToken();
+            if (!token) {
+                console.error("No token found for WS");
+                return;
             }
-        };
-        ws.onerror = (e) => console.log("WS Error", e);
-        ws.onclose = () => console.log("WS Closed");
 
-        setSocket(ws);
+            // Setup WebSocket with Token
+            ws = new WebSocket(`${WS_URL}/rides/${rideId}/?token=${token}`);
+            ws.onopen = () => console.log("Ride WS Connected");
+            ws.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                console.log("WS Message:", data);
+                if (data.type === "ride_update") {
+                    const rideData = data.payload?.ride || data.ride;
+                    if (rideData) {
+                        setRide(rideData);
+                        setStatus(rideData.status);
+                    }
+                }
+            };
+            ws.onerror = (e) => console.log("WS Error", e);
+            ws.onclose = () => console.log("WS Closed");
+
+            setSocket(ws);
+        };
+
+        setup();
 
         return () => {
-            ws.close();
+            if (ws) ws.close();
         };
     }, [rideId]);
 
@@ -121,7 +135,7 @@ export default function RideTrackingScreen({ navigation, route }: any) {
 
                 {ride.driver && (
                     <View style={styles.driverInfo}>
-                        <Text style={styles.driverName}>Driver: {ride.driver.user.first_name || "Driver"}</Text>
+                        <Text style={styles.driverName}>Driver: {ride.driver.user?.first_name || "Driver"}</Text>
                         <Text>Vehicle: {ride.driver.vehicle_model} ({ride.driver.vehicle_number})</Text>
                     </View>
                 )}

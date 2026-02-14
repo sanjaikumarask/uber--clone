@@ -33,4 +33,11 @@ class RideDetailSerializer(serializers.ModelSerializer):
             "lat": obj.driver.last_lat,
             "lng": obj.driver.last_lng,
             "status": obj.driver.status,
+            "vehicle_model": obj.driver.vehicle_model,
+            "vehicle_number": obj.driver.vehicle_number,
+            "user": {
+                "first_name": obj.driver.user.first_name,
+                "last_name": obj.driver.user.last_name,
+                "phone": obj.driver.user.phone,
+            }
         }

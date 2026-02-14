@@ -27,6 +27,10 @@ class Driver(models.Model):
     bank_account_number = models.CharField(max_length=20, blank=True, null=True)
     ifsc_code = models.CharField(max_length=11, blank=True, null=True)
 
+    # Vehicle Details
+    vehicle_model = models.CharField(max_length=64, blank=True, null=True)
+    vehicle_number = models.CharField(max_length=20, blank=True, null=True)
+
     last_lat = models.FloatField(null=True, blank=True)
     last_lng = models.FloatField(null=True, blank=True)
     total_rides = models.PositiveIntegerField(default=0)
