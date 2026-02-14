@@ -111,6 +111,15 @@ export default function RideTrackingScreen({ navigation, route }: any) {
                     title="Dropoff"
                     pinColor="red"
                 />
+
+                {ride.driver && ride.driver.lat && ride.driver.lng && (
+                    <Marker
+                        coordinate={{ latitude: ride.driver.lat, longitude: ride.driver.lng }}
+                        title="Driver"
+                        description={`${ride.driver.vehicle_model || "Vehicle"} (${ride.driver.vehicle_number || ""})`}
+                        pinColor="blue"
+                    />
+                )}
                 {/* {ride.planned_route_polyline && (
                     <Polyline
                         coordinates={decodePolyline(ride.planned_route_polyline)}
