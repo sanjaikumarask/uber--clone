@@ -56,6 +56,24 @@ export default function RideTrackingScreen({ navigation, route }: any) {
         };
     }, [rideId]);
 
+    useEffect(() => {
+        if (ride && mapRef.current) {
+            const coords = [
+                { latitude: ride.pickup_lat, longitude: ride.pickup_lng },
+                { latitude: ride.drop_lat, longitude: ride.drop_lng },
+            ];
+
+            if (ride.driver?.lat && ride.driver?.lng) {
+                coords.push({ latitude: ride.driver.lat, longitude: ride.driver.lng });
+            }
+
+            mapRef.current.fitToCoordinates(coords, {
+                edgePadding: { top: 50, right: 50, bottom: 200, left: 50 },
+                animated: true,
+            });
+        }
+    }, [ride]);
+
     const fetchRideDetails = async () => {
         try {
             const res = await api.get(`/rides/${rideId}/`);
