@@ -12,9 +12,20 @@ export default function DestinationSearchScreen({ navigation }: any) {
                     placeholder="Where to?"
                     nearbyPlacesAPI="GooglePlacesSearch"
                     debounce={400}
+                    predefinedPlaces={[
+                        {
+                            description: 'Little Mount, Chennai',
+                            geometry: { location: { lat: 13.0185, lng: 80.2227 } },
+                        },
+                        {
+                            description: 'Anna Nagar, Chennai',
+                            geometry: { location: { lat: 13.0850, lng: 80.2100 } },
+                        },
+                    ] as any[]}
                     fetchDetails={true}
                     enablePoweredByContainer={false}
                     minLength={2}
+                    onFail={(error) => console.error("Google Places Error:", error)}
                     textInputProps={{
                         placeholderTextColor: "#666",
                         returnKeyType: "search"
