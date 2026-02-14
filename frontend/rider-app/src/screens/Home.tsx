@@ -5,6 +5,7 @@ import * as Location from "expo-location";
 import { useAuth } from "../contexts/AuthContext";
 // import MapViewDirections from "react-native-maps-directions"; // Maybe later
 import { GOOGLE_MAPS_APIKEY } from "../config";
+import { api } from "../services/api";
 
 const { width, height } = Dimensions.get("window");
 
@@ -32,6 +33,18 @@ export default function HomeScreen({ navigation, route }: any) {
 
     useEffect(() => {
         (async () => {
+            // Check for existing ride
+            try {
+                const activeRes = await api.get("/rides/active/");
+                if (activeRes.data.ride_id) {
+                    Alert.alert("Active Ride", "Resuming your current ride...");
+                    navigation.replace("RideTracking", { rideId: activeRes.data.ride_id });
+                    return;
+                }
+            } catch (e) {
+                console.log("No active ride found");
+            }
+
             let { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== "granted") {
                 Alert.alert("Permission to access location was denied");

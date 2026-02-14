@@ -32,6 +32,20 @@ export default function ConfirmRideScreen({ navigation, route }: any) {
             navigation.replace("RideTracking", { rideId: res.data.ride_id });
         } catch (err: any) {
             console.error("Ride request failed", err.response?.data);
+
+            if (err.response?.data?.error === "Active ride exists") {
+                Alert.alert("Active Ride Found", "Redirecting to your current ride...");
+                try {
+                    const activeRes = await api.get("/rides/active/");
+                    if (activeRes.data.ride_id) {
+                        navigation.replace("RideTracking", { rideId: activeRes.data.ride_id });
+                        return;
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch active ride", e);
+                }
+            }
+
             Alert.alert("Error", "Failed to request ride. Please try again.");
         } finally {
             setLoading(false);
