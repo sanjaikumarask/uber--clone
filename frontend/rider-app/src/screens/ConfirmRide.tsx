@@ -23,7 +23,7 @@ export default function ConfirmRideScreen({ navigation, route }: any) {
                 drop_lng: destination.lng,
             };
 
-            const res = await api.post("/rides/create/", payload);
+            const res = await api.post("/rides/request/", payload);
             console.log("Ride Created:", res.data);
 
             Alert.alert("Success", "Ride request sent! Searching for drivers...");
