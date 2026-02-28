@@ -28,6 +28,22 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        
+        # Send Welcome Email
+        if user.email:
+            from apps.notifications.models import Notification
+            from django.db import transaction
+            transaction.on_commit(lambda: Notification.objects.create(
+                user=user,
+                channel="email",
+                type="WELCOME_EMAIL",
+                payload={
+                    "subject": "Welcome to Uber Clone!",
+                    "body": f"Hi {user.first_name}, thanks for joining us!",
+                    "html": f"<h1>Welcome {user.first_name}!</h1><p>We're glad to have you on board.</p>"
+                }
+            ))
+            
         return Response(UserSerializer(user).data, status=201)
 
 
@@ -36,9 +52,17 @@ class RiderLoginView(APIView):
     authentication_classes = []
 
     def post(self, request):
+        import sys
+        sys.stderr.write(f"\n--- LOGIN ATTEMPT ---\nData: {request.data}\n")
+        sys.stderr.flush()
         serializer = RiderLoginSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            sys.stderr.write(f"Errors: {serializer.errors}\n")
+            sys.stderr.flush()
+            return Response(serializer.errors, status=400)
         user = serializer.validated_data["user"]
+        sys.stderr.write(f"Success for user: {user.phone}\n")
+        sys.stderr.flush()
         data = jwt_tokens(user)
         data["user"] = UserSerializer(user).data
         return Response(data)
@@ -74,4 +98,20 @@ class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        return Response(UserSerializer(request.user).data)
+        from .serializers import UserSerializer
+        user_data = UserSerializer(request.user).data
+        print(f"[DEBUG] MeView for {request.user.phone}: Role={request.user.role}, Data={user_data}")
+        return Response(user_data)
+
+
+class UpdatePushTokenView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        token = request.data.get("token")
+        if not token:
+            return Response({"error": "Token is required"}, status=400)
+        
+        request.user.expo_push_token = token
+        request.user.save(update_fields=["expo_push_token"])
+        return Response({"status": "Token updated"})

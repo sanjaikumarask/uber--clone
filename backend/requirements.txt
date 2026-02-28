@@ -14,9 +14,13 @@ razorpay
 requests>=2.31.0
 django-cors-headers==4.3.1
 twilio>=9.0.0
+exponent-server-sdk
 
 
 
 pytest
 pytest-django
 pytest-cov
+
+
+polyline

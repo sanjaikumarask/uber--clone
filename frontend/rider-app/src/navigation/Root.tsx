@@ -8,6 +8,11 @@ import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import DestinationSearchScreen from "../screens/DestinationSearch";
 import ConfirmRideScreen from "../screens/ConfirmRide";
 import RideTrackingScreen from "../screens/RideTracking";
+import OffersScreen from "../screens/OffersScreen";
+import SupportScreen from "../screens/SupportScreen";
+import CreateSupportScreen from "../screens/CreateSupportScreen";
+import RideSearchingScreen from "../screens/RideSearching";
+import RideCompletionScreen from "../screens/RideCompletion";
 
 const Stack = createStackNavigator();
 
@@ -16,8 +21,8 @@ function AppStack() {
 
     if (loading) {
         return (
-            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                <ActivityIndicator size="large" color="#000" />
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#000" }}>
+                <ActivityIndicator size="large" color="#276EF1" />
             </View>
         );
     }
@@ -33,6 +38,11 @@ function AppStack() {
                         <Stack.Screen name="DestinationSearch" component={DestinationSearchScreen} />
                         <Stack.Screen name="ConfirmRide" component={ConfirmRideScreen} />
                         <Stack.Screen name="RideTracking" component={RideTrackingScreen} />
+                        <Stack.Screen name="RideSearching" component={RideSearchingScreen} />
+                        <Stack.Screen name="RideCompletion" component={RideCompletionScreen} />
+                        <Stack.Screen name="Offers" component={OffersScreen} />
+                        <Stack.Screen name="Support" component={SupportScreen} />
+                        <Stack.Screen name="CreateSupport" component={CreateSupportScreen} />
                     </>
                 )}
             </Stack.Navigator>

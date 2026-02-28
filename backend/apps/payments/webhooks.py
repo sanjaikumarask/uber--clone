@@ -83,12 +83,33 @@ def razorpay_webhook(request):
         LedgerEntry.objects.create(
             user=payment.user,
             ride_id=payment.ride_id,
-            payment=payment,
             amount=amount,
             entry_type=LedgerEntry.Type.DEBIT,
             reference=f"payment:{payment.id}",
             reason=LedgerEntry.Reason.PAYMENT,
         )
+
+        # Ensure Driver Gets Paid if Webhook wins the race condition
+        try:
+            from apps.rides.models import Ride
+            from apps.payments.services.payout import settle_driver_payout
+            ride = Ride.objects.select_for_update().get(id=payment.ride_id)
+            settle_driver_payout(ride=ride, payment=payment)
+        except Exception as e:
+            # Note: We don't fail the webhook if payout errors; retry payout separately.
+            pass
+
+        from apps.notifications.models import Notification
+        transaction.on_commit(lambda: Notification.objects.create(
+            user=payment.user,
+            channel="email",
+            type="PAYMENT_CONFIRMED",
+            payload={
+                "subject": f"Payment Successful - Ride #{payment.ride_id}",
+                "body": f"Hi {payment.user.first_name}, your payment of ₹{payment.amount} was successful. Trans ID: {payment.gateway_payment_id}",
+                "html": f"<h2>Payment Successful ✅</h2><p>Your payment of <strong>₹{payment.amount}</strong> has been received for ride #{payment.ride_id}.</p><p>Transaction ID: {payment.gateway_payment_id}</p>"
+            }
+        ))
 
     return HttpResponse(status=200)
 

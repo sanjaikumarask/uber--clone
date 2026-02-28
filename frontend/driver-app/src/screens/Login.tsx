@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityInd
 import { useAuthStore } from "../domains/auth/auth.store";
 import { api } from "../services/api";
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }: any) {
     const [phone, setPhone] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
@@ -92,6 +92,13 @@ export default function LoginScreen() {
             <TouchableOpacity style={styles.btn} onPress={handleLogin} disabled={loading}>
                 {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Login</Text>}
             </TouchableOpacity>
+
+            <TouchableOpacity
+                style={styles.link}
+                onPress={() => (navigation as any).navigate("Register")}
+            >
+                <Text style={styles.linkText}>Don't have an account? Sign Up</Text>
+            </TouchableOpacity>
         </View>
     );
 }
@@ -127,5 +134,13 @@ const styles = StyleSheet.create({
         color: "#fff",
         fontSize: 16,
         fontWeight: "600",
+    },
+    link: {
+        marginTop: 20,
+        alignItems: "center",
+    },
+    linkText: {
+        color: "#666",
+        fontSize: 14,
     },
 });

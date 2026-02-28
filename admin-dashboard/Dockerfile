@@ -12,7 +12,8 @@ RUN npm run build
 # ===== Production stage =====
 FROM nginx:1.25-alpine
 
-COPY --from=builder /app/dist /usr/share/nginx/html
+# 👇 IMPORTANT: copy to /usr/share/nginx/admin
+COPY --from=builder /app/dist /usr/share/nginx/admin
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

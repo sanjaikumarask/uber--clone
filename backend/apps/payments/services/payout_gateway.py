@@ -6,6 +6,9 @@ client = razorpay.Client(
 )
 
 
+from apps.common.circuit_breaker import circuit_breaker
+
+@circuit_breaker(service_name="razorpay_payouts", failure_threshold=5, recovery_timeout=120)
 def create_driver_payout(*, payout):
     """
     Calls Razorpay Payout API

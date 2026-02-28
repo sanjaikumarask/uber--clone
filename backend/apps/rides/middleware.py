@@ -34,6 +34,20 @@ class JwtAuthMiddleware(BaseMiddleware):
         if token:
             user = await self.get_user(token)
             if user:
+                # ── WebSocket Scaling (Rate Limiting) ────────────────
+                # Reject > 15 socket connects per minute from same user
+                import time
+                from django.core.cache import cache
+                
+                cache_key = f"ws_ratelimit_{user.id}"
+                attempts = cache.get(cache_key, 0)
+                
+                if attempts > 15:
+                    return None  # Aggressively drop connection
+                    
+                cache.set(cache_key, attempts + 1, timeout=60)
+                # ────────────────────────────────────────────────────────
+                
                 scope["user"] = user
 
         return await super().__call__(scope, receive, send)

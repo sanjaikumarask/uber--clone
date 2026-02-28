@@ -49,7 +49,9 @@ INSTALLED_APPS = [
     "apps.supports",
     "apps.notifications",
     "apps.admin_dashboard",
-    # "apps.offers",
+    "apps.offers",
+    "apps.driver_incentives",
+
 
 ]
 
@@ -86,7 +88,17 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle"
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "100/day",     # Prevent bruteforce from public endpoints
+        "user": "1000/day"     # Allow normal usage but prevent spamming
+    },
+    "EXCEPTION_HANDLER": "rest_framework.views.exception_handler"
 }
+
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=12),
@@ -110,6 +122,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "apps.rides.idempotency.IdempotencyMiddleware",  # 🔥 NEW: Idempotent Mutations
 ]
 
 # ============================================================
@@ -165,6 +178,9 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 
 # ============================================================
 # CELERY
@@ -184,6 +200,44 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.payments.tasks.trigger_scheduled_payouts",
         "schedule": crontab(day_of_week=1, hour=3, minute=0),  # Mondays @ 3 AM
     },
+    "retry-ride-matching": {
+        "task": "apps.rides.tasks.retry_matching_for_searching_rides",
+        "schedule": 15.0,  # Run every 15 seconds
+    },
+    "auto-resolve-stuck-rides": {
+        "task": "apps.rides.tasks.auto_resolve_stuck_rides",
+        "schedule": 600.0,  # Run every 10 minutes
+    },
+    "reconcile-pending-payments": {
+        "task": "apps.payments.tasks.reconcile_pending_payments",
+        "schedule": 900.0,  # Run every 15 minutes
+    },
+    "retry-failed-payouts": {
+        "task": "apps.payments.tasks.retry_failed_payouts",
+        "schedule": 900.0,
+    },
+    "audit-platform-ledger": {
+        "task": "apps.payments.tasks.audit_platform_ledger",
+        "schedule": 86400.0,  # Run daily
+    },
+
+    # ── Driver Management ───────────────────────────────────────────
+    "recalculate-driver-scores": {
+        "task": "apps.drivers.tasks.recalculate_all_driver_scores",
+        "schedule": crontab(minute=0, hour="*/6"),  # Every 6 hours
+    },
+    "reset-weekly-driver-stats": {
+        "task": "apps.drivers.tasks.reset_weekly_driver_stats",
+        "schedule": crontab(day_of_week=1, hour=0, minute=0),  # Monday midnight
+    },
+    "lift-expired-suspensions": {
+        "task": "apps.drivers.tasks.lift_expired_suspensions",
+        "schedule": 300.0,  # Every 5 minutes
+    },
+    "driver-feedback-nudges": {
+        "task": "apps.drivers.tasks.send_driver_feedback_nudges",
+        "schedule": crontab(hour=10, minute=0),  # Daily at 10 AM
+    },
 }
 
 
@@ -198,6 +252,8 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [("redis", 6379)],
+            "capacity": 1500,  # Handle 100+ drivers at once
+            "expiry": 10,      # Drop stale location pings quickly
         },
     },
 }
@@ -229,6 +285,12 @@ CORS_ALLOWED_ORIGINS = [
     "http://192.169.1.137:8000",
     "http://192.169.1.137:19000",
     "http://192.169.1.137:19001",
+    "http://192.169.1.137",
+    "http://10.247.72.202:8000",
+    "http://10.247.72.202:19000",
+    "http://10.247.72.202:19001",
+    "http://10.247.72.202:8081",
+    "http://10.247.72.202",
 ]
 
 
@@ -236,6 +298,9 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:5174",
     "http://192.169.1.137:8000",
+    "http://192.169.1.137",
+    "http://10.247.72.202:8000",
+    "http://10.247.72.202",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -257,14 +322,17 @@ CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 # EMAIL / SMS
 # ============================================================
 
-DEFAULT_FROM_EMAIL = "no-reply@yourdomain.com"
+if os.getenv("EMAIL_HOST_USER"):
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+    EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
+    EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "1") == "1"
+    EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+    EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.yourprovider.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", os.getenv("EMAIL_HOST_USER", "noreply@uberclone.com"))
 
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
@@ -300,6 +368,56 @@ if not GOOGLE_MAPS_API_KEY:
     raise RuntimeError("GOOGLE_MAPS_API_KEY is not set")
 
 
+# ============================================================
+# LOGGING & MONITORING
+# ============================================================
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": True,
+        },
+        "apps": {  # Catch all custom app loggers automatically
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
 
+# Add basic sentry integration safely (if DSN exists in env)
+SENTRY_DSN = os.getenv("SENTRY_DSN")
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.redis import RedisIntegration
+    from sentry_sdk.integrations.celery import CeleryIntegration
+    
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration(), RedisIntegration(), CeleryIntegration()],
+        traces_sample_rate=1.0 if DEBUG else 0.1,  # 10% traces in prod
+        send_default_pii=True
+    )
 

@@ -63,7 +63,7 @@ services:
       dockerfile: Dockerfile
     container_name: uber_admin_dashboard
     volumes:
-      - admin_build:/usr/share/nginx/html
+      - admin_build:/usr/share/nginx/admin
     restart: "no"
 
   # ============================
@@ -74,13 +74,13 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: uber_backend
-    command: daphne -b 0.0.0.0 -p 8000 config.asgi:application
-    expose:
-      - "8000"
+    command: daphne -b 0.0.0.0 -p 8000 --ping-interval 20 --ping-timeout 60 config.asgi:application
+    ports:
+      - "8000:8000"
     volumes:
       - ./backend:/app
       - static_data:/app/staticfiles
-      - media_data:/app/media
+      - ./backend/media:/app/media
     env_file:
       - .env
     environment:
@@ -100,6 +100,25 @@ services:
       context: ./backend
     container_name: uber_celery
     command: celery -A config worker -l info
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env
+    environment:
+      PYTHONPATH: /app
+      DJANGO_SETTINGS_MODULE: config.settings
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  celery-beat:
+    build:
+      context: ./backend
+    container_name: uber_celery_beat
+    command: celery -A config beat -l info
     volumes:
       - ./backend:/app
     env_file:
@@ -152,7 +171,7 @@ services:
       - admin_build:/usr/share/nginx/admin:ro
 
       - static_data:/static:ro
-      - media_data:/media:ro
+      - ./backend/media:/media:ro
     depends_on:
       - backend
       - rider-web
@@ -163,10 +182,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   postgres_data:
   static_data:
-  media_data:
   rider_build:
   admin_build:

@@ -38,19 +38,31 @@ def refund_payment(
         .get(id=payment.id)
     )
 
-    # 🔁 Gateway refund (Razorpay)
-    refund = razorpay_client.payment.refund(
-        payment.gateway_payment_id,
-        {
-            "amount": int(amount * 100),  # paise
-            "notes": {
-                "reason": reason,
-                "payment_id": payment.id,
-            },
-        },
-    )
-
-    refund_id = refund["id"]
+    # ⬇️ Handle Simulation or Missing Client
+    refund_id = f"sim_ref_{payment.id}"
+    
+    if payment.gateway != "simulation" and razorpay_client:
+        # 🔁 Gateway refund (Razorpay)
+        try:
+            refund = razorpay_client.payment.refund(
+                payment.gateway_payment_id,
+                {
+                    "amount": int(amount * 100),  # paise
+                    "notes": {
+                        "reason": reason,
+                        "payment_id": payment.id,
+                    },
+                },
+            )
+            refund_id = refund["id"]
+        except Exception as e:
+            from django.core.exceptions import ValidationError
+            raise ValidationError(f"Gateway refund failed: {str(e)}")
+    else:
+        # For simulation, we just log it
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"SIMULATED_REFUND: Payment={payment.id} Amount={amount} Reason={reason}")
 
     # 1️⃣ Ledger: platform → rider (CREDIT)
     LedgerEntry.objects.create(
@@ -73,6 +85,19 @@ def refund_payment(
 
     payment.save(
         update_fields=["refunded_amount", "status", "updated_at"]
+    )
+
+    # 3️⃣ Notify Rider
+    from apps.notifications.models import Notification
+    Notification.objects.create(
+        user=payment.user,
+        channel="push",
+        type="REFUND_ISSUED",
+        payload={
+            "ride_id": payment.ride_id,
+            "amount": float(amount),
+            "message": f"A refund of ₹{amount} has been issued for your ride."
+        }
     )
 
     return {

@@ -73,3 +73,30 @@ def get_available_balance(user) -> Decimal:
     """
 
     return get_wallet_balance(user) - get_held_balance(user)
+    
+  
+def debit_rider_wallet(user, amount: Decimal):
+    """
+    Deduct amount from rider wallet.
+    Currently allows negative balance (credit line).
+    """
+    # In production, check balance > amount if prepaid.
+    # Here we just record debit.
+    LedgerEntry.objects.create(
+        user=user,
+        amount=amount,
+        entry_type=LedgerEntry.Type.DEBIT,
+        reason=LedgerEntry.Reason.PAYMENT,
+    )
+
+
+def credit_driver_wallet(driver, amount: Decimal):
+    """
+    Add earnings to driver wallet.
+    """
+    LedgerEntry.objects.create(
+        user=driver.user, # Driver object passed, need user
+        amount=amount,
+        entry_type=LedgerEntry.Type.CREDIT,
+        reason=LedgerEntry.Reason.DRIVER_EARNING,
+    )

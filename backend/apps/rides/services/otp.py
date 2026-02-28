@@ -3,7 +3,7 @@
 import random
 from datetime import timedelta
 from django.utils import timezone
-from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError
 
 OTP_EXPIRY_MINUTES = 5
 
@@ -13,8 +13,8 @@ def _generate_otp():
 
 
 def generate_and_attach_otp(ride):
-    if ride.status != ride.Status.ARRIVED:
-        raise ValidationError("OTP allowed only in ARRIVED state")
+    if ride.status not in [ride.Status.ASSIGNED, ride.Status.ARRIVED]:
+        raise ValidationError(f"OTP generation not allowed in {ride.status} state")
 
     if ride.otp_code:
         return ride.otp_code

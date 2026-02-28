@@ -18,10 +18,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
       localStorage.removeItem("access");
       localStorage.removeItem("refresh");
-      window.location.href = "/login";
+      window.location.href = "/dashboard/login";
     }
     return Promise.reject(error);
   }

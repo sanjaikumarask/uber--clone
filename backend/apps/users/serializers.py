@@ -10,7 +10,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "phone", "password", "first_name", "last_name", "role"]
+        fields = ["id", "phone", "email", "password", "first_name", "last_name", "role"]
         read_only_fields = ["id"]
 
     def create(self, validated_data):
@@ -66,14 +66,25 @@ class DriverLoginSerializer(serializers.Serializer):
 
 
 class AdminLoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
+    username = serializers.CharField(required=False)
+    email = serializers.CharField(required=False)
     password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        user = authenticate(
-            username=attrs["username"],
-            password=attrs["password"],
-        )
+        username = attrs.get("username")
+        email = attrs.get("email")
+        password = attrs.get("password")
+
+        user = None
+        if email:
+            try:
+                user_obj = User.objects.get(email=email)
+                user = authenticate(username=user_obj.username, password=password)
+            except User.DoesNotExist:
+                pass
+        
+        if not user and username:
+            user = authenticate(username=username, password=password)
 
         if not user:
             raise serializers.ValidationError("Invalid credentials")
@@ -86,6 +97,13 @@ class AdminLoginSerializer(serializers.Serializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    is_verified = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
-        fields = ["id", "phone", "role", "first_name", "last_name"]
+        fields = ["id", "phone", "role", "first_name", "last_name", "is_verified", "expo_push_token"]
+
+    def get_is_verified(self, obj):
+        if obj.role == "driver":
+            return getattr(obj, 'driver', None).is_verified if hasattr(obj, 'driver') else False
+        return True

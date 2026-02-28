@@ -16,6 +16,7 @@ body {
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
 }
 
 #root {
@@ -33,6 +34,8 @@ button {
     cursor: pointer;
     border: none;
     font-family: inherit;
+    outline: none;
+    background: transparent;
 }
 
 input,
@@ -41,7 +44,57 @@ textarea {
     font-family: inherit;
 }
 
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.02);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.animate-fade {
+    animation: fadeIn var(--transition-normal) forwards;
+}
+
 /* Typography Utilities */
+.text-huge {
+    font-size: var(--font-size-huge);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+}
+
 .text-h1 {
     font-size: var(--font-size-xxl);
     font-weight: 700;
@@ -65,6 +118,10 @@ textarea {
 
 .text-center {
     text-align: center;
+}
+
+.text-accent {
+    color: var(--color-accent);
 }
 
 /* Layout Utilities */
@@ -107,6 +164,33 @@ textarea {
     gap: var(--spacing-md);
 }
 
+.gap-lg {
+    gap: var(--spacing-lg);
+}
+
+.w-full {
+    width: 100%;
+}
+
+/* Glassmorphism Components */
+.glass {
+    background: var(--color-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-md);
+}
+
+.glass-card {
+    background: var(--color-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-md);
+}
+
 /* Components */
 .btn {
     display: inline-flex;
@@ -114,29 +198,37 @@ textarea {
     justify-content: center;
     padding: var(--spacing-md) var(--spacing-lg);
     border-radius: var(--radius-md);
-    font-weight: 500;
+    font-weight: 600;
     font-size: var(--font-size-md);
-    transition: background-color var(--transition-fast);
+    transition: all var(--transition-fast);
     width: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn:active {
+    transform: scale(0.98);
 }
 
 .btn-primary {
-    background-color: var(--color-accent);
+    background: var(--gradient-primary);
     color: #fff;
+    box-shadow: var(--shadow-accent);
 }
 
 .btn-primary:hover {
-    background-color: var(--color-accent-hover);
+    box-shadow: 0 6px 20px rgba(39, 110, 241, 0.5);
+    transform: translateY(-1px);
 }
 
 .btn-secondary {
-    background-color: var(--color-surface);
+    background-color: rgba(255, 255, 255, 0.05);
     color: var(--color-text);
     border: 1px solid var(--color-border);
 }
 
 .btn-secondary:hover {
-    background-color: var(--color-surface-hover);
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .input-group {
@@ -148,19 +240,21 @@ textarea {
 }
 
 .input {
-    background-color: var(--color-surface);
+    background-color: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--color-border);
     color: var(--color-text);
-    padding: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
     border-radius: var(--radius-md);
     font-size: var(--font-size-md);
     outline: none;
-    transition: border-color var(--transition-fast);
+    transition: all var(--transition-fast);
     width: 100%;
 }
 
 .input:focus {
     border-color: var(--color-accent);
+    background-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 4px rgba(39, 110, 241, 0.1);
 }
 
 .card {
@@ -169,4 +263,24 @@ textarea {
     padding: var(--spacing-lg);
     box-shadow: var(--shadow-md);
     border: 1px solid var(--color-border);
+}
+
+.nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-lg) var(--spacing-xl);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.logo {
+    font-size: var(--font-size-xl);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+}
+
+.logo span {
+    color: var(--color-accent);
 }

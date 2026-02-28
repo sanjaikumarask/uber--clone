@@ -3,15 +3,15 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 
 from apps.users.permissions import IsAdmin
+from apps.users.models import User
 from apps.payments.models import LedgerEntry, Payout
 from apps.payments.tasks import execute_driver_payout
 from apps.payments.services.invariants import assert_user_ledger
 
 
-
 class AdminPaymentsView(APIView):
     """
-    Admin ledger audit view (read-only)
+    Admin ledger audit view
     """
     permission_classes = [IsAdmin]
 
@@ -25,7 +25,7 @@ class AdminPaymentsView(APIView):
         data = [
             {
                 "id": e.id,
-                "user_id": e.user_id,
+                "user_phone": e.user.phone,
                 "ride_id": e.ride_id,
                 "amount": str(e.amount),
                 "type": e.entry_type,
@@ -34,6 +34,34 @@ class AdminPaymentsView(APIView):
                 "created_at": e.created_at,
             }
             for e in entries
+        ]
+
+        return Response(data)
+
+
+class AdminPayoutListView(APIView):
+    """
+    List payout requests
+    """
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        payouts = (
+            Payout.objects
+            .select_related("driver")
+            .order_by("-created_at")[:100]
+        )
+
+        data = [
+            {
+                "id": p.id,
+                "driver_phone": p.driver.phone,
+                "amount": str(p.amount),
+                "status": p.status,
+                "reference": p.reference,  # ✅ FIXED
+                "created_at": p.created_at,
+            }
+            for p in payouts
         ]
 
         return Response(data)
@@ -51,7 +79,9 @@ class AdminApprovePayoutView(APIView):
         payout.status = Payout.Status.PROCESSING
         payout.save(update_fields=["status"])
 
-        # ⚠️ Trigger Razorpay transfer async here
+        # 🔥 async payout execution
+        execute_driver_payout.delay(payout.id)
+
         return Response({"status": "processing"})
 
 
@@ -70,28 +100,9 @@ class AdminRejectPayoutView(APIView):
         return Response({"status": "rejected"})
 
 
-
-class AdminApprovePayoutView(APIView):
-    permission_classes = [IsAdmin]
-
-    def post(self, request, payout_id):
-        payout = get_object_or_404(Payout, id=payout_id)
-
-        if payout.status != Payout.Status.REQUESTED:
-            return Response({"error": "Invalid state"}, status=400)
-
-        payout.status = Payout.Status.PROCESSING
-        payout.save(update_fields=["status"])
-
-        # 🔥 ASYNC PAYOUT
-        execute_driver_payout.delay(payout.id)
-
-        return Response({"status": "processing"})
-
-
 class AdminLedgerCheckView(APIView):
     """
-    Admin tool: validate ledger invariants for a user
+    Validate ledger invariants for a user
     """
     permission_classes = [IsAdmin]
 
@@ -99,26 +110,17 @@ class AdminLedgerCheckView(APIView):
         user_id = request.data.get("user_id")
 
         if not user_id:
-            return Response(
-                {"error": "user_id is required"},
-                status=400,
-            )
+            return Response({"error": "user_id is required"}, status=400)
 
         try:
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:
-            return Response(
-                {"error": "User not found"},
-                status=404,
-            )
+            return Response({"error": "User not found"}, status=404)
 
-        # 🔍 Ledger invariant check
         assert_user_ledger(user)
 
-        return Response(
-            {
-                "status": "ok",
-                "user_id": user.id,
-                "message": "Ledger is consistent",
-            }
-        )
+        return Response({
+            "status": "ok",
+            "user_id": user.id,
+            "message": "Ledger is consistent",
+        })

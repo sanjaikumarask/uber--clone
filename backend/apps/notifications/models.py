@@ -22,6 +22,7 @@ class Notification(models.Model):
     )
 
     retry_count = models.PositiveIntegerField(default=0)
+    is_read = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
     sent_at = models.DateTimeField(null=True, blank=True)
@@ -34,6 +35,14 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"Notification<{self.id}> {self.type} [{self.status}]"
+
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+        if is_new:
+            from django.db import transaction
+            from .tasks import deliver_notification
+            transaction.on_commit(lambda: deliver_notification.delay(self.id))
 
 
 class NotificationPreference(models.Model):

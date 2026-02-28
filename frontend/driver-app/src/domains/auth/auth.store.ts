@@ -7,6 +7,7 @@ interface User {
     role: "rider" | "driver" | "admin";
     first_name: string;
     last_name: string;
+    is_verified?: boolean;
 }
 
 interface AuthState {
@@ -15,9 +16,10 @@ interface AuthState {
     login: (user: User, accessToken: string, refreshToken: string) => Promise<void>;
     logout: () => Promise<void>;
     loadUser: () => Promise<void>;
+    syncUser: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     isAuthenticated: false,
 
@@ -35,8 +37,26 @@ export const useAuthStore = create<AuthState>((set) => ({
     loadUser: async () => {
         const token = await Storage.getToken();
         if (token) {
-            // Typically fetch /me here to validate
-            set({ isAuthenticated: true });
+            try {
+                const { api } = await import("../../services/api");
+                const { data } = await api.get("/users/me/");
+                set({ user: data, isAuthenticated: true });
+            } catch (err) {
+                console.error("Failed to load user:", err);
+                await Storage.clear();
+                set({ user: null, isAuthenticated: false });
+            }
         }
     },
+
+    syncUser: async () => {
+        if (!get().isAuthenticated) return;
+        try {
+            const { api } = await import("../../services/api");
+            const { data } = await api.get("/users/me/");
+            set({ user: data });
+        } catch (err) {
+            console.error("Sync user failed:", err);
+        }
+    }
 }));

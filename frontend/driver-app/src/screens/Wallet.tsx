@@ -14,8 +14,8 @@ export default function WalletScreen({ navigation }: any) {
     async function fetchWalletData() {
         try {
             setLoading(true);
-            const res = await api.get("/payments/wallet/");
-            setBalance(res.data.balance);
+            const res = await api.get("payments/wallet/");
+            setBalance(res.data.available_balance || res.data.total_balance || "0.00");
             // Assuming transactions are at /payments/wallet/transactions/ or part of wallet response
             // For now, let's just show balance.
         } catch (err: any) {
@@ -46,7 +46,7 @@ export default function WalletScreen({ navigation }: any) {
                         text: "Confirm",
                         onPress: async () => {
                             try {
-                                await api.post("/payments/payout/instant/", {
+                                await api.post("payments/payout/instant/", {
                                     amount: amount
                                 });
                                 Alert.alert("Success", "Withdrawal initiated!");

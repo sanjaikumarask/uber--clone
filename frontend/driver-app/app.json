@@ -23,6 +23,11 @@
       }
     },
     "android": {
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyD5Yq_dZsNz5fbq2DAAzjNfVKDYCn16BC8"
+        }
+      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -43,7 +48,14 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow Uber Driver to use your location."
         }
-      ]
-    ]
+      ],
+      "expo-web-browser"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e54bd37c-7e91-44df-b67c-a6bec158287d"
+      }
+    },
+    "owner": "sanjaikumardev"
   }
 }

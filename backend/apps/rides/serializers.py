@@ -4,6 +4,8 @@ from apps.rides.models import Ride
 
 class RideDetailSerializer(serializers.ModelSerializer):
     driver = serializers.SerializerMethodField()
+    rider = serializers.SerializerMethodField()
+    polyline = serializers.SerializerMethodField()
 
     class Meta:
         model = Ride
@@ -12,17 +14,35 @@ class RideDetailSerializer(serializers.ModelSerializer):
             "status",
             "pickup_lat",
             "pickup_lng",
+            "pickup_address",
             "drop_lat",
             "drop_lng",
+            "drop_address",
+            "vehicle_type",
+            "polyline",
+            "planned_route_polyline",
             "planned_distance_km",
             "planned_duration_min",
             "actual_distance_km",
             "base_fare",
             "final_fare",
+            "discount_amount",
+            "driver_bonus",
+            "applied_offer",
             "driver",
+            "rider",
+            "otp_code",
             "created_at",
             "updated_at",
+            "otp_verified_at",
+            "arrived_at",
+            "completed_at",
+            "cancelled_at",
+            "actual_route_polyline",
         ]
+
+    def get_polyline(self, obj):
+        return obj.planned_route_polyline
 
     def get_driver(self, obj):
         if not obj.driver:
@@ -40,4 +60,10 @@ class RideDetailSerializer(serializers.ModelSerializer):
                 "last_name": obj.driver.user.last_name,
                 "phone": obj.driver.user.phone,
             }
+        }
+
+    def get_rider(self, obj):
+        return {
+            "phone": obj.rider.phone,
+            "name": f"{obj.rider.first_name} {obj.rider.last_name}".strip(),
         }

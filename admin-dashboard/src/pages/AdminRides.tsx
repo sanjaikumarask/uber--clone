@@ -1,18 +1,25 @@
 import { useEffect, useState } from "react";
 import { api } from "../services/api";
+import RideDetailPanel from "../components/RideDetailPanel";
+import ResolutionModal from "../components/ResolutionModal";
 
 interface AdminRide {
     id: number;
-    rider: string;
-    driver: string | null;
+    rider_phone: string;
+    rider_name: string;
+    driver_phone: string | null;
     status: string;
+    payment_status: string | null;
+    base_fare: string;
+    final_fare: string | null;
     created_at: string;
-    fare: string | null;
 }
 
 export default function AdminRides() {
     const [rides, setRides] = useState<AdminRide[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedRideId, setSelectedRideId] = useState<number | null>(null);
+    const [resolutionRide, setResolutionRide] = useState<any | null>(null);
 
     const fetchRides = () => {
         setLoading(true);
@@ -29,69 +36,84 @@ export default function AdminRides() {
         fetchRides();
     }, []);
 
-    const handleCancel = async (rideId: number) => {
-        if (!confirm(`Are you sure you want to cancel Ride #${rideId}?`)) return;
+    const handleResolutionSubmit = async (data: any) => {
         try {
-            await api.post("/rides/admin/rides/actions/", {
-                ride_id: rideId,
-                action: "cancel"
-            });
-            alert("Ride cancelled");
-            fetchRides(); // Refresh list
-        } catch (err) {
-            alert("Failed to cancel ride");
+            await api.post("/admin/resolve-ride/", data);
+            alert("Ride resolved successfully.");
+            setResolutionRide(null);
+            fetchRides();
+        } catch (err: any) {
+            alert(err.response?.data?.error || "Resolution failed");
         }
     };
 
-    if (loading) return <div style={{ padding: 40, color: "#888" }}>Loading rides…</div>;
+    if (loading) return <div style={{ padding: 60, color: "var(--text-dim)" }}>Loading trip data...</div>;
 
     return (
-        <div style={{ padding: "40px 60px" }}>
-            <h1 style={{ marginBottom: "30px", fontSize: "2rem" }}>Rides</h1>
+        <div style={{ padding: "40px" }}>
+            <h1 style={{ marginBottom: "8px", fontSize: "2rem" }}>Trips</h1>
+            <p style={{ color: "var(--text-dim)", marginBottom: "32px" }}>Monitor real-time and past trip activity.</p>
 
-            <div style={{ overflowX: "auto", borderRadius: "8px", border: "1px solid #333" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", background: "#1e1e1e" }}>
+            <div className="glass-card" style={{ overflowX: "auto" }}>
+                <table style={{ minWidth: "100%" }}>
                     <thead>
-                        <tr style={{ background: "#000", textAlign: "left" }}>
-                            <th style={{ padding: "16px", color: "#888", fontSize: "0.85rem", textTransform: "uppercase" }}>ID</th>
-                            <th style={{ padding: "16px", color: "#888", fontSize: "0.85rem", textTransform: "uppercase" }}>Rider</th>
-                            <th style={{ padding: "16px", color: "#888", fontSize: "0.85rem", textTransform: "uppercase" }}>Driver</th>
-                            <th style={{ padding: "16px", color: "#888", fontSize: "0.85rem", textTransform: "uppercase" }}>Status</th>
-                            <th style={{ padding: "16px", color: "#888", fontSize: "0.85rem", textTransform: "uppercase" }}>Fare</th>
-                            <th style={{ padding: "16px", color: "#888", fontSize: "0.85rem", textTransform: "uppercase" }}>Date</th>
-                            <th style={{ padding: "16px", color: "#888", fontSize: "0.85rem", textTransform: "uppercase" }}>Action</th>
+                        <tr>
+                            <th style={{ width: "80px" }}>ID</th>
+                            <th>Rider</th>
+                            <th>Driver</th>
+                            <th>Status</th>
+                            <th>Fare</th>
+                            <th>Requested</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {rides.length === 0 ? (
-                            <tr><td colSpan={7} style={{ padding: 24, textAlign: "center", color: "#666" }}>No rides found</td></tr>
+                            <tr><td colSpan={7} style={{ padding: 48, textAlign: "center", color: "var(--text-dim)" }}>No active trips found.</td></tr>
                         ) : (
                             rides.map(r => (
-                                <tr key={r.id} style={{ borderBottom: "1px solid #333" }}>
-                                    <td style={{ padding: "16px", color: "#fff" }}>{r.id}</td>
-                                    <td style={{ padding: "16px", color: "#fff" }}>{r.rider}</td>
-                                    <td style={{ padding: "16px", color: "#fff" }}>{r.driver || "-"}</td>
-                                    <td style={{ padding: "16px" }}>
-                                        <span style={{
-                                            padding: "4px 8px", borderRadius: "4px", fontSize: "0.75rem",
-                                            background: r.status === "COMPLETED" ? "#2ecc7120" : "#333",
-                                            color: r.status === "COMPLETED" ? "#2ecc71" : "#ccc"
+                                <tr
+                                    key={r.id}
+                                    onClick={() => setSelectedRideId(r.id)}
+                                    style={{ cursor: "pointer" }}
+                                >
+                                    <td style={{ color: "var(--text-bright)", fontWeight: 500 }}>#{r.id}</td>
+                                    <td>{r.rider_name || r.rider_phone}</td>
+                                    <td>
+                                        {r.driver_phone ? (
+                                            <span style={{ fontWeight: 500 }}>{r.driver_phone}</span>
+                                        ) : (
+                                            <span style={{ color: "var(--text-dim)", fontStyle: "italic" }}>Searching...</span>
+                                        )}
+                                    </td>
+                                    <td>
+                                        <span className="badge" style={{
+                                            background: r.status === "COMPLETED" ? "#1F2937" : "#374151",
+                                            color: r.status === "COMPLETED" ? "var(--success)" : "var(--text-bright)",
+                                            border: "none"
                                         }}>
                                             {r.status}
                                         </span>
                                     </td>
-                                    <td style={{ padding: "16px", color: "#fff" }}>{r.fare ? `₹${r.fare}` : "-"}</td>
-                                    <td style={{ padding: "16px", color: "#aaa" }}>{new Date(r.created_at).toLocaleString()}</td>
-                                    <td style={{ padding: "16px" }}>
-                                        {["SEARCHING", "OFFERED", "ASSIGNED", "ARRIVED", "ONGOING"].includes(r.status) && (
+                                    <td style={{ fontWeight: 500 }}>{r.final_fare ? `₹${r.final_fare}` : r.base_fare ? `₹${r.base_fare}` : "—"}</td>
+                                    <td style={{ color: "var(--text-dim)", fontSize: '0.85rem' }}>{new Date(r.created_at).toLocaleString()}</td>
+                                    <td>
+                                        {["SEARCHING", "OFFERED", "ASSIGNED", "ARRIVED", "ONGOING", "COMPLETED"].includes(r.status) && (
                                             <button
-                                                onClick={() => handleCancel(r.id)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setResolutionRide(r);
+                                                }}
                                                 style={{
-                                                    background: "transparent", color: "#e74c3c", border: "1px solid #e74c3c",
-                                                    padding: "6px 12px", borderRadius: "4px", cursor: "pointer"
+                                                    background: "transparent",
+                                                    color: "var(--accent)",
+                                                    border: "1px solid var(--border)",
+                                                    padding: "6px 12px",
+                                                    fontSize: "0.8rem",
+                                                    cursor: "pointer"
                                                 }}
                                             >
-                                                Cancel
+                                                ⚠️ Resolve
                                             </button>
                                         )}
                                     </td>
@@ -101,6 +123,23 @@ export default function AdminRides() {
                     </tbody>
                 </table>
             </div>
+
+            {/* Ride Detail Panel */}
+            {selectedRideId && (
+                <RideDetailPanel
+                    rideId={selectedRideId}
+                    onClose={() => setSelectedRideId(null)}
+                />
+            )}
+
+            {/* Resolution Modal */}
+            {resolutionRide && (
+                <ResolutionModal
+                    ride={resolutionRide}
+                    onClose={() => setResolutionRide(null)}
+                    onSubmit={handleResolutionSubmit}
+                />
+            )}
         </div>
     );
 }

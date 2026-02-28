@@ -50,6 +50,7 @@ class Payment(models.Model):
     )
     gateway_payment_id = models.CharField(
         max_length=128,
+        unique=True,
         null=True,
         blank=True,
     )
@@ -57,6 +58,14 @@ class Payment(models.Model):
         max_length=256,
         null=True,
         blank=True,
+    )
+    
+    idempotency_key = models.CharField(
+        max_length=128,
+        unique=True,
+        null=True,
+        blank=True,
+        help_text="Network-edge idempotency tracking key"
     )
 
     failure_reason = models.TextField(null=True, blank=True)
@@ -101,6 +110,9 @@ class LedgerEntry(models.Model):
         DRIVER_PAYOUT = "DRIVER_PAYOUT"
         WITHDRAWAL_FEE = "WITHDRAWAL_FEE"
         REFUND = "REFUND"
+        PENALTY = "PENALTY"
+        INCENTIVE = "INCENTIVE"
+        CORRECTION = "CORRECTION"
         OTHER = "OTHER"
 
     user = models.ForeignKey(
@@ -135,7 +147,7 @@ class LedgerEntry(models.Model):
         max_length=128,
         null=True,
         blank=True,
-        db_index=True,
+        unique=True,
         help_text="Idempotency / correlation key",
     )
 
@@ -242,3 +254,28 @@ class WebhookEvent(models.Model):
 
     class Meta:
         ordering = ["-received_at"]
+
+
+class DriverEarnings(models.Model):
+    driver = models.ForeignKey(
+        "drivers.Driver",
+        on_delete=models.CASCADE,
+        related_name="earnings",
+    )
+    ride = models.OneToOneField(
+        "rides.Ride",
+        on_delete=models.CASCADE,
+        related_name="earning",
+    )
+    # Total amount paid by rider
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    # Platform cut
+    commission = models.DecimalField(max_digits=10, decimal_places=2)
+    # What the driver actually gets
+    net_earning = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Driver Earnings"
+        ordering = ["-created_at"]

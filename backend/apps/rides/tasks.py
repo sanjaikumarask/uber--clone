@@ -16,7 +16,7 @@ from apps.rides.services.surge_engine import (
     decrement_demand,
     increment_supply,
 )
-from apps.drivers.services.trust import register_no_show
+from apps.drivers.services.metrics import update_driver_metrics
 
 WAIT_TIME_MINUTES = 5
 
@@ -99,7 +99,54 @@ def check_no_show(self, ride_id: int):
         handle_no_show(ride=ride)
 
         if ride.driver:
-            register_no_show(ride.driver)
+            update_driver_metrics(ride.driver, "NO_SHOW")
 
         decrement_demand(cell_id)
         increment_supply(cell_id)
+@shared_task
+def retry_matching_for_searching_rides():
+    """
+    Periodic task to pick up rides that are stuck in SEARCHING state.
+    """
+    from apps.rides.services.matching import find_driver_and_offer_ride
+    
+    searching_rides = Ride.objects.filter(status=Ride.Status.SEARCHING)
+    for ride in searching_rides:
+        find_driver_and_offer_ride(ride.id)
+
+@shared_task
+def auto_resolve_stuck_rides():
+    """
+    Handle failures:
+    - Cancel rides SEARCHING for > 15 minutes.
+    - Attempt to COMPLETE or CANCEL rides ONGOING for > 24 hours (App crash logic).
+    """
+    from apps.rides.services.cancellation import cancel_ride
+    from apps.rides.services.complete_ride import complete_ride
+
+    now = timezone.now()
+
+    # 1. Cancel stale SEARCHING rides (> 15 mins)
+    stale_threshold = now - timedelta(minutes=15)
+    stale_searching = Ride.objects.filter(status=Ride.Status.SEARCHING, created_at__lt=stale_threshold)
+    for ride in stale_searching:
+        try:
+            cancel_ride(ride, by=Ride.CancelledBy.SYSTEM)
+        except Exception:
+            pass
+
+    # 2. Complete abandoned ONGOING/ASSIGNED rides (> 24 hours) 
+    # This catches edge-cases where driver/rider force-close app without finishing
+    abandoned_threshold = now - timedelta(hours=24)
+    abandoned_active = Ride.objects.filter(
+        status__in=[Ride.Status.ONGOING, Ride.Status.ARRIVED, Ride.Status.ASSIGNED],
+        updated_at__lt=abandoned_threshold
+    )
+    for ride in abandoned_active:
+        try:
+            if ride.status == Ride.Status.ONGOING:
+                complete_ride(ride.id)
+            else:
+                cancel_ride(ride, by=Ride.CancelledBy.SYSTEM)
+        except Exception:
+            pass
