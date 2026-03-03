@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Uber Clone (Ride-Hailing Platform)
 
 A production-ready, highly-scalable Uber-like platform featuring real-time tracking, driver matching, automated payouts, and multi-app architecture.
@@ -49,3 +50,6 @@ For detailed setup instructions, module-wise dependencies, and common troublesho
 - **Financial Audit**: Double-entry ledger system with automated reconciliation.
 - **Adaptive Resilience**: Load shedding and circuit breaking for high availability.
 - **Observability**: Integrated with Prometheus, Grafana, and Sentry.
+=======
+# taxi-python
+>>>>>>> taxi-python/main
