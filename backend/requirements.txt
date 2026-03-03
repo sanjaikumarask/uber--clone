@@ -2,6 +2,7 @@ Django>=4.2
 djangorestframework
 psycopg2-binary
 redis
+django-redis
 celery
 django-celery-results
 kafka-python
@@ -21,6 +22,13 @@ exponent-server-sdk
 pytest
 pytest-django
 pytest-cov
+pytest-asyncio
 
 
+geopy
 polyline
+
+# Observability
+django-prometheus>=2.3.1
+flower>=2.0.1
+sentry-sdk[django,celery]>=1.39.0

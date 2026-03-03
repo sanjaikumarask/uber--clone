@@ -15,6 +15,7 @@ from apps.payments.services.payout import (
 )
 from apps.payments.services.razorpay import verify_razorpay_payout_webhook
 from apps.payments.services.webhooks import register_webhook_event
+from apps.common.idempotency import idempotent_webhook
 
 
 # =====================================================
@@ -36,6 +37,7 @@ def _verify_payment_webhook(*, body: bytes, signature: str) -> bool:
 # PAYMENT (RIDE PAYMENT) WEBHOOK
 # ==============================
 @csrf_exempt
+@idempotent_webhook("razorpay")
 def razorpay_webhook(request):
     signature = request.headers.get("X-Razorpay-Signature")
     body = request.body
@@ -118,6 +120,7 @@ def razorpay_webhook(request):
 # PAYOUT WEBHOOK
 # ==============================
 @csrf_exempt
+@idempotent_webhook("razorpay")
 def payout_webhook(request):
     signature = request.headers.get("X-Razorpay-Signature")
     body = request.body

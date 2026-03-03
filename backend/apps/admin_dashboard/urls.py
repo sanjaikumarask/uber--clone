@@ -18,6 +18,7 @@ from .views_admin import (
     AdminTicketsView,
     AdminResolveRideView,
 )
+from .views import AdminSystemLogsView
 
 urlpatterns = [
     # General Core
@@ -46,4 +47,5 @@ urlpatterns = [
     path("payout/<str:action>/<int:id>/", AdminPayoutActionView.as_view()),
     path("tickets/", AdminTicketsView.as_view()),
     path("resolve-ride/", AdminResolveRideView.as_view()),
+    path("logs/", AdminSystemLogsView.as_view()),
 ]

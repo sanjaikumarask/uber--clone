@@ -5,16 +5,16 @@ from apps.payments.services.payout import (
 from apps.payments.models import LedgerEntry, Payout
 
 
-def test_driver_payout_request(driver):
+def test_driver_payout_request(driver_user):
     LedgerEntry.objects.create(
-        user=driver,
+        user=driver_user,
         amount=Decimal("1000.00"),
         entry_type=LedgerEntry.Type.CREDIT,
         reason=LedgerEntry.Reason.DRIVER_EARNING,
     )
 
     payout = request_driver_payout(
-        driver=driver,
+        driver=driver_user,
         amount=Decimal("500.00"),
     )
 
@@ -22,7 +22,7 @@ def test_driver_payout_request(driver):
 
     # HOLD exists
     assert LedgerEntry.objects.filter(
-        user=driver,
+        user=driver_user,
         entry_type=LedgerEntry.Type.HOLD,
         reference__contains=payout.reference,
     ).exists()

@@ -1,48 +1,68 @@
-from decimal import Decimal
-from django.db.models import Sum
-from apps.payments.models import LedgerEntry
+import logging
+import time
+from django.db import transaction
+from celery import shared_task
+from django.utils import timezone
+from datetime import timedelta
 
+# Mocking external client if not imported logic
+from apps.payments.views import razorpay_client
+from apps.payments.services.payout_gateway import get_payout_status
+from apps.payments.services.payout import mark_payout_success, mark_payout_failed
+from apps.payments.models import Payout, Payment
+from apps.rides.models import Ride
 
-class LedgerViolation(Exception):
-    pass
+logger = logging.getLogger(__name__)
 
+@shared_task(bind=True, max_retries=5)
+def reconcile_payout_status_task(self, payout_id):
+    """
+    Individual Payout Reconciliation.
+    Triggered when a webhook is delayed or 
+    by the periodic scanner.
+    """
+    try:
+        payout = Payout.objects.get(id=payout_id)
+        if payout.status != Payout.Status.PROCESSING:
+            return f"Payout {payout_id} not in PROCESSING"
 
-def _sum(user, entry_type):
-    return (
-        LedgerEntry.objects
-        .filter(user=user, entry_type=entry_type)
-        .aggregate(s=Sum("amount"))["s"]
-        or Decimal("0.00")
-    )
+        # 1. Fetch from Gateway
+        status_data = get_payout_status(
+            gateway_payout_id=payout.gateway_payout_id,
+            reference_id=payout.reference
+        )
 
+        if not status_data:
+            return f"No data for {payout_id}"
 
-def verify_user_ledger(user):
-    credit = _sum(user, LedgerEntry.Type.CREDIT)
-    debit = _sum(user, LedgerEntry.Type.DEBIT)
+        pg_status = status_data.get("status")
 
-    hold = _sum(user, LedgerEntry.Type.HOLD)
-    release = _sum(user, LedgerEntry.Type.RELEASE)
+        # 2. Reconcile states
+        if pg_status == "processed":
+            mark_payout_success(payout=payout)
+        elif pg_status in ["failed", "rejected", "cancelled"]:
+            payout.failure_reason = status_data.get("failure_reason", "Gateway Failure")
+            mark_payout_failed(payout=payout)
+        
+        return f"Reconciled {payout_id} to {pg_status}"
 
-    total = credit - debit
-    held = hold - release
-    available = total - held
+    except Exception as exc:
+        logger.error(f"Reconciliation failed for Payout {payout_id}: {exc}", extra={"payout_id": payout_id})
+        # Exponential backoff retry
+        raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
 
-    if credit < 0 or debit < 0:
-        raise LedgerViolation("Negative credit/debit")
+@shared_task
+def global_payout_reconciliation_scanner():
+    """
+    Periodic job to find 'Stuck' payouts.
+    """
+    cutoff = timezone.now() - timedelta(minutes=30)
+    stuck_payouts = Payout.objects.filter(
+        status=Payout.Status.PROCESSING,
+        updated_at__lt=cutoff
+    ).values_list('id', flat=True)
 
-    if held < 0:
-        raise LedgerViolation("Negative held balance")
-
-    if total < 0:
-        raise LedgerViolation("Negative total balance")
-
-    if available < 0:
-        raise LedgerViolation("Negative available balance")
-
-    return {
-        "credit": credit,
-        "debit": debit,
-        "held": held,
-        "total": total,
-        "available": available,
-    }
+    for p_id in stuck_payouts:
+        reconcile_payout_status_task.delay(p_id)
+    
+    return f"Queued {len(stuck_payouts)} payouts for reconciliation"

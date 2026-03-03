@@ -26,6 +26,7 @@ WAIT_TIME_MINUTES = 5
 # ============================================================
 @shared_task(bind=True, autoretry_for=(Exception,), retry_kwargs={"max_retries": 3})
 def driver_accept_timeout(self, ride_id: int, driver_id: int):
+    from apps.rides.services.matching import find_driver_and_offer_ride
     with transaction.atomic():
         ride = Ride.objects.select_for_update().filter(
             id=ride_id,
@@ -67,10 +68,7 @@ def driver_accept_timeout(self, ride_id: int, driver_id: int):
             )
 
         transaction.on_commit(
-            lambda r=ride: publish_ride_searching_event(
-                ride=r,
-                driver_ids=[],
-            )
+            lambda: find_driver_and_offer_ride(ride.id)
         )
 
 
@@ -126,12 +124,12 @@ def auto_resolve_stuck_rides():
 
     now = timezone.now()
 
-    # 1. Cancel stale SEARCHING rides (> 15 mins)
+    # 1. Cancel stale SEARCHING rides (> 15 mins since last update)
     stale_threshold = now - timedelta(minutes=15)
-    stale_searching = Ride.objects.filter(status=Ride.Status.SEARCHING, created_at__lt=stale_threshold)
+    stale_searching = Ride.objects.filter(status=Ride.Status.SEARCHING, updated_at__lt=stale_threshold)
     for ride in stale_searching:
         try:
-            cancel_ride(ride, by=Ride.CancelledBy.SYSTEM)
+            cancel_ride(ride=ride, by=Ride.CancelledBy.SYSTEM)
         except Exception:
             pass
 
@@ -147,6 +145,6 @@ def auto_resolve_stuck_rides():
             if ride.status == Ride.Status.ONGOING:
                 complete_ride(ride.id)
             else:
-                cancel_ride(ride, by=Ride.CancelledBy.SYSTEM)
+                cancel_ride(ride=ride, by=Ride.CancelledBy.SYSTEM)
         except Exception:
             pass

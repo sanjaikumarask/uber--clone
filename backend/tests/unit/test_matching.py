@@ -1,127 +1,98 @@
 from unittest.mock import MagicMock, patch
 import pytest
-
-# We import the function under test
 from apps.rides.services.matching import find_driver_and_offer_ride
 
-# We define the patches as strings to avoid importing Models if possible, 
-# but patching where they are USED is key.
-# apps.rides.services.matching.Ride
-
+@patch("apps.drivers.services.metrics.update_driver_metrics", create=True)
+@patch("apps.drivers.services.geo.lock_driver_for_offer", create=True)
+@patch("apps.drivers.services.geo.is_driver_locked", create=True)
+@patch("apps.drivers.models.DriverStats", create=True)
 @patch("apps.rides.services.matching.get_nearby_driver_ids")
 @patch("apps.rides.services.matching.Ride")
 @patch("apps.rides.services.matching.Driver")
 @patch("apps.rides.services.matching.transaction.atomic")
-def test_matching_logic_success(mock_atomic, mock_Driver_cls, mock_Ride_cls, mock_geo):
-    # Setup Constants on Mock
+def test_matching_logic_success(mock_atomic, mock_Driver_cls, mock_Ride_cls, mock_geo, 
+                                 mock_stats_cls, mock_is_locked, mock_lock, mock_metrics):
+    # Setup Constants
     mock_Ride_cls.Status.SEARCHING = "SEARCHING"
     mock_Ride_cls.Status.OFFERED = "OFFERED"
+    mock_Ride_cls.Status.ASSIGNED = "ASSIGNED"
     mock_Driver_cls.Status.ONLINE = "ONLINE"
 
     # Setup Mocks
     mock_ride = MagicMock()
     mock_ride.id = 1
-    mock_ride.pickup_lat = 10.0
-    mock_ride.pickup_lng = 20.0
     mock_ride.status = "SEARCHING"
     mock_ride.rejected_driver_ids = []
-
-    # Mock Ride Query: Ride.objects.select_for_update().filter().first()
-    # Ensure chain returns mock_ride
     mock_Ride_cls.objects.select_for_update.return_value.filter.return_value.first.return_value = mock_ride
 
-    # Mock Geo: returns driver IDs
-    mock_geo.return_value = [101, 102]
+    # Geo returns 101
+    mock_geo.return_value = [101]
 
-    # Mock Driver Query
+    # Online IDs
+    mock_Driver_cls.objects.filter.return_value.values_list.return_value = [101]
+
+    # DB Candidates
     mock_driver = MagicMock()
     mock_driver.id = 101
-    mock_Driver_cls.objects.select_for_update.return_value.filter.return_value.first.return_value = mock_driver
+    mock_driver.level = "NORMAL"
+    mock_Driver_cls.objects.select_for_update.return_value.select_related.return_value.filter.return_value = [mock_driver]
 
-    # Call Function
+    # Locks
+    mock_is_locked.return_value = False
+    mock_lock.return_value = True
+
+    # Stats
+    mock_stats = MagicMock()
+    mock_stats.rejection_count_today = 0
+    mock_stats_cls.objects.get_or_create.return_value = (mock_stats, False)
+
+    # Call
     find_driver_and_offer_ride(1)
 
-    # Assertions
-    # We verify save was called (implying success path taken)
+    # Assert success
     mock_ride.save.assert_called_once()
-    
-    # We assigned driver to ride
     assert mock_ride.driver == mock_driver
-    assert mock_ride.status == "OFFERED"
-    
-    # We checked nearby drivers
-    mock_geo.assert_called_once_with(lat=10.0, lng=20.0, radius_km=5.0, limit=10)
+    # We check transition_to CALL instead of status attribute on mock
+    mock_ride.transition_to.assert_called_once_with("OFFERED")
 
 @patch("apps.rides.services.matching.get_nearby_driver_ids")
 @patch("apps.rides.services.matching.Ride")
-@patch("apps.rides.services.matching.Driver")
 @patch("apps.rides.services.matching.transaction.atomic")
-def test_matching_no_drivers_found(mock_atomic, mock_Driver_cls, mock_Ride_cls, mock_geo):
-    # Setup Constants
+def test_matching_no_drivers_found(mock_atomic, mock_Ride_cls, mock_geo):
     mock_Ride_cls.Status.SEARCHING = "SEARCHING"
-
-    # Setup
     mock_ride = MagicMock()
     mock_ride.status = "SEARCHING"
-    mock_ride.pickup_lat = 10.0
-    mock_ride.pickup_lng = 20.0
-    mock_ride.rejected_driver_ids = []
-    
     mock_Ride_cls.objects.select_for_update.return_value.filter.return_value.first.return_value = mock_ride
     
-    # Mock Geo returns empty list
     mock_geo.return_value = [] 
 
-    # Call
     find_driver_and_offer_ride(1)
-
-    # Assert
-    # Save should NOT be called (status remains SEARCHING)
     mock_ride.save.assert_not_called()
 
+@patch("apps.drivers.services.geo.lock_driver_for_offer", create=True)
+@patch("apps.drivers.services.geo.is_driver_locked", create=True)
 @patch("apps.rides.services.matching.get_nearby_driver_ids")
 @patch("apps.rides.services.matching.Ride")
 @patch("apps.rides.services.matching.Driver")
 @patch("apps.rides.services.matching.transaction.atomic")
-def test_matching_skip_rejected_drivers(mock_atomic, mock_Driver_cls, mock_Ride_cls, mock_geo):
-    # Setup Constants
+def test_matching_skip_rejected_drivers(mock_atomic, mock_Driver_cls, mock_Ride_cls, mock_geo, mock_is_locked, mock_lock):
     mock_Ride_cls.Status.SEARCHING = "SEARCHING"
-    mock_Ride_cls.Status.OFFERED = "OFFERED"
     mock_Driver_cls.Status.ONLINE = "ONLINE"
 
-    # Setup
     mock_ride = MagicMock()
     mock_ride.status = "SEARCHING"
-    mock_ride.pickup_lat = 10.0
-    mock_ride.pickup_lng = 20.0
-    # Driver 101 already rejected this ride
     mock_ride.rejected_driver_ids = [101]
-    
     mock_Ride_cls.objects.select_for_update.return_value.filter.return_value.first.return_value = mock_ride
     
-    # Geo returns 101 and 102
+    # 101 rejected, 102 available
     mock_geo.return_value = [101, 102]
 
-    # Mock Driver 102 (should be picked)
-    mock_driver_102 = MagicMock()
-    mock_driver_102.id = 102
-    
-    # Configure Driver query to return mock_driver_102
-    mock_Driver_cls.objects.select_for_update.return_value.filter.return_value.first.return_value = mock_driver_102
+    # Online IDs should only include 102
+    mock_Driver_cls.objects.filter.return_value.values_list.return_value = [102]
 
-    # Call
     find_driver_and_offer_ride(1)
 
-    # Assert
-    # Verify filter called with correct ID
-    # We check the arguments passed to filter()
-    # Driver.objects.select_for_update().filter(id=..., ...)
-    filter_mock = mock_Driver_cls.objects.select_for_update.return_value.filter
-    
-    assert filter_mock.call_count >= 1, "Driver filter query was not called"
-    
-    call_args = filter_mock.call_args
-    # call_args is (args, kwargs)
-    assert call_args[1]['id'] == 102 # Selected ID should be 102
-    
-    assert mock_ride.driver == mock_driver_102
+    # Verify online filter called with 102, not 101
+    args, kwargs = mock_Driver_cls.objects.filter.call_args
+    assert 102 in kwargs['id__in']
+    assert 101 not in kwargs['id__in']

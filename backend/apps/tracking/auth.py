@@ -16,14 +16,14 @@ class JWTAuthMiddleware:
         self.app = app
 
     async def __call__(self, scope, receive, send):
-        query = parse_qs(scope["query_string"].decode())
-        token = query.get("token")
-
-        if not token:
-            scope["user"] = AnonymousUser()
-            return await self.app(scope, receive, send)
-
         try:
+            query = parse_qs(scope["query_string"].decode())
+            token = query.get("token")
+
+            if not token:
+                scope["user"] = AnonymousUser()
+                return await self.app(scope, receive, send)
+
             scope["user"] = await authenticate_token(token[0])
         except Exception:
             scope["user"] = AnonymousUser()

@@ -376,6 +376,8 @@ export default function AdminLiveMap() {
     }
 
     // --- Road Following Preparation ---
+    // Tolerance raised to 400 m so sub-interpolated road vertices (which may sit
+    // slightly off the decoded polyline points) still snap correctly.
     let subPath: { lat: number, lng: number }[] = [];
     if (!isRider && path && path.length > 1) {
       try {
@@ -395,13 +397,18 @@ export default function AdminLiveMap() {
           if (dTo < minToDist) { minToDist = dTo; toIdx = i; }
         }
 
-        // Within 120m tolerance, and forward movement
-        if (fromIdx !== -1 && toIdx !== -1 && fromIdx < toIdx && minFromDist < 120 && minToDist < 120) {
-          subPath = [
-            from,
-            ...path.slice(fromIdx + 1, toIdx).map(p => ({ lat: p.lat(), lng: p.lng() })),
-            to
-          ];
+        // Relaxed: tolerance 400 m, allow same-index (very short movement) but
+        // still exclude backwards movement (toIdx < fromIdx) as that signals the
+        // polyline direction is inverted.
+        const SNAP_TOLERANCE = 400; // metres
+        if (
+          fromIdx !== -1 && toIdx !== -1 &&
+          toIdx >= fromIdx &&          // allow equal (tiny move stays on same vertex)
+          minFromDist < SNAP_TOLERANCE &&
+          minToDist < SNAP_TOLERANCE
+        ) {
+          const slice = path.slice(fromIdx + 1, toIdx).map(p => ({ lat: p.lat(), lng: p.lng() }));
+          subPath = [from, ...slice, to];
         }
       } catch (e) { console.warn("Anim path error", e); }
     }
@@ -412,7 +419,7 @@ export default function AdminLiveMap() {
       const progress = Math.min((now - start) / duration, 1);
 
       let currentPos;
-      if (subPath.length > 2) {
+      if (subPath.length >= 2) {
         const totalSegments = subPath.length - 1;
         const segmentIdx = Math.min(Math.floor(progress * totalSegments), totalSegments - 1);
         const segmentProgress = (progress * totalSegments) - segmentIdx;

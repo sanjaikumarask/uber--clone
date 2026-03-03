@@ -19,6 +19,7 @@ urlpatterns = [
     path("api/admin/", include("apps.admin_dashboard.urls")),
     path("api/offers/", include("apps.offers.urls")),
     path("api/driver-incentives/", include("apps.driver_incentives.urls")),
+    path("", include("django_prometheus.urls")), # 🔥 Expose /metrics
 ]
 
 # ============================

@@ -1,13 +1,14 @@
 from decimal import Decimal
+import logging
 from django.db import transaction
 from django.conf import settings
-
 from apps.payments.models import Payout, LedgerEntry
 from apps.payments.services import ledger
 from apps.payments.services.wallet import get_available_balance
 from apps.payments.services.invariants import assert_user_ledger
 
 WITHDRAWAL_FEE_PERCENT = Decimal("2.0")
+logger = logging.getLogger(__name__)
 
 
 def _platform_user():
@@ -16,7 +17,12 @@ def _platform_user():
     """
     from django.contrib.auth import get_user_model
     User = get_user_model()
-    return User.objects.get(id=settings.PLATFORM_USER_ID)
+    # Safely get or create to avoid DoesNotExist in tests/clean DBs
+    user, _ = User.objects.get_or_create(
+        id=settings.PLATFORM_USER_ID,
+        defaults={'username': 'platform_system_account', 'role': 'admin'}
+    )
+    return user
 
 
 @transaction.atomic
@@ -29,6 +35,17 @@ def request_driver_payout(*, driver, amount: Decimal, reference=None) -> Payout:
 
     if amount <= 0:
         raise ValueError("Invalid payout amount")
+
+    # ── CONCURRENCY LOCK (High Load Optimization) ──
+    # At 10k+ users, multiple workers might process payouts for the same driver pool.
+    # select_for_update() ensures strict consistency for the balance check.
+    # Note: We do NOT use skip_locked here as we MUST be certain of the driver's
+    # current balance and cannot skip/retry later for this specific flow.
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    # Log context for observability
+    logger.info(f"[Payout] Acquiring financial lock for driver {driver.id}", extra={"driver_id": driver.id})
+    User.objects.select_for_update().get(id=driver.id)
 
     available = get_available_balance(driver)
     if amount > available:
@@ -58,6 +75,12 @@ def request_driver_payout(*, driver, amount: Decimal, reference=None) -> Payout:
 
     if reference is None:
         reference = f"payout:{driver.id}:{payout_uuid()}"
+
+    # ── IDEMPOTENCY CHECK ──
+    # Ensure reference-based idempotency if one was provided
+    existing_payout = Payout.objects.filter(reference=reference).first()
+    if existing_payout:
+        return existing_payout
 
     payout = Payout.objects.create(
         driver=driver,
@@ -154,6 +177,14 @@ def settle_driver_payout(*, ride, payment):
     """
     if payment.status != "CAPTURED":
         raise ValueError("Payment not captured")
+
+    # ── IDEMPOTENCY GUARD ──
+    # Ensure this ride payout hasn't already been processed
+    if LedgerEntry.objects.filter(
+        reference=f"earning:{ride.id}", 
+        reason=LedgerEntry.Reason.DRIVER_EARNING
+    ).exists():
+        return Decimal("0.00"), Decimal("0.00")
 
     # 1. Calculate splits (80/20)
     total = payment.amount

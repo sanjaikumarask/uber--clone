@@ -2,9 +2,10 @@ from django.db import models
 from django.conf import settings
 from django.db.models import Q
 from decimal import Decimal
+from django_prometheus.models import ExportModelOperationsMixin
 
 
-class Payment(models.Model):
+class Payment(ExportModelOperationsMixin('payment'), models.Model):
     class Status(models.TextChoices):
         CREATED = "CREATED"
         AUTHORIZED = "AUTHORIZED"
@@ -91,7 +92,7 @@ class Payment(models.Model):
         return max(self.amount - self.refunded_amount, Decimal("0.00"))
 
 
-class LedgerEntry(models.Model):
+class LedgerEntry(ExportModelOperationsMixin('ledger_entry'), models.Model):
     """
     IMMUTABLE ACCOUNTING LEDGER
     NEVER UPDATE — ONLY INSERT
@@ -206,6 +207,7 @@ class Payout(models.Model):
     failure_reason = models.TextField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class WebhookEvent(models.Model):

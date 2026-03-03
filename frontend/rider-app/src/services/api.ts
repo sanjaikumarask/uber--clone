@@ -70,16 +70,18 @@ export const flushOfflineQueue = async () => {
 
         for (const req of currentBatch) {
             try {
-                // Resume request dynamically
-                await axios({ ...req, baseURL: API_URL });
+                // ✅ USE API INSTANCE: Ensures interceptors (token refresh) are applied
+                await api({ ...req });
                 console.log(`✅ [Offline Queue] Success: ${req.url}`);
 
                 // Add tiny 100ms artificial delay to prevent socket flooding
                 await new Promise(resolve => setTimeout(resolve, 100));
             } catch (err: any) {
                 console.warn(`⏳ [Offline Queue] Retry still failing for: ${req.url}`);
-                if (!err.response || err.response.status >= 500) {
-                    remainingQueue.push(req); // Keeps failed in queue, safely appended to end
+                // ✅ PREVENT DATA LOSS: If 401 (Unauthorized/Expired), keep in queue!
+                // Don't discard until the user successfully logs back in and retry succeeds.
+                if (!err.response || err.response.status >= 500 || err.response.status === 401) {
+                    remainingQueue.push(req);
                 }
             }
         }

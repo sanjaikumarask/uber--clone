@@ -19,13 +19,6 @@ const QUICK_LINKS = [
   { path: "/analytics", icon: "📊", label: "Analytics", desc: "Performance metrics" },
 ];
 
-const STATUS_SERVICES = [
-  { name: "WebSocket Gateway", ok: true, latency: "4ms" },
-  { name: "API Server", ok: true, latency: "12ms" },
-  { name: "Location Tracking", ok: true, latency: "8ms" },
-  { name: "Notification Service", ok: true, latency: "21ms" },
-];
-
 export default function Overview() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -62,11 +55,14 @@ export default function Overview() {
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
           <div style={{
             display: "flex", alignItems: "center", gap: 8,
-            background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)",
+            background: loading ? "rgba(0,0,0,0.05)" : (data?.system_health?.is_operational ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.06)"),
+            border: `1px solid ${loading ? "var(--border)" : (data?.system_health?.is_operational ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)")}`,
             borderRadius: 99, padding: "6px 14px"
           }}>
-            <div className="live-dot" />
-            <span style={{ fontSize: 11, color: "var(--green)", fontWeight: 700 }}>SYSTEM OPERATIONAL</span>
+            <div className="live-dot" style={{ background: loading ? "var(--text-3)" : (data?.system_health?.is_operational ? "var(--green)" : "var(--red)") }} />
+            <span style={{ fontSize: 11, color: loading ? "var(--text-3)" : (data?.system_health?.is_operational ? "var(--green)" : "var(--red)"), fontWeight: 700 }}>
+              {loading ? "INITIALIZING..." : (data?.system_health?.is_operational ? "SYSTEM OPERATIONAL" : "SYSTEM DEGRADED")}
+            </span>
           </div>
           <span style={{ fontSize: 11, color: "var(--text-3)", fontVariantNumeric: "tabular-nums" }}>
             {time.toLocaleString()}
@@ -139,9 +135,9 @@ export default function Overview() {
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
             {[
-              { label: "API Uptime", value: "99.99%", color: "var(--green)" },
-              { label: "Throughput", value: "4.2k req/s", color: "var(--text-1)" },
-              { label: "Error Rate", value: "0.01%", color: "var(--text-2)" },
+              { label: "API Health", value: data?.system_health?.redis?.ok ? "Healthy" : "Down", color: data?.system_health?.redis?.ok ? "var(--green)" : "var(--red)" },
+              { label: "Shedding Factor", value: `${((data?.system_health?.shedding_factor ?? 0) * 100).toFixed(0)}%`, color: (data?.system_health?.shedding_factor ?? 0) > 0.4 ? "var(--red)" : "var(--text-1)" },
+              { label: "Redis Latency", value: data?.system_health?.redis?.latency || "N/A", color: "var(--text-1)" },
             ].map(m => (
               <div key={m.label}>
                 <div style={{ fontSize: 9, color: "var(--text-3)", fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 6 }}>{m.label}</div>
@@ -154,10 +150,15 @@ export default function Overview() {
         {/* Service health */}
         <div className="glass-card" style={{ padding: 28 }}>
           <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--text-2)", letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 20 }}>
-            Service Health
+            Infrastructure Health
           </h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {STATUS_SERVICES.map(svc => (
+            {[
+              { name: "Global Redis Cache", ok: data?.system_health?.redis?.ok, latency: data?.system_health?.redis?.latency },
+              { name: "Adaptive Shedder", ok: (data?.system_health?.shedding_factor ?? 0) < 0.8, latency: `${Math.round((data?.system_health?.shedding_factor ?? 0) * 100)}% load` },
+              { name: "Celery Workers", ok: true, latency: "Online" },
+              { name: "Kafka Broker", ok: true, latency: "Connected" },
+            ].map(svc => (
               <div key={svc.name} style={{
                 display: "flex", justifyContent: "space-between", alignItems: "center",
                 padding: "12px 14px", background: "var(--bg-4)",

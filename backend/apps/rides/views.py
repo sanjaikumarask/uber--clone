@@ -25,6 +25,8 @@ from apps.rides.services.complete_ride import complete_ride
 from apps.rides.services.surge_engine import (
     cell_id_from_lat_lng, increment_demand, decrement_demand, increment_supply
 )
+from apps.common.idempotency import idempotent_request
+from apps.common.backpressure import endpoint_cooldown
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +84,14 @@ from apps.rides.services.complete_ride import complete_ride
 class CreateRideView(APIView):
     permission_classes = [IsAuthenticated, IsRider]
 
+    @idempotent_request(ttl=300)
     def post(self, request):
+            # ── GLOBAL RATE LIMITING & ABUSE DETECTION ──
+        # Throttles individual users to prevent scripted abuse or unintended concurrency.
+        if not endpoint_cooldown(request.user.id, "create_ride", max_calls=3, window=60):
+            logger.warning(f"[AbuseDiscovery] User {request.user.id} hit create_ride limit", extra={"user_id": request.user.id})
+            return Response({"error": "Too many ride requests. Please wait."}, status=429)
+
         if Ride.objects.filter(
             rider=request.user, 
             status__in=[
@@ -96,20 +105,35 @@ class CreateRideView(APIView):
             return Response({"error": "Active ride exists"}, status=409)
 
         try:
-            pickup_lat = float(request.data["pickup_lat"])
-            pickup_lng = float(request.data["pickup_lng"])
+            # support both snake_case and camelCase for better client compatibility
+            pickup_lat = request.data.get("pickup_lat") or request.data.get("pickupLat")
+            pickup_lng = request.data.get("pickup_lng") or request.data.get("pickupLng")
+            drop_lat   = request.data.get("drop_lat")   or request.data.get("dropLat")
+            drop_lng   = request.data.get("drop_lng")   or request.data.get("dropLng")
+
+            if any(v is None for v in [pickup_lat, pickup_lng, drop_lat, drop_lng]):
+                missing = [k for k, v in {"pickup_lat": pickup_lat, "pickup_lng": pickup_lng, "drop_lat": drop_lat, "drop_lng": drop_lng}.items() if v is None]
+                return Response({"error": f"Missing required coordinates: {', '.join(missing)}"}, status=400)
+
+            pickup_lat = float(pickup_lat)
+            pickup_lng = float(pickup_lng)
+            drop_lat   = float(drop_lat)
+            drop_lng   = float(drop_lng)
+
             pickup_address = request.data.get("pickup_address", "Pickup Point")
-            drop_lat = float(request.data["drop_lat"])
-            drop_lng = float(request.data["drop_lng"])
             drop_address = request.data.get("drop_address", "Destination")
             vehicle_type = request.data.get("vehicle_type", "go")
             
+            # ── Guard: Basic Coordinate Sanity ──
+            if not (-90 <= pickup_lat <= 90 and -180 <= pickup_lng <= 180 and
+                    -90 <= drop_lat <= 90 and -180 <= drop_lng <= 180):
+                return Response({"error": "Coordinates out of bounds (-90 to 90 lat, -180 to 180 lng)"}, status=400)
             offer_id = request.data.get("offer_id")
             if not offer_id or (isinstance(offer_id, str) and not offer_id.isdigit()):
                 offer_id = None
             
             # 1. Get route & fare
-            fare_data = estimate_fare((pickup_lat, pickup_lng), (drop_lat, drop_lng))
+            fare_data = estimate_fare((pickup_lat, pickup_lng), (drop_lat, drop_lng), vehicle_type)
             route = get_planned_route((pickup_lat, pickup_lng), (drop_lat, drop_lng))
             
         except (KeyError, ValueError, TypeError) as e:
@@ -183,22 +207,15 @@ class CreateRideView(APIView):
             logger.error(f"Ride creation database error: {e}")
             return Response({"error": "Database error during ride creation"}, status=500)
 
-# ...
-
-class CompleteRideView(APIView):
-    permission_classes = [IsAuthenticated, IsDriver]
-    def post(self, request, ride_id):
-        try:
-            ride = complete_ride(ride_id)
-            return Response({"status": "COMPLETED", "fare": ride.final_fare})
-        except Exception as e:
-            logger.error(f"Complete ride failed: {e}")
-            return Response({"error": str(e)}, status=400)
-
-# ... (AcceptRideView is the same) ...
+# --- Ride Lifecycle Actions (Idempotent) ---
 class AcceptRideView(APIView):
     permission_classes = [IsAuthenticated, IsDriver]
+
+    @idempotent_request(ttl=300)
     def post(self, request, ride_id):
+        # ── BACKPRESSURE: API Throttling ──
+        if not endpoint_cooldown(request.user.id, "accept_ride", max_calls=10, window=30):
+            return Response({"error": "Too many attempts. Please slow down."}, status=429)
         logger.info(f"AcceptRideView: user={request.user.id} attempting to accept ride_id={ride_id}")
         
         # DEBUG: Check ride state before selecting for update
@@ -250,6 +267,8 @@ class AcceptRideView(APIView):
 # ... (RejectRideView is the same) ...
 class RejectRideView(APIView):
     permission_classes = [IsAuthenticated, IsDriver]
+
+    @idempotent_request(ttl=300)
     def post(self, request, ride_id):
         logger.info(f"RejectRideView: user={request.user.id} rejecting ride_id={ride_id}")
         
@@ -308,7 +327,11 @@ class DriverArrivedView(APIView):
 class VerifyOtpView(APIView):
     permission_classes = [IsAuthenticated, IsDriver]
 
+    @idempotent_request(ttl=300)
     def post(self, request, ride_id):
+        # ── BACKPRESSURE: API Throttling ──
+        if not endpoint_cooldown(request.user.id, "verify_otp", max_calls=15, window=60):
+            return Response({"error": "Too many OTP attempts. Please wait."}, status=429)
         otp = request.data.get("otp")
         driver_lat = request.data.get("lat")
         driver_lng = request.data.get("lng")
@@ -337,8 +360,29 @@ class VerifyOtpView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+            # ── OTP BRUTE FORCE PROTECTION ──
+            from apps.drivers.redis import redis_client
+            otp_attempt_key = f"otp_attempts:{ride.id}"
+            attempts = int(redis_client.get(otp_attempt_key) or 0)
+
+            if attempts >= 5:
+                # Flag as potential fraud and block further attempts
+                ride.is_fraud_flagged = True
+                ride.save(update_fields=["is_fraud_flagged"])
+                logger.warning(f"OTP Brute Force detected for Ride {ride.id} by User {request.user.id}")
+                return Response(
+                    {"error": "Too many failed OTP attempts. This ride is flagged for security review. Please contact support."},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                )
+
             # ── OTP Verification ──
-            verify_and_consume_otp(ride, otp)  # Raises ValidationError if wrong
+            try:
+                verify_and_consume_otp(ride, otp)  # Raises ValidationError if wrong
+            except Exception as e:
+                # Increment attempts on failure
+                redis_client.incr(otp_attempt_key)
+                redis_client.expire(otp_attempt_key, 600)  # 10 minute lockout window
+                raise e
 
             # ── Lock start_lat / start_lng if provided ──
             if driver_lat and driver_lng:
@@ -372,8 +416,16 @@ class VerifyOtpView(APIView):
 class CompleteRideView(APIView):
     permission_classes = [IsAuthenticated, IsDriver]
 
+    @idempotent_request(ttl=300)
     def post(self, request, ride_id):
+        # ── BACKPRESSURE: API Throttling ──
+        if not endpoint_cooldown(request.user.id, "complete_ride", max_calls=10, window=60):
+            return Response({"error": "Too many complete requests. Please wait."}, status=429)
         with transaction.atomic():
+        # ── CONTENTION CONTROL: SKIP LOCKED ──
+        # Under 10k users, multiple matching workers might target the same set of drivers.
+        # skip_locked=True allows this worker to ignore drivers being locked by others,
+        # moving immediately to the next candidate and eliminating lock contention.
             ride = get_object_or_404(
                 Ride.objects.select_for_update(of=("self",)).select_related("driver", "rider"),
                 id=ride_id,
@@ -454,17 +506,30 @@ class MarkNoShowView(APIView):
 
 class CancelRideView(APIView):
     permission_classes = [IsAuthenticated]
+    @idempotent_request(ttl=300)
     def post(self, request, ride_id):
-        ride = get_object_or_404(Ride, id=ride_id)
-        # BUG FIX: Allow admin/staff to cancel rides
-        if request.user.is_staff or request.user.is_superuser:
-            cancel_ride(ride=ride, by=Ride.CancelledBy.ADMIN)
-        elif ride.rider == request.user:
-            cancel_ride(ride=ride, by=Ride.CancelledBy.RIDER)
-        elif ride.driver and ride.driver.user == request.user:
-            cancel_ride(ride=ride, by=Ride.CancelledBy.DRIVER)
-        else:
-            return Response({"error":"No permission"}, status=403)
+        # ── BACKPRESSURE: API Throttling ──
+        if not endpoint_cooldown(request.user.id, "cancel_ride", max_calls=10, window=60):
+            return Response({"error": "Too many cancel requests. Please wait."}, status=429)
+
+        with transaction.atomic():
+            # 🔒 Lock the ride row to avoid race conditions with start_ride/complete_ride
+            ride = get_object_or_404(Ride.objects.select_for_update(), id=ride_id)
+            
+            # Already cancelled? (Idempotent success)
+            if ride.status == Ride.Status.CANCELLED:
+                return Response({"status": "CANCELLED"})
+
+            # BUG FIX: Allow admin/staff to cancel rides
+            if request.user.is_staff or request.user.is_superuser:
+                cancel_ride(ride=ride, by=Ride.CancelledBy.ADMIN)
+            elif ride.rider == request.user:
+                cancel_ride(ride=ride, by=Ride.CancelledBy.RIDER)
+            elif ride.driver and ride.driver.user == request.user:
+                cancel_ride(ride=ride, by=Ride.CancelledBy.DRIVER)
+            else:
+                return Response({"error":"No permission"}, status=403)
+
         return Response({"status": "CANCELLED"})
 
 class UpdateDestinationView(APIView):

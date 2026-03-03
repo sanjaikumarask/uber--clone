@@ -5,10 +5,11 @@ from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.utils import timezone
 from decimal import Decimal
+from django_prometheus.models import ExportModelOperationsMixin
 from apps.drivers.models import Driver
 
 
-class Ride(models.Model):
+class Ride(ExportModelOperationsMixin('ride'), models.Model):
     class Status(models.TextChoices):
         SEARCHING = "SEARCHING"
         OFFERED = "OFFERED"
@@ -204,12 +205,24 @@ class Ride(models.Model):
     }
 
     def transition_to(self, new_status):
+        """
+        Server-Authoritative State Machine.
+        Validates transition and updates specific fields only to prevent 
+        concurrency 'ghost' overwrites.
+        """
         allowed = self.ALLOWED_TRANSITIONS.get(self.status, set())
         if new_status not in allowed:
+            # 🚨 BUDGET ALERT: Log invalid transitions for failure budget tracking
             raise ValidationError(
-                f"Invalid transition {self.status} → {new_status}"
+                f"Invalid state transition {self.status} → {new_status}"
             )
+        
+        # Hard restriction on terminal states
+        if self.status in {self.Status.COMPLETED, self.Status.CANCELLED}:
+            raise ValidationError(f"Cannot transition from terminal state {self.status}")
+
         self.status = new_status
+        self.updated_at = timezone.now()
         self.save(update_fields=["status", "updated_at"])
 
     def cancel(self, *, by):
@@ -266,7 +279,7 @@ class RideFeedback(models.Model):
         unique_together = ("ride", "giver_role")
         constraints = [
             models.CheckConstraint(
-                check=models.Q(rating__gte=1, rating__lte=5),
+                condition=models.Q(rating__gte=1, rating__lte=5),
                 name="rating_between_1_and_5",
             )
         ]

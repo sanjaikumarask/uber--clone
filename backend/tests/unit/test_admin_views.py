@@ -83,4 +83,5 @@ def test_admin_live_map_snapshot(mock_Ride_cls, mock_Driver_cls):
     assert len(rides_data) == 1
     assert rides_data[0]['id'] == 100
     assert rides_data[0]['status'] == "SEARCHING"
-    assert rides_data[0]['pickup']['lat'] == 11.0
+    # Pickup is a list [lat, lng]
+    assert rides_data[0]['pickup'][0] == 11.0

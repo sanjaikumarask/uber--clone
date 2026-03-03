@@ -17,6 +17,7 @@ import Reports from "./pages/Reports.tsx";
 import FareConfig from "./pages/FareConfig.tsx";
 import Payments from "./pages/Payments.tsx";
 import Alerts from "./pages/Alerts.tsx";
+import Observability from "./pages/Observability.tsx";
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
           <Route path="/fare-config" element={<FareConfig />} />
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/live-map" element={<LiveMap />} />
+          <Route path="/observability" element={<Observability />} />
         </Route>
 
         {/* FALLBACK */}

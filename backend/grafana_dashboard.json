@@ -1,0 +1,604 @@
+{
+    "annotations": {
+        "list": []
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 1,
+    "links": [],
+    "liveNow": false,
+    "panels": [
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "grafana-postgresql-datasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "#22c55e"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "currencyINR"
+                }
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 0,
+                "y": 0
+            },
+            "id": 1,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "center",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "sum"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "value",
+                "text": {
+                    "valueSize": 90
+                }
+            },
+            "pluginVersion": "10.0.0",
+            "targets": [
+                {
+                    "format": "table",
+                    "rawSql": "SELECT SUM(amount) AS \"Gross Revenue\" FROM payments_payment WHERE status = 'CAPTURED';",
+                    "refId": "A"
+                }
+            ],
+            "title": "Gross Revenue",
+            "transparent": true,
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "grafana-postgresql-datasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "#22c55e"
+                    }
+                }
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 6,
+                "y": 0
+            },
+            "id": 2,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "center",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "sum"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "value",
+                "text": {
+                    "valueSize": 90
+                }
+            },
+            "pluginVersion": "10.0.0",
+            "targets": [
+                {
+                    "format": "table",
+                    "rawSql": "SELECT COUNT(*) AS \"Completed Rides\" FROM rides_ride WHERE status = 'COMPLETED';",
+                    "refId": "A"
+                }
+            ],
+            "title": "Completed Trips",
+            "transparent": true,
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "grafana-postgresql-datasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "#22c55e",
+                                "value": null
+                            },
+                            {
+                                "color": "#f59e0b",
+                                "value": 20
+                            },
+                            {
+                                "color": "#ef4444",
+                                "value": 40
+                            }
+                        ]
+                    },
+                    "unit": "percent"
+                }
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 12,
+                "y": 0
+            },
+            "id": 7,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "center",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "value",
+                "text": {
+                    "valueSize": 90
+                }
+            },
+            "pluginVersion": "10.0.0",
+            "targets": [
+                {
+                    "format": "table",
+                    "rawSql": "SELECT (COUNT(CASE WHEN status = 'CANCELLED' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0)) as \"Value\" FROM rides_ride;",
+                    "refId": "A"
+                }
+            ],
+            "title": "Cancellation Rate",
+            "transparent": true,
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "grafana-postgresql-datasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "#f59e0b"
+                    },
+                    "unit": "currencyINR"
+                }
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 18,
+                "y": 0
+            },
+            "id": 9,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "center",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "value",
+                "text": {
+                    "valueSize": 90
+                }
+            },
+            "pluginVersion": "10.0.0",
+            "targets": [
+                {
+                    "format": "table",
+                    "rawSql": "SELECT AVG(final_fare) FROM rides_ride WHERE status = 'COMPLETED';",
+                    "refId": "A"
+                }
+            ],
+            "title": "Avg Trip Fare",
+            "transparent": true,
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "grafana-postgresql-datasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "#3b82f6"
+                    }
+                }
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 8,
+                "x": 0,
+                "y": 5
+            },
+            "id": 10,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "center",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "sum"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "value",
+                "text": {
+                    "valueSize": 80
+                }
+            },
+            "pluginVersion": "10.0.0",
+            "targets": [
+                {
+                    "format": "table",
+                    "rawSql": "SELECT COUNT(*) FROM users_user WHERE is_staff = false AND id NOT IN (SELECT user_id FROM drivers_driver);",
+                    "refId": "A"
+                }
+            ],
+            "title": "Registered Riders",
+            "transparent": true,
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "grafana-postgresql-datasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "#3b82f6"
+                    }
+                }
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 8,
+                "x": 8,
+                "y": 5
+            },
+            "id": 3,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "center",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "sum"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "value",
+                "text": {
+                    "valueSize": 80
+                }
+            },
+            "pluginVersion": "10.0.0",
+            "targets": [
+                {
+                    "format": "table",
+                    "rawSql": "SELECT COUNT(*) FROM drivers_driver WHERE is_verified = true;",
+                    "refId": "A"
+                }
+            ],
+            "title": "Verified Drivers",
+            "transparent": true,
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "grafana-postgresql-datasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "#3b82f6"
+                    },
+                    "unit": "percent"
+                }
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 8,
+                "x": 16,
+                "y": 5
+            },
+            "id": 11,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "center",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "value",
+                "text": {
+                    "valueSize": 80
+                }
+            },
+            "pluginVersion": "10.0.0",
+            "targets": [
+                {
+                    "format": "table",
+                    "rawSql": "SELECT (COUNT(CASE WHEN status = 'ONLINE' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0)) FROM drivers_driver WHERE is_verified = true;",
+                    "refId": "A"
+                }
+            ],
+            "title": "Driver Online %",
+            "transparent": true,
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "grafana-postgresql-datasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "unit": "currencyINR"
+                }
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 9
+            },
+            "id": 4,
+            "options": {
+                "displayLabels": [
+                    "percent"
+                ],
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "right",
+                    "values": [
+                        "value"
+                    ]
+                },
+                "pieType": "donut",
+                "reduceOptions": {
+                    "calcs": [
+                        "mean"
+                    ],
+                    "fields": "",
+                    "values": true
+                }
+            },
+            "pluginVersion": "10.0.0",
+            "targets": [
+                {
+                    "format": "table",
+                    "rawSql": "SELECT reason AS \"metric\", SUM(amount) AS \"value\" FROM payments_ledgerentry WHERE entry_type = 'CREDIT' AND reason IN ('DRIVER_EARNING', 'PLATFORM_COMMISSION') GROUP BY reason;",
+                    "refId": "A"
+                }
+            ],
+            "title": "Revenue Split",
+            "transparent": true,
+            "type": "piechart"
+        },
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "grafana-postgresql-datasource"
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 9
+            },
+            "id": 5,
+            "options": {
+                "displayLabels": [
+                    "percent"
+                ],
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "right",
+                    "values": [
+                        "value"
+                    ]
+                },
+                "pieType": "donut",
+                "reduceOptions": {
+                    "calcs": [
+                        "mean"
+                    ],
+                    "fields": "",
+                    "values": true
+                }
+            },
+            "pluginVersion": "10.0.0",
+            "targets": [
+                {
+                    "format": "table",
+                    "rawSql": "SELECT status AS \"metric\", COUNT(id) AS \"value\" FROM drivers_driver WHERE is_verified = true GROUP BY status;",
+                    "refId": "A"
+                }
+            ],
+            "title": "Driver Capacity",
+            "transparent": true,
+            "type": "piechart"
+        },
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "grafana-postgresql-datasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "#3b82f6"
+                    },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "fillOpacity": 85,
+                        "gradientMode": "opacity",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "lineWidth": 1,
+                        "showValue": "always"
+                    }
+                }
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 16,
+                "y": 9
+            },
+            "id": 8,
+            "options": {
+                "orientation": "horizontal",
+                "showValue": true,
+                "stacking": "none",
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "xTickLabelRotation": 0,
+                "xTickLabelSpacing": 0
+            },
+            "pluginVersion": "10.0.0",
+            "targets": [
+                {
+                    "format": "table",
+                    "rawSql": "SELECT gateway AS \"metric\", COUNT(id) AS \"value\" FROM payments_payment GROUP BY gateway;",
+                    "refId": "A"
+                }
+            ],
+            "title": "Payment Channels",
+            "transparent": true,
+            "type": "barchart"
+        },
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "grafana-postgresql-datasource"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "drawStyle": "line",
+                        "fillOpacity": 20,
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 4,
+                        "gradientMode": "opacity",
+                        "showPoints": "auto",
+                        "pointSize": 6
+                    },
+                    "unit": "short"
+                }
+            },
+            "gridPos": {
+                "h": 9,
+                "w": 24,
+                "x": 0,
+                "y": 17
+            },
+            "id": 6,
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "mean",
+                        "sum",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                }
+            },
+            "pluginVersion": "10.0.0",
+            "targets": [
+                {
+                    "format": "time_series",
+                    "rawSql": "SELECT $__timeGroupAlias(created_at, '1d'), status AS metric, COUNT(id) AS value FROM rides_ride WHERE $__timeFilter(created_at) GROUP BY 1, status ORDER BY 1;",
+                    "refId": "A"
+                }
+            ],
+            "title": "Network Performance Trends",
+            "transparent": true,
+            "type": "timeseries"
+        }
+    ],
+    "refresh": "5s",
+    "schemaVersion": 38,
+    "style": "dark",
+    "time": {
+        "from": "now-30d",
+        "to": "now"
+    },
+    "title": "Uber Operational Intelligence Dashboard v3",
+    "uid": "uber-pro-v3",
+    "version": 11
+}

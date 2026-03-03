@@ -17,6 +17,7 @@ const NAV = [
     { path: "/analytics", label: "Analytics", icon: "📊" },
     { path: "/fare-config", label: "Fare Config", icon: "⚙️" },
     { path: "/alerts", label: "Alerts", icon: "🚨" },
+    { path: "/observability", label: "Observability", icon: "🌌" },
     { path: "/live-map", label: "Live Map", icon: "📡" },
 ];
 

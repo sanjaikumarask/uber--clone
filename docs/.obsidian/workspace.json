@@ -1,0 +1,287 @@
+{
+  "main": {
+    "id": "3da09995c2210f9e",
+    "type": "split",
+    "children": [
+      {
+        "id": "e579553481b9390d",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c7758f4df3157d4e",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "3.Rides/4.Core_Logic/Matching_Engine.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Matching_Engine"
+            }
+          },
+          {
+            "id": "c926754dd1a7c2b1",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "3.Rides/4.Core_Logic/OTP_System.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "OTP_System"
+            }
+          },
+          {
+            "id": "dcc81424c41cf4cc",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "1.Users_Authentication/5.Workflows/Login.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Login"
+            }
+          },
+          {
+            "id": "7e68f3d01a6d8567",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "2.Drivers/5.Workflows/Driver_Onboarding.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Driver_Onboarding"
+            }
+          },
+          {
+            "id": "5bd0742d3efdf10d",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "3.Rides/4.Core_Logic/OTP_System.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "OTP_System"
+            }
+          }
+        ],
+        "currentTab": 4
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "e96dcb4dc8700284",
+    "type": "split",
+    "children": [
+      {
+        "id": "64ae3bda3628b946",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "dbff9b981481a705",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "0e9cccaf6833a25d",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "e63685836021f607",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "0317d2c13ff0c6ec",
+    "type": "split",
+    "children": [
+      {
+        "id": "4db6360a3d6089ba",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "0512fdb2f2a23c52",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "0.System_Design/3.Data_Flow.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for 3.Data_Flow"
+            }
+          },
+          {
+            "id": "549fa5ec5ae8e9fa",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "0.System_Design/3.Data_Flow.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from 3.Data_Flow"
+            }
+          },
+          {
+            "id": "b777c8aaf386b801",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "aef5d3f4300e9ee4",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "c5ddef817019bb8a",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "0.System_Design/3.Data_Flow.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of 3.Data_Flow"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "5bd0742d3efdf10d",
+  "lastOpenFiles": [
+    "3.Rides/4.Core_Logic/Matching_Engine.md",
+    "3.Rides/4.Core_Logic/Fare_Calculation.md",
+    "2.Drivers/5.Workflows/Driver_Onboarding.md",
+    "2.Drivers/5.Workflows/Driver_Activation.md",
+    "1.Users_Authentication/5.Workflows/Signup.md",
+    "1.Users_Authentication/5.Workflows/Login.md",
+    "14.Driver_App/Driver_App_Readme.md",
+    "14.Driver_App/6.Workflows/Ride_Fulfillment_Flow.md",
+    "12.Rider_App/6.Workflows/Ride_Booking_Flow.md",
+    "11.Common_Core/5.Async_Processing/Kafka.md",
+    "11.Common_Core/5.Async_Processing/Celery.md",
+    "11.Common_Core/4.Logging_Monitoring/Metrics.md",
+    "11.Common_Core/4.Logging_Monitoring/Logging.md",
+    "11.Common_Core/4.Logging_Monitoring/Alerts.md",
+    "10.Admin_Dashboard/5.Workflows/Monitoring_Flow.md",
+    "9.Support/5.Workflows/Support_Flow.md",
+    "8.Offers/5.Workflows/Offer_Application.md",
+    "7.Driver_Incentives/5.Workflows/Incentive_Flow.md",
+    "6.Tracking/5.Workflows/Live_Tracking.md",
+    "5.Notifications/5.Workflows/Notification_Flow.md",
+    "5.Notifications/4.Core_Logic/Providers.md",
+    "5.Notifications/4.Core_Logic/DLQ.md",
+    "5.Notifications/4.Core_Logic/Dispatcher.md",
+    "4.Payments/5.Workflows/Payout_Flow.md",
+    "4.Payments/5.Workflows/Payment_Flow.md",
+    "4.Payments/4.Core_Logic/Webhooks.md",
+    "0.System_Design/Tech stack.png",
+    "Sytstem Data flow.png.png",
+    "Data flow.png.png",
+    "0.System_Design/Arxhitecture.md.png",
+    "0.System_Design/image.png",
+    "add_diagrams.py",
+    "strip_symbols.py",
+    "15.Admin_Dashboard_Web/6.Workflows",
+    "15.Admin_Dashboard_Web/5.Services",
+    "15.Admin_Dashboard_Web/4.Components",
+    "15.Admin_Dashboard_Web/3.Pages",
+    "15.Admin_Dashboard_Web/2.Navigation",
+    "15.Admin_Dashboard_Web/1.Architecture",
+    "15.Admin_Dashboard_Web/0.Overview",
+    "15.Admin_Dashboard_Web"
+  ]
+}

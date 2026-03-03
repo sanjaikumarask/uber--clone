@@ -1,4 +1,4 @@
-# 🔍 Full Project Audit Report
+# Full Project Audit Report
 **Date:** 2026-02-27
 
 ## Summary
@@ -6,13 +6,13 @@ Full cross-audit of all backend APIs vs. all frontend clients (rider-app, driver
 
 ---
 
-## 🔴 CRITICAL — Broken Right Now (Will Crash / 404 / 500)
+## CRITICAL — Broken Right Now (Will Crash / 404 / 500)
 
 ### 1. rider-web `OffersPage.tsx` — Uses old field names
 - **File:** `frontend/rider-web/src/pages/OffersPage.tsx`
 - **Line 65:** `offer.discount_value` → should be `offer.value`
 - **Line 73:** `offer.end_time` → should be `offer.valid_to`
-- **Backend returns:** `{ code, title, description, discount_type, value, max_discount, min_ride_value, valid_from, valid_to, city }`
+- **Backend returns:** `{code, title, description, discount_type, value, max_discount, min_ride_value, valid_from, valid_to, city}`
 
 ### 2. driver-app `Incentives.tsx` — Uses old field names
 - **File:** `frontend/driver-app/src/screens/Incentives.tsx`
@@ -28,7 +28,7 @@ Full cross-audit of all backend APIs vs. all frontend clients (rider-app, driver
 
 ---
 
-## 🟡 MEDIUM — Functional but Wrong Data / Silent Failures
+## MEDIUM — Functional but Wrong Data / Silent Failures
 
 ### 4. driver-app `Wallet.tsx` — Calls `/payments/wallet/` without leading `/api/`
 - **Line 17:** `api.get("/payments/wallet/")` — uses `/payments/wallet/` with leading slash
@@ -40,19 +40,19 @@ Full cross-audit of all backend APIs vs. all frontend clients (rider-app, driver
 - The service file was fixed (uses `value`, `valid_to`) but the **page component** still reads `offer.discount_value` and `offer.end_time` from the old TypeScript interface.
 
 ### 6. driver-app Incentives — No Type/Condition display
-- Backend returns `{ type: "STREAK", condition: { rides_required: 5 }, reward_amount: 100 }`
+- Backend returns `{type:"STREAK", condition: {rides_required: 5}, reward_amount: 100}`
 - Frontend shows `Distance: undefined - undefined` because it reads the old `min_distance` / `max_distance` fields.
 
 ---
 
-## 🟠 WARNINGS — Missing Features / Incomplete Wiring
+## WARNINGS — Missing Features / Incomplete Wiring
 
 ### 7. Rider-app has NO payment service file
 - The `RideCompletion.tsx` screen calls payment APIs directly via bare `fetch()` or `api.post()`
 - There's no `paymentService.ts` — all calls are inline
 - **Impact:** Inconsistent, no centralized error handling for payments
 
-### 8. Rider-app has NO ride service file  
+### 8. Rider-app has NO ride service file 
 - All ride API calls (`request/`, `active/`, `cancel/`, `feedback/`) are done inline in screen files
 - No centralized `rideService.ts`
 - **Impact:** Code duplication, harder to maintain
@@ -68,7 +68,7 @@ Full cross-audit of all backend APIs vs. all frontend clients (rider-app, driver
 
 ---
 
-## 🔵 NICE TO HAVE — Architecture Improvements
+## NICE TO HAVE — Architecture Improvements
 
 ### 11. Rider-web missing several features
 - No support ticket creation page (CreateTicketPage.tsx exists but not verified)
@@ -93,34 +93,34 @@ Full cross-audit of all backend APIs vs. all frontend clients (rider-app, driver
 
 ---
 
-## ✅ VERIFIED WORKING (No Issues)
+## VERIFIED WORKING (No Issues)
 
-| System | Status |
+|System|Status|
 |--------|--------|
-| Admin dashboard → Offers CRUD + Analytics | ✅ |
-| Admin dashboard → Driver Incentives CRUD + Analytics | ✅ |
-| Admin dashboard → Driver list/detail/actions/level | ✅ |
-| Admin dashboard → Rides list + resolve | ✅ |
-| Admin dashboard → Verification flow | ✅ |
-| Admin dashboard → Support tickets | ✅ |
-| Admin dashboard → Payments/Payouts/Ledger | ✅ |
-| Admin dashboard → Fare Config | ✅ |
-| Admin dashboard → Overview/Analytics/Reports | ✅ |
-| Admin dashboard → Alerts | ✅ |
-| Admin dashboard → Live Map | ✅ |
-| Rider-app → Offers list (just fixed) | ✅ |
-| Rider-app → Ride flow (search/confirm/track/complete) | ✅ |
-| Rider-app → Support tickets | ✅ |
-| Rider-web → Ride booking flow | ✅ |
-| Rider-web → Ride tracking + SOS | ✅ |
-| Rider-web → Payment + Simulate | ✅ |
-| Rider-web → Support page | ✅ |
-| Driver-app → Ride offer/accept/reject | ✅ |
-| Driver-app → Location tracking | ✅ |
-| Driver-app → Document upload | ✅ |
-| Driver-app → Notifications | ✅ |
-| Backend → Complete ride lifecycle | ✅ |
-| Backend → Driver level system | ✅ |
-| Backend → Abuse detection | ✅ |
-| Backend → Progressive suspension | ✅ |
-| Backend → Matching with level priority | ✅ |
+|Admin dashboard → Offers CRUD + Analytics||
+|Admin dashboard → Driver Incentives CRUD + Analytics||
+|Admin dashboard → Driver list/detail/actions/level||
+|Admin dashboard → Rides list + resolve||
+|Admin dashboard → Verification flow||
+|Admin dashboard → Support tickets||
+|Admin dashboard → Payments/Payouts/Ledger||
+|Admin dashboard → Fare Config||
+|Admin dashboard → Overview/Analytics/Reports||
+|Admin dashboard → Alerts||
+|Admin dashboard → Live Map||
+|Rider-app → Offers list (just fixed)||
+|Rider-app → Ride flow (search/confirm/track/complete)||
+|Rider-app → Support tickets||
+|Rider-web → Ride booking flow||
+|Rider-web → Ride tracking + SOS||
+|Rider-web → Payment + Simulate||
+|Rider-web → Support page||
+|Driver-app → Ride offer/accept/reject||
+|Driver-app → Location tracking||
+|Driver-app → Document upload||
+|Driver-app → Notifications||
+|Backend → Complete ride lifecycle||
+|Backend → Driver level system||
+|Backend → Abuse detection||
+|Backend → Progressive suspension||
+|Backend → Matching with level priority||

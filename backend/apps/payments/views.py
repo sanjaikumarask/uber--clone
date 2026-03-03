@@ -15,6 +15,7 @@ from apps.rides.models import Ride
 from .razorpay_client import razorpay_client
 from .models import LedgerEntry
 from apps.payments.services.payout import settle_driver_payout
+from apps.common.idempotency import idempotent_request
 
 
 class SimulatedPaymentView(APIView):
@@ -44,14 +45,23 @@ class SimulatedPaymentView(APIView):
             if Payment.objects.filter(ride_id=ride.id, status=Payment.Status.CAPTURED).exists():
                 return Response({"status": "already_paid"})
 
-            payment = Payment.objects.create(
-                user=request.user,
-                ride_id=ride.id,
-                amount=ride.final_fare,
-                status=Payment.Status.CAPTURED,
-                gateway="simulation",
-                gateway_payment_id=f"sim_{ride.id}_{request.user.id}",
-            )
+            # Try to find existing CREATED payment (made by ride completion lifecycle)
+            payment = Payment.objects.filter(ride_id=ride.id, status=Payment.Status.CREATED).first()
+            
+            if payment:
+                payment.status = Payment.Status.CAPTURED
+                payment.gateway = "simulation"
+                payment.gateway_payment_id = f"sim_{ride.id}_{request.user.id}"
+                payment.save(update_fields=["status", "gateway", "gateway_payment_id"])
+            else:
+                payment = Payment.objects.create(
+                    user=request.user,
+                    ride_id=ride.id,
+                    amount=ride.final_fare,
+                    status=Payment.Status.CAPTURED,
+                    gateway="simulation",
+                    gateway_payment_id=f"sim_{ride.id}_{request.user.id}",
+                )
 
             # Record ledger
             LedgerEntry.objects.create(
@@ -61,6 +71,12 @@ class SimulatedPaymentView(APIView):
                 entry_type=LedgerEntry.Type.DEBIT,
                 reason=LedgerEntry.Reason.PAYMENT,
                 reference=payment.gateway_payment_id,
+            )
+
+            # 2️⃣ Platform → Driver payout + commission split
+            settle_driver_payout(
+                ride=ride,
+                payment=payment,
             )
 
             # Notify Rider of successful payment (Simulated)
@@ -86,6 +102,7 @@ class SimulatedPaymentView(APIView):
 class CreatePaymentOrderView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @idempotent_request(ttl=300)
     def post(self, request, ride_id):
         logger.info(f"CREATE_PAYMENT: User {request.user.id} ({request.user.username}) requesting for Ride {ride_id}")
         
@@ -167,6 +184,7 @@ class CreatePaymentOrderView(APIView):
 class VerifyPaymentView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @idempotent_request(ttl=300)
     def post(self, request):
         if not razorpay_client:
             return Response(

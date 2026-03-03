@@ -166,6 +166,12 @@ class IncentiveEngine:
             )
             return
 
+        # ── IDEMPOTENCY GUARD ──
+        # Check if already credited for THIS ride and THIS incentive
+        if DriverIncentiveEarning.objects.filter(incentive=incentive, ride=ride).exists():
+            logger.info(f"Driver {driver.id} already received incentive {incentive.id} for ride {ride.id}. Skipping.")
+            return
+
         # Record earning
         DriverIncentiveEarning.objects.create(
             incentive=incentive,

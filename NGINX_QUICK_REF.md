@@ -1,19 +1,19 @@
-# 🚀 Nginx Quick Reference
+# Nginx Quick Reference
 
-## 📦 **One-Command Deploy:**
+## **One-Command Deploy:**
 ```bash
 ./deploy.sh
 ```
 
-## 🌐 **URLs:**
+## **URLs:**
 ```
-Rider:  http://localhost/
-Admin:  http://localhost/admin-dashboard
-API:    http://localhost/api/
+Rider: http://localhost/
+Admin: http://localhost/admin-dashboard
+API: http://localhost/api/
 Health: http://localhost/health
 ```
 
-## 🔧 **Common Commands:**
+## **Common Commands:**
 ```bash
 # Start
 docker-compose up -d
@@ -37,7 +37,7 @@ docker exec uber_nginx nginx -s reload
 docker exec uber_backend python manage.py collectstatic --noinput
 ```
 
-## 🐛 **Quick Fixes:**
+## **Quick Fixes:**
 ```bash
 # 502 Error
 docker restart uber_backend
@@ -53,18 +53,18 @@ docker-compose ps
 docker-compose logs -f
 ```
 
-## ✅ **Health Check:**
+## **Health Check:**
 ```bash
 curl http://localhost/health
-# Should return: "healthy"
+# Should return:"healthy"
 ```
 
-## 📊 **Service Status:**
+## **Service Status:**
 ```bash
 docker-compose ps
 ```
 
-## 🎯 **Files:**
+## **Files:**
 - Config: `backend/nginx/nginx.conf`
 - Docker: `docker-compose.yml`
 - Deploy: `./deploy.sh`

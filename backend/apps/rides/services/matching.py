@@ -46,14 +46,37 @@ def find_driver_and_offer_ride(ride_id: int):
             Driver.Level.ACTIVE:     2,
             Driver.Level.NORMAL:     1,
         }
+        
+        from apps.drivers.services.geo import is_driver_locked, lock_driver_for_offer
 
+        # ── FIXED MATCHING LOGIC ──
+        # 1. Identify which drivers are truly NOT ONLINE to prune them from Redis
+        # (Separating existence from eligibility)
+        online_driver_ids = set(
+            Driver.objects.filter(
+                id__in=valid_candidate_ids,
+                status=Driver.Status.ONLINE
+            ).values_list('id', flat=True)
+        )
+
+        # Prune stale drivers from GEO (Sync Redis with DB Status)
+        from apps.drivers.redis import remove_driver_from_geo
+        for cid in valid_candidate_ids:
+            if cid not in online_driver_ids:
+                logger.info(f"Ride {ride.id}: Pruning Driver {cid} from GEO (Offline in DB)")
+                remove_driver_from_geo(driver_id=cid)
+
+        # ── CONTENTION CONTROL: SKIP LOCKED (High Load Optimization) ──
+        # At 10k+ concurrent users, multiple matching workers may compete for the 
+        # same high-scoring drivers. `skip_locked=True` prevents workers from 
+        # blocking on each other, allowing them to instantly bypass drivers 
+        # already being evaluated or locked by another ride request.
         db_candidates = (
             Driver.objects
-            .select_for_update(of=("self",))
+            .select_for_update(of=("self",), skip_locked=True)
             .select_related("user", "stats")
             .filter(
-                id__in=valid_candidate_ids,
-                status=Driver.Status.ONLINE,
+                id__in=online_driver_ids,
                 stats__trust_score__gte=60.0,
                 stats__is_suspended=False,
             )
@@ -70,19 +93,35 @@ def find_driver_and_offer_ride(ride_id: int):
             ),
         )
 
-        # Remove stale drivers from geo for any that were ONLINE in Redis but not DB
-        db_ids = {d.id for d in sorted_candidates}
-        for cid in valid_candidate_ids:
-            if cid not in db_ids:
-                logger.info(f"Ride {ride.id}: Driver {cid} not ONLINE in DB. Removing from GEO.")
-                from apps.drivers.services.geo import remove_driver_from_geo
-                remove_driver_from_geo(driver_id=cid)
+        # --------------------
+        # CONCURRENCY FILTER
+        # --------------------
+        # Skip drivers already offered another ride (active lock)
+        available_candidates = []
+        for d in sorted_candidates:
+            if not is_driver_locked(driver_id=d.id):
+                available_candidates.append(d)
+                
+        # Already handled above in FIXED MATCHING LOGIC
+        available_candidates = []
+        for d in sorted_candidates:
+            if not is_driver_locked(driver_id=d.id):
+                available_candidates.append(d)
 
-        driver = sorted_candidates[0] if sorted_candidates else None
+        driver = available_candidates[0] if available_candidates else None
 
         if not driver:
-            logger.info(f"Ride {ride.id}: No eligible drivers after sorting.")
+            logger.info(f"Ride {ride.id}: No eligible drivers after sorting and lock checks.")
             return
+
+        # -----------------------------------------
+        # ACQUIRE LOCK BEFORE OFFER
+        # -----------------------------------------
+        # This double-check lock prevents race conditions between multiple ride requests
+        if not lock_driver_for_offer(driver_id=driver.id):
+            logger.info(f"Ride {ride.id}: Driver {driver.id} was just locked. Retrying matching.")
+            # Recursive retry or wait-then-return
+            return 
 
         # -----------------------------------------
         # AUTO-ACCEPTANCE LOGIC

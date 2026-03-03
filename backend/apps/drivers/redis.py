@@ -13,15 +13,19 @@ DRIVER_TTL = 60  # seconds — must be > mobile GPS ping interval (typically 10-
 DRIVER_GEO_KEY = "drivers:geo"
 
 
-# ───────────────────────────────────────────────
-# LIVE LOCATION UPDATE (VERSION-SAFE)
-# ───────────────────────────────────────────────
 def update_driver_location(driver_id: int, lat: float, lng: float):
     """
-    Update driver location in Redis using raw GEOADD command.
-    This avoids redis-py version signature issues.
+    Update driver location in Redis with Velocity & Spoofing protection.
     """
     now = int(time.time())
+
+    # ──────────────────────────────────────────────────
+    # ── GPS VELOCITY GUARD (SPOOFING DETECTION) ────────
+    # ──────────────────────────────────────────────────
+    from apps.common.fraud import validate_gps_velocity
+    if not validate_gps_velocity(driver_id, lat, lng):
+        # 🚨 Log and drop the spoofed ping. do NOT update GEO position if invalid.
+        return 
 
     # Use raw Redis command to avoid geoadd() API mismatch
     redis_client.execute_command(
@@ -30,15 +34,6 @@ def update_driver_location(driver_id: int, lat: float, lng: float):
         float(lng),
         float(lat),
         str(driver_id),
-    )
-
-    # Update metadata
-    redis_client.hset(
-        f"driver:{driver_id}:meta",
-        mapping={
-            "driver_id": driver_id,
-            "last_seen": now,
-        },
     )
 
     # TTL heartbeat key

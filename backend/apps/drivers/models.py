@@ -2,8 +2,9 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.utils import timezone
+from django_prometheus.models import ExportModelOperationsMixin
 
-class Driver(models.Model):
+class Driver(ExportModelOperationsMixin('driver'), models.Model):
     class Status(models.TextChoices):
         OFFLINE = "OFFLINE", "Offline"
         ONLINE = "ONLINE", "Online"

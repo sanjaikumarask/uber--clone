@@ -1,4 +1,4 @@
-# 🚀 Quick Start - Driver App on Mobile
+# Quick Start - Driver App on Mobile
 
 ## Your Configuration
 
@@ -30,16 +30,16 @@ npx expo start
 
 ---
 
-## ✅ What's Already Configured
+## What's Already Configured
 
-✅ API URL updated to `http://192.169.1.137:8000/api`  
-✅ WebSocket URL updated to `ws://192.169.1.137:8000/ws`  
-✅ Backend CORS configured for your IP  
-✅ Backend CSRF configured for your IP  
+API URL updated to `http://192.169.1.137:8000/api` 
+WebSocket URL updated to `ws://192.169.1.137:8000/ws` 
+Backend CORS configured for your IP 
+Backend CSRF configured for your IP 
 
 ---
 
-## 🧪 Test the Complete Flow
+## Test the Complete Flow
 
 ### Step 1: Go Online (Driver App)
 1. Login with `1234567890` / `driver123`
@@ -49,7 +49,7 @@ npx expo start
 ### Step 2: Request Ride (Rider Web)
 1. Open browser: `http://localhost:5173`
 2. Login with `9876543210` / `securepassword123`
-3. Click "Book Ride"
+3. Click"Book Ride"
 4. Confirm request
 
 ### Step 3: Accept Ride (Driver App)
@@ -68,25 +68,25 @@ npx expo start
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
-### ❌ "Network request failed"
+###"Network request failed"
 ```bash
 # Test if backend is reachable from your phone's browser:
 # Visit: http://192.169.1.137:8000/api/users/driver-login/
-# Should show "Method not allowed" or similar
+# Should show"Method not allowed"or similar
 ```
 
-### ❌ Can't scan QR code
+### Can't scan QR code
 ```bash
 # Use tunnel mode instead:
 npx expo start --tunnel
 ```
 
-### ❌ Login fails
+### Login fails
 ```bash
 # Verify driver exists:
-docker exec uber_backend python manage.py shell -c "
+docker exec uber_backend python manage.py shell -c"
 from apps.drivers.models import Driver
 d = Driver.objects.get(user__phone='1234567890')
 print(f'Driver: {d.user.phone}, Status: {d.status}')
@@ -95,7 +95,7 @@ print(f'Driver: {d.user.phone}, Status: {d.status}')
 
 ---
 
-## 📱 Alternative: Test on Emulator
+## Alternative: Test on Emulator
 
 ### Android Emulator
 ```bash
@@ -112,11 +112,11 @@ npm run ios
 
 ---
 
-## 🎯 Quick Commands
+## Quick Commands
 
 ### Check Backend Status
 ```bash
-docker ps | grep uber_backend
+docker ps|grep uber_backend
 ```
 
 ### View Backend Logs
@@ -131,23 +131,23 @@ docker restart uber_backend
 
 ### Check Driver Status
 ```bash
-docker exec uber_backend python manage.py shell -c "
+docker exec uber_backend python manage.py shell -c"
 from apps.drivers.models import Driver
 for d in Driver.objects.all():
-    print(f'{d.user.phone}: {d.status}')
+print(f'{d.user.phone}: {d.status}')
 "
 ```
 
 ---
 
-## 🔐 All Test Accounts
+## All Test Accounts
 
-| Type | Phone | Password |
+|Type|Phone|Password|
 |------|-------|----------|
-| Rider | 9876543210 | securepassword123 |
-| **Driver** | **1234567890** | **driver123** |
-| Admin | admin | admin123 |
+|Rider|9876543210|securepassword123|
+|**Driver**|**1234567890**|**driver123**|
+|Admin|admin|admin123|
 
 ---
 
-**Everything is configured! Just run `npx expo start` and scan the QR code!** 🎉
+**Everything is configured! Just run `npx expo start` and scan the QR code!** 

@@ -1,18 +1,18 @@
-# 🔧 Fixing Nginx 502 Bad Gateway Error
+# Fixing Nginx 502 Bad Gateway Error
 
-## 🐛 **Problem:**
+## **Problem:**
 
 Nginx logs show:
 ```
 connect() failed (111: Connection refused) while connecting to upstream
-upstream: "http://172.18.0.10:8000/api/"
+upstream:"http://172.18.0.10:8000/api/"
 ```
 
 This means Nginx can't connect to the Django backend.
 
 ---
 
-## ✅ **Quick Fix:**
+## **Quick Fix:**
 
 ### **Run the fix script:**
 ```bash
@@ -27,11 +27,11 @@ This will:
 
 ---
 
-## 🔍 **Manual Diagnosis:**
+## **Manual Diagnosis:**
 
 ### **1. Check if backend is running:**
 ```bash
-docker ps | grep uber_backend
+docker ps|grep uber_backend
 ```
 
 **Expected:** Should show `uber_backend` container running
@@ -52,14 +52,14 @@ docker exec uber_nginx ping -c 2 backend
 
 ### **4. Check backend logs:**
 ```bash
-docker compose logs backend | tail -20
+docker compose logs backend|tail -20
 ```
 
 **Look for:** Any errors or if it's receiving requests
 
 ---
 
-## 🛠️ **Solutions:**
+## **Solutions:**
 
 ### **Solution 1: Restart Backend**
 ```bash
@@ -89,7 +89,7 @@ docker network inspect uber-backend_default
 
 ---
 
-## 🎯 **Root Causes & Fixes:**
+## **Root Causes & Fixes:**
 
 ### **Cause 1: Backend Not Running**
 **Symptom:** `docker ps` doesn't show `uber_backend`
@@ -115,7 +115,7 @@ docker restart uber_backend
 **Fix:** Update `backend/nginx/nginx.conf`:
 ```nginx
 upstream backend_api {
-    server backend:8000;  # Make sure this matches container name
+server backend:8000; # Make sure this matches container name
 }
 ```
 
@@ -125,9 +125,9 @@ upstream backend_api {
 **Fix:**
 ```bash
 # Check if backend is listening on 8000
-docker exec uber_backend netstat -tuln | grep 8000
+docker exec uber_backend netstat -tuln|grep 8000
 
-# Should show: tcp   0.0.0.0:8000
+# Should show: tcp 0.0.0.0:8000
 ```
 
 ### **Cause 5: Network Issue**
@@ -141,7 +141,7 @@ docker compose up -d
 
 ---
 
-## ✅ **Verification:**
+## **Verification:**
 
 ### **Test 1: Backend Direct**
 ```bash
@@ -159,30 +159,30 @@ curl http://localhost/api/
 ```bash
 curl http://localhost/health
 ```
-**Expected:** "healthy"
+**Expected:**"healthy"
 
 ---
 
-## 📊 **Current Status Check:**
+## **Current Status Check:**
 
 ```bash
 # All services status
 docker compose ps
 
 # Backend status
-docker ps | grep uber_backend
+docker ps|grep uber_backend
 
-# Nginx status  
-docker ps | grep uber_nginx
+# Nginx status 
+docker ps|grep uber_nginx
 
 # Test connectivity
-curl -I http://localhost:8000/api/  # Direct
-curl -I http://localhost/api/       # Through Nginx
+curl -I http://localhost:8000/api/ # Direct
+curl -I http://localhost/api/ # Through Nginx
 ```
 
 ---
 
-## 🚀 **Quick Commands:**
+## **Quick Commands:**
 
 ```bash
 # Restart everything
@@ -204,7 +204,7 @@ curl http://localhost/api/
 
 ---
 
-## 💡 **Why This Happens:**
+## **Why This Happens:**
 
 1. **Backend crashes** → Nginx can't connect
 2. **Backend starts slowly** → Nginx tries before backend is ready
@@ -213,7 +213,7 @@ curl http://localhost/api/
 
 ---
 
-## ✅ **After Fix:**
+## **After Fix:**
 
 You should see:
 ```bash
@@ -226,27 +226,27 @@ healthy
 
 ---
 
-## 🎯 **Prevention:**
+## **Prevention:**
 
 Add health checks to `docker-compose.yml`:
 
 ```yaml
 backend:
-  healthcheck:
-    test: ["CMD", "curl", "-f", "http://localhost:8000/api/"]
-    interval: 30s
-    timeout: 10s
-    retries: 3
-    start_period: 40s
+healthcheck:
+test: ["CMD","curl","-f","http://localhost:8000/api/"]
+interval: 30s
+timeout: 10s
+retries: 3
+start_period: 40s
 
 nginx:
-  depends_on:
-    backend:
-      condition: service_healthy
+depends_on:
+backend:
+condition: service_healthy
 ```
 
 This ensures Nginx only starts after backend is ready.
 
 ---
 
-**Run `./fix-nginx.sh` to automatically diagnose and fix!** 🚀
+**Run `./fix-nginx.sh` to automatically diagnose and fix!** 

@@ -99,7 +99,7 @@ services:
     build:
       context: ./backend
     container_name: uber_celery
-    command: celery -A config worker -l info
+    command: celery -A config worker -l info -Q high,medium,low
     volumes:
       - ./backend:/app
     env_file:

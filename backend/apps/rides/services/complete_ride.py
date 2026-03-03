@@ -55,42 +55,22 @@ def complete_ride(ride_id: int) -> Ride:
             ride.fare_breakdown = get_fare_breakdown(ride)
         except Exception as e:
             logger.error(f"Failed to generate fare breakdown for {ride.id}: {e}")
-        # ── Step 2.5: FRAUD DETECTION CHECKS ──────────────────────────────
-        if ride.actual_distance_km and ride.planned_distance_km:
-            if ride.actual_distance_km > ride.planned_distance_km * 2.5:
-                # Driver drove 2.5x further than expected
+
+        # ── Step 2.5: ADVANCED FRAUD DETECTION ───────────────────────────────
+        # Runs cross-ride pattern checks (ghost, route inflation, frequency, pair abuse)
+        try:
+            from apps.common.fraud import run_fraud_checks, apply_fraud_penalties
+            fraud_signals = run_fraud_checks(ride)
+            if fraud_signals:
                 ride.is_fraud_flagged = True
-        
-        if ride.waiting_seconds and ride.waiting_seconds > 3600:
-            # Driver waited over 1 entire hour
-            ride.is_fraud_flagged = True
-            
-        if getattr(ride, "is_fraud_flagged", False):
-            logger.warning(f"🚨 FRAUD FLAG RAISED inside completion for Ride {ride.id}")
-            from apps.notifications.services.alerts import send_critical_alert
-            send_critical_alert(
-                title=f"Fraud Flag Triggered: Ride #{ride.id}",
-                message=f"Driver {ride.driver.first_name} completed a ride that vastly exceeded distance or wait thresholds. Payout distributions have been frozen.",
-                level="CRITICAL"
-            )
-            
-            # Algorithmic Trust Penalty
-            if ride.driver:
-                stats = getattr(ride.driver, 'stats', None)
-                if stats:
-                    stats.fraud_flags_count += 1
-                    stats.trust_score = max(0.0, stats.trust_score - 5.0)  # -5 Points per severe violation
-                    stats.save(update_fields=["fraud_flags_count", "trust_score"])
-                    
-                    if stats.trust_score < 40.0:
-                        # Auto-Suspend
-                        ride.driver.status = "BLOCKED"
-                        ride.driver.save(update_fields=["status"])
-                        send_critical_alert(
-                            title=f"Auto-Suspension Issued",
-                            message=f"Driver {ride.driver.first_name} organically dropped below 40.0 Trust Score. Account automatically BLOCKED.",
-                            level="CRITICAL"
-                        )
+                ride.save(update_fields=["is_fraud_flagged"])
+                apply_fraud_penalties(ride, fraud_signals)
+                logger.warning(
+                    f"[FraudEngine] Ride {ride.id} flagged: {fraud_signals}",
+                    extra={"ride_id": ride.id, "driver_id": ride.driver_id}
+                )
+        except Exception as e:
+            logger.error(f"[FraudEngine] Check failed for ride {ride.id}: {e}")
 
         ride.save(update_fields=["final_fare", "fare_breakdown", "is_fraud_flagged"])
 

@@ -33,6 +33,45 @@ def group_send(channel_layer, group, payload):
     async_to_sync(channel_layer.group_send)(group, payload)
 
 
+def fetch_directions_path(origin_lat, origin_lng, dest_lat, dest_lng):
+    """
+    Calls the Google Maps Directions API and returns a list of (lat, lng) tuples
+    that follow the actual road network.
+    Falls back to a two-point straight list if the API key is absent or the call fails.
+    """
+    import requests
+    from django.conf import settings
+
+    api_key = getattr(settings, "GOOGLE_MAPS_API_KEY", "") or os.environ.get("GOOGLE_MAPS_API_KEY", "")
+    if not api_key:
+        print("   [directions] No GOOGLE_MAPS_API_KEY — using straight-line fallback.")
+        return [(origin_lat, origin_lng), (dest_lat, dest_lng)]
+
+    url = "https://maps.googleapis.com/maps/api/directions/json"
+    params = {
+        "origin": f"{origin_lat},{origin_lng}",
+        "destination": f"{dest_lat},{dest_lng}",
+        "mode": "driving",
+        "key": api_key,
+    }
+    try:
+        resp = requests.get(url, params=params, timeout=8)
+        data = resp.json()
+        if data.get("status") != "OK":
+            print(f"   [directions] API status: {data.get('status')} — using straight-line fallback.")
+            return [(origin_lat, origin_lng), (dest_lat, dest_lng)]
+
+        # Decode the overview_polyline into (lat, lng) tuples
+        import polyline as pl
+        encoded = data["routes"][0]["overview_polyline"]["points"]
+        path = pl.decode(encoded)          # list of (lat, lng)
+        print(f"   [directions] Road path fetched: {len(path)} vertices.")
+        return path
+    except Exception as e:
+        print(f"   [directions] Error: {e} — using straight-line fallback.")
+        return [(origin_lat, origin_lng), (dest_lat, dest_lng)]
+
+
 def broadcast_location(driver, ride, lat, lng, channel_layer, speed=40, prev_lat=None, prev_lng=None):
     """Send driver GPS ping to admin live map + rider tracking socket."""
     update_driver_location(driver.id, lat, lng)
@@ -131,38 +170,41 @@ def broadcast_status(ride, channel_layer, extra=None):
 def follow_path(driver, ride, path, channel_layer, steps_per_segment=5, interval=0.25, speed_kmh=40, label="Moving"):
     """
     Sub-interpolates between path points for ultra-smooth movement.
+    `path` is a list of (lat, lng) tuples — MUST follow real road geometry for
+    the frontend road-snapping animation to work correctly.
     """
     if not path:
         return None, None
 
     prev_lat, prev_lng = path[0]
     total_points = len(path)
-    
+
     for i in range(total_points - 1):
         p1 = path[i]
-        p2 = path[i+1]
-        
+        p2 = path[i + 1]
+
         for s in range(steps_per_segment):
             t = s / steps_per_segment
             lat = interpolate(p1[0], p2[0], t)
             lng = interpolate(p1[1], p2[1], t)
-            
+
             broadcast_location(driver, ride, lat, lng, channel_layer, speed=speed_kmh,
                                prev_lat=prev_lat, prev_lng=prev_lng)
             prev_lat, prev_lng = lat, lng
-            
+
             # Progress display
-            progress = (i + (s/steps_per_segment)) / (total_points - 1)
+            progress = (i + (s / steps_per_segment)) / (total_points - 1)
             pct = int(progress * 100)
-            bar = "█" * (pct // 5) + "░" * (20 - pct // 5)
-            print(f"\r   {label}: [{bar}] {pct:3d}%  ({lat:.4f}, {lng:.4f})  ", end="", flush=True)
-            
+            bar = "#" * (pct // 5) + "." * (20 - pct // 5)
+            print(f"\r   {label}: [{bar}] {pct:3d}%  ({lat:.5f}, {lng:.5f})  ", end="", flush=True)
+
             time.sleep(interval)
-            
+
     # Snap to final point
     last_lat, last_lng = path[-1]
-    broadcast_location(driver, ride, last_lat, last_lng, channel_layer, speed=speed_kmh, prev_lat=prev_lat, prev_lng=prev_lng)
-    print(f"\r   {label}: [████████████████████] 100%  ({last_lat:.4f}, {last_lng:.4f})  ")
+    broadcast_location(driver, ride, last_lat, last_lng, channel_layer, speed=speed_kmh,
+                       prev_lat=prev_lat, prev_lng=prev_lng)
+    print(f"\r   {label}: [####################] 100%  ({last_lat:.5f}, {last_lng:.5f})  ")
     return last_lat, last_lng
 
 
@@ -176,86 +218,98 @@ def simulate_trip(ride_id):
         return
 
     from apps.tracking.geo import decode_route
-    
-    # Pre-decode path
+
+    # ── Pre-decode the stored road polyline (pickup → dropoff) ──────────────
     main_path = []
     if ride.planned_route_polyline:
         main_path = decode_route(ride.planned_route_polyline)
-    
-    print(f"\n🚗  Smooth Simulation | Ride #{ride_id} | Driver: {driver.user.get_full_name()}")
 
-    # 1. Start / Assign
+    print(f"\nSmooth Simulation | Ride #{ride_id} | Driver: {driver.user.get_full_name()}")
+
+    # 1. Assign ride ──────────────────────────────────────────────────────────
     if ride.status not in [Ride.Status.ASSIGNED, Ride.Status.ARRIVED, Ride.Status.ONGOING]:
         ride.status = Ride.Status.ASSIGNED
         ride.save(update_fields=["status", "updated_at"])
         driver.status = Driver.Status.BUSY
         driver.save(update_fields=["status"])
         broadcast_status(ride, channel_layer)
-        print("✅  Status: ASSIGNED")
+        print("  Status: ASSIGNED")
 
-    # 2. Phase 1: To Pickup (Linear interpolation but smooth)
+    # 2. Phase 1: Driver → Pickup (road-following via Directions API) ─────────
     pickup_lat, pickup_lng = float(ride.pickup_lat), float(ride.pickup_lng)
-    start_lat = pickup_lat + 0.005
-    start_lng = pickup_lng + 0.005
-    
-    # Create a 2-point path for to-pickup
-    to_pickup_path = [(start_lat, start_lng), (pickup_lat, pickup_lng)]
-    
-    print("\n📍  Phase 1: Moving to pickup (High frequency pings)")
-    last_lat, last_lng = follow_path(driver, ride, to_pickup_path, channel_layer, steps_per_segment=40, interval=0.1, label="To Pickup")
 
-    # 3. Arrived
+    # Place the driver ~500 m north-east of the pickup as starting position
+    start_lat = pickup_lat + 0.0045
+    start_lng = pickup_lng + 0.0045
+
+    print("\n  Phase 1: Fetching road route to pickup ...")
+    to_pickup_path = fetch_directions_path(start_lat, start_lng, pickup_lat, pickup_lng)
+
+    print(f"  Phase 1: Moving to pickup along {len(to_pickup_path)} road vertices")
+    last_lat, last_lng = follow_path(
+        driver, ride, to_pickup_path, channel_layer,
+        steps_per_segment=8, interval=0.12, speed_kmh=35, label="To Pickup"
+    )
+
+    # 3. ARRIVED ──────────────────────────────────────────────────────────────
     from apps.rides.services.otp import generate_and_attach_otp
     ride.status = Ride.Status.ARRIVED
     ride.arrived_at = timezone.now()
     otp = generate_and_attach_otp(ride)
     ride.save(update_fields=["status", "arrived_at", "otp_code", "otp_expires_at", "updated_at"])
     broadcast_status(ride, channel_layer)
-    print(f"\n✅  ARRIVED | OTP: {otp} | Waiting 3s...")
+    print(f"\n  ARRIVED | OTP: {otp} | Waiting 3s...")
     time.sleep(3)
 
-    # 4. Ongoing
+    # 4. ONGOING ──────────────────────────────────────────────────────────────
     ride.status = Ride.Status.ONGOING
     ride.otp_verified_at = timezone.now()
     ride.save(update_fields=["status", "otp_verified_at", "updated_at"])
     broadcast_status(ride, channel_layer)
-    print(f"\n🚀  ONGOING | Journey started!")
+    print(f"\n  ONGOING | Journey started!")
 
+    # Phase 2: Follow stored polyline (pickup → dropoff, real road vertices) ──
     if not main_path:
-        # Fallback to linear if no polyline
-        main_path = [(pickup_lat, pickup_lng), (float(ride.drop_lat), float(ride.drop_lng))]
+        # No stored polyline — ask Directions API for the trip route too
+        print("  Phase 2: No stored polyline — fetching road route for trip ...")
+        main_path = fetch_directions_path(
+            pickup_lat, pickup_lng,
+            float(ride.drop_lat), float(ride.drop_lng)
+        )
 
-    print(f"📍  Phase 2: Following road polyline ({len(main_path)} vertices)")
-    last_lat, last_lng = follow_path(driver, ride, main_path, channel_layer, steps_per_segment=3, interval=0.15, speed_kmh=65, label="Trip Progress")
+    print(f"  Phase 2: Following road polyline ({len(main_path)} vertices)")
+    last_lat, last_lng = follow_path(
+        driver, ride, main_path, channel_layer,
+        steps_per_segment=4, interval=0.15, speed_kmh=45, label="Trip Progress"
+    )
 
-    # 5. Completed
-    print("\n⏱️   Finalizing...")
+    # 5. Complete ─────────────────────────────────────────────────────────────
+    print("\n  Finalizing...")
     time.sleep(2)
-    
+
     try:
         from apps.rides.services.complete_ride import complete_ride
         ride = complete_ride(ride.id)
         fare = float(ride.final_fare) if ride.final_fare else 0
-        print(f"\n✅  Trip COMPLETED | Fare: ₹{fare:.2f}")
+        print(f"\n  Trip COMPLETED | Fare: Rs.{fare:.2f}")
 
         group_send(channel_layer, f"ride_{ride.id}", {
             "type":    "ride_completed",
             "ride_id": ride.id,
             "fare":    fare,
         })
-        print("📡  Broadcast sent.")
+        print("  Broadcast sent.")
     except Exception as e:
-        # In case complete_ride needs fresh object
         ride.refresh_from_db()
         fare = float(ride.final_fare) if ride.final_fare else 0
-        print(f"\n✅  Trip COMPLETED | Fare: ₹{fare:.2f}")
+        print(f"\n  Trip COMPLETED | Fare: Rs.{fare:.2f}")
         group_send(channel_layer, f"ride_{ride.id}", {
             "type":    "ride_completed",
             "ride_id": ride.id,
             "fare":    fare,
         })
 
-    print("\n🏁  Simulation complete.\n")
+    print("\n  Simulation complete.\n")
 
 
 if __name__ == "__main__":

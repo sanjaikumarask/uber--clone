@@ -75,7 +75,42 @@ def refund_payment(
         reason=reason,
     )
 
-    # 2️⃣ Update payment aggregates
+    # 2️⃣ Ledger Claws: Proportionally debit Driver and Platform
+    # Based on 80/20 split
+    if payment.ride_id:
+        from apps.rides.models import Ride
+        from apps.payments.services import payout as payout_service
+        try:
+            ride = Ride.objects.get(id=payment.ride_id)
+            if ride.driver:
+                platform_share = (amount * Decimal("0.20")).quantize(Decimal("0.01"))
+                driver_share = amount - platform_share
+
+                # Debit Driver
+                LedgerEntry.objects.create(
+                    user=ride.driver.user,
+                    ride_id=ride.id,
+                    payment=payment,
+                    amount=driver_share,
+                    entry_type=LedgerEntry.Type.DEBIT,
+                    reason=LedgerEntry.Reason.REFUND,
+                    reference=f"refund_debit_driver:{refund_id}",
+                )
+
+                # Debit Platform
+                LedgerEntry.objects.create(
+                    user=payout_service._platform_user(),
+                    ride_id=ride.id,
+                    payment=payment,
+                    amount=platform_share,
+                    entry_type=LedgerEntry.Type.DEBIT,
+                    reason=LedgerEntry.Reason.REFUND,
+                    reference=f"refund_debit_platform:{refund_id}",
+                )
+        except Ride.DoesNotExist:
+            pass
+
+    # 3️⃣ Update payment aggregates
     payment.refunded_amount += amount
 
     if payment.refunded_amount == payment.amount:

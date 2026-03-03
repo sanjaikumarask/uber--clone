@@ -27,14 +27,17 @@ class TestRideCreation:
             role="rider"
         )
 
+    @patch("apps.rides.services.distance.get_planned_route")
     @patch("apps.rides.views.get_planned_route")
-    def test_create_ride_success(self, mock_route):
+    def test_create_ride_success(self, mock_view_route, mock_dist_route):
         """Test successful ride creation"""
-        mock_route.return_value = {
+        mock_data = {
             "polyline": "mock_polyline",
             "distance_km": 5.2,
             "duration_min": 15
         }
+        mock_view_route.return_value = mock_data
+        mock_dist_route.return_value = mock_data
         
         self.client.force_authenticate(user=self.rider)
         
@@ -50,9 +53,9 @@ class TestRideCreation:
         response = self.client.post("/api/rides/request/", data, format="json")
         
         assert response.status_code == status.HTTP_201_CREATED
-        assert "ride_id" in response.data
+        assert "id" in response.data
         
-        ride = Ride.objects.get(id=response.data["ride_id"])
+        ride = Ride.objects.get(id=response.data["id"])
         assert ride.rider == self.rider
         assert ride.planned_distance_km == 5.2
 
@@ -141,7 +144,7 @@ class TestRideRetrieval:
         response = self.client.get("/api/rides/active/")
         
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["ride_id"] == self.ride.id
+        assert response.data["id"] == self.ride.id
 
     def test_get_ride_history(self):
         """Test getting ride history"""
@@ -256,7 +259,9 @@ class TestRideActions:
 
     def test_complete_ride(self):
         """Test completing ride"""
+        from django.utils import timezone
         self.ride.status = Ride.Status.ONGOING
+        self.ride.start_time = timezone.now()
         self.ride.save()
         
         self.client.force_authenticate(user=self.driver_user)

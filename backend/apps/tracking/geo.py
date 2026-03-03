@@ -1,7 +1,7 @@
 import math
 import polyline
 
-DEVIATION_THRESHOLD_METERS = 300
+DEVIATION_THRESHOLD_METERS = 50
 
 
 def decode_route(polyline_str):

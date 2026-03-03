@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "channels",
     "django_celery_results",
     "rest_framework_simplejwt.token_blacklist",
+    "django_prometheus",  # 🔥 APM Metrics
 
     # ---- Domain apps ----
     "apps.drivers",
@@ -51,6 +52,7 @@ INSTALLED_APPS = [
     "apps.admin_dashboard",
     "apps.offers",
     "apps.driver_incentives",
+    "apps.common",
 
 
 ]
@@ -93,8 +95,8 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle"
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/day",     # Prevent bruteforce from public endpoints
-        "user": "1000/day"     # Allow normal usage but prevent spamming
+        "anon": "1000/day",     # Prevent bruteforce from public endpoints
+        "user": "50000/day"     # Higher limit for polling dashboards
     },
     "EXCEPTION_HANDLER": "rest_framework.views.exception_handler"
 }
@@ -115,6 +117,7 @@ SIMPLE_JWT = {
 # ============================================================
 
 MIDDLEWARE = [
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",  # 🔥 Track Input
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -122,7 +125,8 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
-    "apps.rides.idempotency.IdempotencyMiddleware",  # 🔥 NEW: Idempotent Mutations
+    "apps.common.idempotency.IdempotencyMiddleware",  # 🔥 NEW: Idempotent Mutations
+    "django_prometheus.middleware.PrometheusAfterMiddleware", # 🔥 Track Output
 ]
 
 # ============================================================
@@ -151,6 +155,9 @@ TEMPLATES = [
 # DATABASE
 # ============================================================
 
+import sys
+IS_TESTING = 'pytest' in sys.modules or 'test' in sys.argv
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -159,6 +166,32 @@ DATABASES = {
         "PASSWORD": os.getenv("POSTGRES_PASSWORD", "uber"),
         "HOST": os.getenv("POSTGRES_HOST", "postgres"),
         "PORT": os.getenv("POSTGRES_PORT", "5432"),
+        "CONN_MAX_AGE": 0 if IS_TESTING else 60,  # 🚀 POOLING: Disable for tests to avoid locking
+        "OPTIONS": {
+            "connect_timeout": 5,
+        },
+    }
+}
+
+# ============================================================
+# CACHES (Redis Pooling)
+# ============================================================
+
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_URL,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": {
+                "max_connections": 100,
+                "retry_on_timeout": True,
+            },
+            "SOCKET_CONNECT_TIMEOUT": 5,
+            "SOCKET_TIMEOUT": 5,
+        }
     }
 }
 
@@ -183,17 +216,52 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 
 # ============================================================
-# CELERY
+# CELERY (High Load Strategy)
 # ============================================================
 
 from celery.schedules import crontab
+from kombu import Queue, Exchange
 
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "django-db")
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_TASK_ACKS_LATE = True
+
+if IS_TESTING:
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_WORKER_SEND_TASK_EVENTS = True  # 🔥 Required for Flower
+CELERY_TASK_SEND_SENT_EVENT = True      # 🔥 Required for Flower
+
+# ── Queue Definitions ──
+CELERY_QUEUES = (
+    Queue("high",   Exchange("high"),   routing_key="high"),
+    Queue("medium", Exchange("medium"), routing_key="medium"),
+    Queue("low",    Exchange("low"),    routing_key="low"),
+)
+
+CELERY_TASK_DEFAULT_QUEUE = "medium"
+CELERY_TASK_DEFAULT_EXCHANGE = "medium"
+CELERY_TASK_DEFAULT_ROUTING_KEY = "medium"
+
+# ── Task Routing (Obsessively Prioritized) ──
+CELERY_TASK_ROUTES = {
+    # HIGH PRIORITY (Blocking UX)
+    "apps.payments.tasks.process_driver_payout": {"queue": "high"},
+    "apps.payments.tasks.execute_driver_payout": {"queue": "high"},
+    "apps.rides.tasks.driver_accept_timeout":    {"queue": "high"},
+    
+    # MEDIUM PRIORITY (Revenue/Flow)
+    "apps.rides.services.matching.*":   {"queue": "medium"},
+    "apps.rides.tasks.retry_matching*": {"queue": "medium"},
+    "apps.payments.tasks.reconcile*":   {"queue": "medium"},
+    
+    # LOW PRIORITY (Non-Blocking)
+    "apps.drivers.tasks.*":        {"queue": "low"},
+    "apps.notifications.tasks.*":  {"queue": "low"},
+}
 
 CELERY_BEAT_SCHEDULE = {
     "weekly-driver-payouts": {
@@ -211,6 +279,23 @@ CELERY_BEAT_SCHEDULE = {
     "reconcile-pending-payments": {
         "task": "apps.payments.tasks.reconcile_pending_payments",
         "schedule": 900.0,  # Run every 15 minutes
+    },
+    "reconcile-processing-payouts": {
+        "task": "apps.payments.tasks.reconcile_processing_payouts",
+        "schedule": 900.0,  # Every 15 mins
+    },
+    # ─── 4. PERIODIC RECONCILIATION & CHAOS ──────────────────
+    "reconcile_all_rides_daily": {
+        "task": "apps.payments.tasks.audit_platform_ledger",
+        "schedule": crontab(hour=3, minute=0), # 3 AM
+    },
+    "chaos_simulation_hourly": {
+        "task": "apps.common.tasks.run_chaos_simulation",
+        "schedule": crontab(minute=0), # Every hour
+    },
+    "update_system_health_30s": {
+        "task": "apps.common.tasks.update_system_health",
+        "schedule": 30.0, # Every 30 seconds
     },
     "retry-failed-payouts": {
         "task": "apps.payments.tasks.retry_failed_payouts",
@@ -238,6 +323,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.drivers.tasks.send_driver_feedback_nudges",
         "schedule": crontab(hour=10, minute=0),  # Daily at 10 AM
     },
+    "prune-ghost-drivers": {
+        "task": "apps.drivers.tasks.prune_ghost_driver_sessions",
+        "schedule": 120.0,  # Every 2 minutes
+    },
 }
 
 
@@ -261,8 +350,6 @@ CHANNEL_LAYERS = {
 # ============================================================
 # REDIS / KAFKA
 # ============================================================
-
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
 KAFKA_BOOTSTRAP_SERVERS = os.getenv(
     "KAFKA_BOOTSTRAP_SERVERS",
@@ -376,12 +463,11 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
+        "json": {
+            "()": "apps.common.logging.JSONFormatter",
+        },
         "verbose": {
             "format": "{levelname} {asctime} {module} {message}",
-            "style": "{",
-        },
-        "simple": {
-            "format": "{levelname} {message}",
             "style": "{",
         },
     },
@@ -389,17 +475,22 @@ LOGGING = {
         "console": {
             "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": "json" if not DEBUG else "verbose",
+        },
+        "redis": {
+            "level": "INFO",
+            "class": "apps.common.logging.RedisLogHandler",
+            "formatter": "json",
         },
     },
     "loggers": {
         "django": {
-            "handlers": ["console"],
+            "handlers": ["console", "redis"],
             "level": "INFO",
             "propagate": True,
         },
-        "apps": {  # Catch all custom app loggers automatically
-            "handlers": ["console"],
+        "apps": {
+            "handlers": ["console", "redis"],
             "level": "INFO",
             "propagate": False,
         },

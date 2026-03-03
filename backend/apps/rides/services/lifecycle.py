@@ -6,18 +6,23 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from apps.rides.models import Ride
 from apps.drivers.models import Driver
+from apps.common.ordering import SequenceFencer, RIDE_STATUS_RANK
 from .otp import generate_and_attach_otp
 
 logger = logging.getLogger(__name__)
 
 def update_ride_status(ride: Ride, new_status: str, extra_data: dict = None) -> Ride:
-    """
-    Production-grade state machine manager.
-    Updates status, saves, and broadcasts to ALL interested parties.
-    """
-    old_status = ride.status
     with transaction.atomic():
-        ride.transition_to(new_status) # Enforces logic
+        # ── SERVER-AUTHORITY MODEL ──
+        # Any attempt to bypass the FSM (Finite State Machine) logic is rejected.
+        # transition_to() validates logical flow (e.g. cannot go from SEARCHING to COMPLETED).
+        try:
+            ride.transition_to(new_status)
+        except Exception as e:
+            from apps.common.budget import FailureBudget
+            FailureBudget.record_failure("ride_lifecycle")
+            logger.error(f"[Authority] Rejected invalid state transition: {e}")
+            raise
         
         # ── Specialized State Logic ───────────────────────────────────
         if new_status == Ride.Status.ASSIGNED:
@@ -102,7 +107,16 @@ def update_ride_status(ride: Ride, new_status: str, extra_data: dict = None) -> 
 
     # ── Broadcasts ────────────────────────────────────────────────────
     transaction.on_commit(lambda: _broadcast_status_update(ride))
-    
+
+    # ── Clear fence after terminal states are durably committed ──────
+    if new_status in (Ride.Status.COMPLETED, Ride.Status.CANCELLED, Ride.Status.NO_SHOW):
+        transaction.on_commit(lambda: SequenceFencer.clear_fence("ride", ride.id))
+        
+        # ── DATA RECOVERY TRIGGER ──
+        # Automatically run triple-entry reconciliation on terminal state commit
+        from apps.common.ledger_recon import TripleEntryReconciliation
+        transaction.on_commit(lambda: TripleEntryReconciliation.reconcile_ride(ride.id))
+
     return ride
 
 def _send_completion_notifications(ride: Ride):

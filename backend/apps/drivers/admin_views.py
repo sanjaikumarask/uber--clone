@@ -152,7 +152,7 @@ class AdminDriverActionView(APIView):
                 stats.is_suspended = True
                 stats.suspended_until = timezone.now() + timedelta(hours=24)
                 stats.save(update_fields=["is_suspended", "suspended_until", "updated_at"])
-                driver.status = Driver.Status.BLOCKED
+                driver.status = Driver.Status.OFFLINE
                 driver.save(update_fields=["status", "updated_at"])
 
             elif action == "unsuspend":

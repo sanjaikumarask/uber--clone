@@ -20,6 +20,7 @@ from apps.drivers.redis import (
     update_driver_location,
     get_driver_last_point,
     set_driver_last_point,
+    redis_client,
 )
 
 
@@ -44,6 +45,29 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
         self.prev_point = None
         self.last_ping_ts = None  # ⏱️ Track time between pings for speed/waiting logic
         self.last_deviation_alert_ts = 0  # 🚨 Rate limit deviation alerts
+
+        # ── BACKPRESSURE: Connection Rate Limiting (10k+ Scale) ──
+        from apps.common.backpressure import ConnectionRateLimiter
+        if not ConnectionRateLimiter.is_allowed(driver.id):
+            logger.warning(f"[LocationSocket] 🛑 Rate Limited: Driver {driver.id} reconnecting too fast")
+            await self.close(code=4029)  # 4029: Too Many Requests (Custom)
+            return
+
+        # ── CONCURRENCY: Single Session Enforcement (Last-one-wins) ──
+        from apps.drivers.redis import redis_client
+        session_key = f"driver_socket:{driver.id}"
+        old_channel = redis_client.get(session_key)
+        
+        if old_channel and old_channel != self.channel_name:
+            # Force disconnect the old socket
+            logger.info(f"[LocationSocket] Evicting old session {old_channel} for Driver {driver.id}")
+            await self.channel_layer.send(
+                old_channel,
+                {"type": "force_disconnect", "reason": "new_login"}
+            )
+        
+        # Register this channel as the active one
+        redis_client.set(session_key, self.channel_name, ex=3600)  # 1h expiry
 
         await self.accept()
         logger.info(f"[LocationSocket] ✅ Connected: Driver {driver.id}")
@@ -81,12 +105,22 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        seq = data.get("seq")
+        
+        # ── HEARTBEAT (NEW) ──
+        # Handle ping from client to verify liveness
+        if data.get("type") == "ping":
+            redis_client.set(f"driver_last_seen:{self.driver.id}", int(time.time()), ex=300)
+            await self.send(json.dumps({"type": "pong", "ts": int(time.time())}))
+            return
 
+        seq = data.get("seq")
         if seq is None or seq <= self.last_seq:
             return
 
         self.last_seq = seq
+        
+        # Update last seen on every GPS update too
+        redis_client.set(f"driver_last_seen:{self.driver.id}", int(time.time()), ex=300)
 
         raw_lat, raw_lng = float(data["lat"]), float(data["lng"])
         accuracy_m = data.get("accuracy_m")
@@ -173,6 +207,21 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
 
                 prev = await database_sync_to_async(get_driver_last_point)(self.driver.id)
                 delta_km = accumulate_distance(prev, (final_lat, final_lng))
+                
+                # ── VELOCITY VALIDATION (NEW: Fraud Prevention) ──
+                # If speed > 150 km/h, flag as potential fraud/teleportation
+                if elapsed_seconds > 0 and delta_km > 0:
+                    speed_kmh_calc = (delta_km / elapsed_seconds) * 3600
+                    if speed_kmh_calc > 150:
+                        logger.warning(f"[LocationSocket] 🚨 Velocity Violation: Driver {self.driver.id} speed {speed_kmh_calc:.1f} km/h. Flagging Ride {ride.id}")
+                        def _flag_fraud():
+                            ride.is_fraud_flagged = True
+                            ride.save(update_fields=["is_fraud_flagged"])
+                        await database_sync_to_async(_flag_fraud)()
+                        # Optional: drop this ping if it's too crazy
+                        if speed_kmh_calc > 500: # Teleportation
+                            logger.error(f"[LocationSocket] 🛑 Dropping teleportation ping for Driver {self.driver.id}")
+                            return 
                 
                 # ── Waiting Detector (New) ───────────────────────────────────
                 from apps.rides.services.waiting_detector import process_location_update
@@ -287,9 +336,25 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
             "eta": eta_min
         }))
 
+    async def force_disconnect(self, event):
+        """Forcefully disconnect this socket because a newer one arrived."""
+        await self.send(json.dumps({
+            "type": "error",
+            "code": "SESSION_EVICTED",
+            "message": "Another connection for this driver was detected. Disconnecting."
+        }))
+        await self.close(code=4999)
+
     async def disconnect(self, code):
         """Notify admin live map so the driver marker can be removed."""
         if hasattr(self, "driver"):
+            # ── Session Cleanup ──
+            from apps.drivers.redis import redis_client
+            session_key = f"driver_socket:{self.driver.id}"
+            current_channel = redis_client.get(session_key)
+            if current_channel == self.channel_name:
+                redis_client.delete(session_key)
+
             await self.channel_layer.group_send(
                 "admin_live_map",
                 {

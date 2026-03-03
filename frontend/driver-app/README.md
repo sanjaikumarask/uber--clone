@@ -4,14 +4,14 @@ React Native driver application built with Expo for the Uber clone backend.
 
 ## Features
 
-- ✅ Driver authentication (phone + password)
-- ✅ Online/Offline status toggle
-- ✅ Real-time location tracking
-- ✅ Ride offer acceptance/rejection
-- ✅ OTP verification to start rides
-- ✅ Ride status management (Assigned → Arrived → Ongoing → Completed)
-- ✅ No-show marking
-- ✅ WebSocket support for real-time updates
+- Driver authentication (phone + password)
+- Online/Offline status toggle
+- Real-time location tracking
+- Ride offer acceptance/rejection
+- OTP verification to start rides
+- Ride status management (Assigned → Arrived → Ongoing → Completed)
+- No-show marking
+- WebSocket support for real-time updates
 
 ## Tech Stack
 
@@ -80,20 +80,20 @@ Then scan the QR code with Expo Go app.
 
 ```
 src/
-├── domains/
-│   └── auth/
-│       └── auth.store.ts       # Authentication state
-├── navigation/
-│   └── Root.tsx                # Navigation setup
-├── screens/
-│   ├── Login.tsx               # Login screen
-│   ├── Home.tsx                # Driver dashboard
-│   ├── RideOffer.tsx           # Accept/reject ride
-│   └── RideTracking.tsx        # Active ride tracking
-└── services/
-    ├── api.ts                  # Axios configuration
-    ├── storage.ts              # AsyncStorage wrapper
-    └── socket.ts               # WebSocket manager
+domains/
+auth/
+auth.store.ts # Authentication state
+navigation/
+Root.tsx # Navigation setup
+screens/
+Login.tsx # Login screen
+Home.tsx # Driver dashboard
+RideOffer.tsx # Accept/reject ride
+RideTracking.tsx # Active ride tracking
+services/
+api.ts # Axios configuration
+storage.ts # AsyncStorage wrapper
+socket.ts # WebSocket manager
 ```
 
 ## Configuration
@@ -115,16 +115,16 @@ To change this, edit `src/services/api.ts`.
 docker exec -it uber_backend bash
 
 # Create driver user
-python manage.py shell -c "
+python manage.py shell -c"
 from apps.users.models import User
 from apps.drivers.models import Driver
 user = User.objects.create_user(
-    username='driver1',
-    phone='1234567890',
-    password='driver123',
-    role='driver',
-    first_name='Test',
-    last_name='Driver'
+username='driver1',
+phone='1234567890',
+password='driver123',
+role='driver',
+first_name='Test',
+last_name='Driver'
 )
 Driver.objects.create(user=user, status='OFFLINE')
 print(f'Driver created: {user.phone}')
@@ -139,8 +139,8 @@ print(f'Driver created: {user.phone}')
 
 ### Location Permission Issues
 - Make sure location permissions are granted in device settings
-- For Android, enable "Location" in app permissions
-- For iOS, allow "While Using the App" or "Always"
+- For Android, enable"Location"in app permissions
+- For iOS, allow"While Using the App"or"Always"
 
 ### Cannot Connect to Backend
 - Ensure backend is running on port 8000

@@ -10,7 +10,8 @@ class PhoneBackend:
 
         try:
             user = User.objects.get(phone=phone)
-        except User.DoesNotExist:
+        except Exception:
+            # Handle DoesNotExist or any DB failure gracefully
             return None
 
         if user.check_password(password) and self.user_can_authenticate(user):

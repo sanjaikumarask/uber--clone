@@ -20,7 +20,7 @@ def compensate_driver(*, driver: Driver, ride_id: int, amount: Decimal, reason: 
         amount=amount,
         entry_type=LedgerEntry.Type.CREDIT,
         reference=f"compensation:{ride_id}:{reason[:50]}",
-        reason=LedgerEntry.Reason.DRIVER_EARNING
+        reason=LedgerEntry.Reason.INCENTIVE
     )
 
     # 2. Add to Driver Earning stats (optional but good for tracking)

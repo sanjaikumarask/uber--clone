@@ -1,4 +1,4 @@
-# 🚗 Uber Clone - Quick Reference
+# Uber Clone - Quick Reference
 
 ## Test Accounts
 
@@ -8,7 +8,7 @@
 - **Login URL:** `http://localhost:5173` (Rider Web App)
 - **Endpoint:** `POST /api/users/login/`
 
-### Driver Account  
+### Driver Account 
 - **Phone:** `1234567890`
 - **Password:** `driver123`
 - **Login via:** Expo Go App (Driver Mobile App)
@@ -26,16 +26,16 @@
 
 Run this to see all drivers:
 ```bash
-docker exec uber_backend python manage.py shell -c "
+docker exec uber_backend python manage.py shell -c"
 from apps.drivers.models import Driver
 for d in Driver.objects.all():
-    print(f'Phone: {d.user.phone}, Status: {d.status}, ID: {d.id}')
+print(f'Phone: {d.user.phone}, Status: {d.status}, ID: {d.id}')
 "
 ```
 
 Current drivers:
 - `9999999999` - Status: BUSY
-- `1234567890` - Status: OFFLINE ✅ **Use this one**
+- `1234567890` - Status: OFFLINE **Use this one**
 
 ---
 
@@ -162,10 +162,10 @@ docker exec -it uber_backend python manage.py shell
 
 ### Reset Driver Status
 ```bash
-docker exec uber_backend python manage.py shell -c "
+docker exec uber_backend python manage.py shell -c"
 from apps.drivers.models import Driver
 d = Driver.objects.get(user__phone='1234567890')
-d.status = 'OFFLINE'
+d.status ='OFFLINE'
 d.save()
 print(f'Driver status: {d.status}')
 "
@@ -173,17 +173,17 @@ print(f'Driver status: {d.status}')
 
 ### Create New Driver
 ```bash
-docker exec uber_backend python manage.py shell -c "
+docker exec uber_backend python manage.py shell -c"
 from apps.users.models import User
 from apps.drivers.models import Driver
 
 user = User.objects.create_user(
-    username='5555555555',
-    phone='5555555555',
-    password='driver123',
-    role='driver',
-    first_name='New',
-    last_name='Driver'
+username='5555555555',
+phone='5555555555',
+password='driver123',
+role='driver',
+first_name='New',
+last_name='Driver'
 )
 
 Driver.objects.create(user=user, status='OFFLINE')
@@ -195,20 +195,20 @@ print(f'Created driver: {user.phone}')
 
 ## Common Issues
 
-### ❌ Login Failed
+### Login Failed
 - **Check:** Are you using the correct phone number?
-  - Rider: `9876543210`
-  - Driver: `1234567890`
+- Rider: `9876543210`
+- Driver: `1234567890`
 - **Check:** Are you using the correct endpoint?
-  - Rider: `/api/users/login/`
-  - Driver: `/api/users/driver-login/`
+- Rider: `/api/users/login/`
+- Driver: `/api/users/driver-login/`
 
-### ❌ Network Request Failed (Mobile)
+### Network Request Failed (Mobile)
 - Update IP in `driver-app/src/services/api.ts`
 - Ensure phone and computer on same WiFi
 - Check firewall settings
 
-### ❌ Ride Not Appearing
+### Ride Not Appearing
 - Check driver is ONLINE
 - Check backend logs for matching errors
 - Verify ride status in database

@@ -83,12 +83,12 @@ def sample_ride(db, rider_user):
         pickup_lat=13.0827,
         pickup_lng=80.2707,
         pickup_address="Chennai Central",
-        dropoff_lat=13.0569,
-        dropoff_lng=80.2425,
-        dropoff_address="Marina Beach",
-        distance=5.2,
-        duration=15,
-        estimated_fare=Decimal("120.00")
+        drop_lat=13.0569,
+        drop_lng=80.2425,
+        drop_address="Marina Beach",
+        planned_distance_km=5.2,
+        planned_duration_min=15,
+        base_fare=Decimal("120.00")
     )
 
 
@@ -106,10 +106,10 @@ def assigned_ride(db, rider_user, driver_user):
         driver=driver,
         pickup_lat=13.0827,
         pickup_lng=80.2707,
-        dropoff_lat=13.0569,
-        dropoff_lng=80.2425,
-        distance=5.2,
-        estimated_fare=Decimal("120.00"),
+        drop_lat=13.0569,
+        drop_lng=80.2425,
+        planned_distance_km=5.2,
+        base_fare=Decimal("120.00"),
         status=Ride.Status.ASSIGNED
     )
 

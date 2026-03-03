@@ -4,8 +4,8 @@
 
 ### Prerequisites
 1. **Install Expo Go** on your mobile device:
-   - Android: [Google Play Store](https://play.google.com/store/apps/details?id=host.exp.exponent)
-   - iOS: [App Store](https://apps.apple.com/app/expo-go/id982107779)
+- Android: [Google Play Store](https://play.google.com/store/apps/details?id=host.exp.exponent)
+- iOS: [App Store](https://apps.apple.com/app/expo-go/id982107779)
 
 2. **Ensure your phone and laptop are on the same WiFi network**
 
@@ -15,23 +15,23 @@
 
 ### On Linux (Ubuntu):
 ```bash
-ip addr show | grep "inet " | grep -v 127.0.0.1
+ip addr show|grep"inet"|grep -v 127.0.0.1
 ```
 Or simpler:
 ```bash
-hostname -I | awk '{print $1}'
+hostname -I|awk'{print $1}'
 ```
 
 ### On macOS:
 ```bash
-ifconfig | grep "inet " | grep -v 127.0.0.1
+ifconfig|grep"inet"|grep -v 127.0.0.1
 ```
 
 ### On Windows:
 ```bash
 ipconfig
 ```
-Look for "IPv4 Address" under your WiFi adapter.
+Look for"IPv4 Address"under your WiFi adapter.
 
 **Example IP:** `192.168.1.100` (yours will be different)
 
@@ -44,22 +44,22 @@ Edit `/home/sanjai/dev/uber-backend/backend/config/settings.py`:
 
 ```python
 # Find ALLOWED_HOSTS and update it:
-ALLOWED_HOSTS = ["*"]  # Already set
+ALLOWED_HOSTS = ["*"] # Already set
 
 # Find CORS_ALLOWED_ORIGINS and add your IP:
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://192.168.1.100:8000",  # Replace with YOUR IP
-    "http://192.168.1.100:19000", # Expo dev server
-    "http://192.168.1.100:19001", # Expo dev server
+"http://localhost:5173",
+"http://localhost:5174",
+"http://192.168.1.100:8000", # Replace with YOUR IP
+"http://192.168.1.100:19000", # Expo dev server
+"http://192.168.1.100:19001", # Expo dev server
 ]
 
 # Find CSRF_TRUSTED_ORIGINS and add your IP:
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://192.168.1.100:8000",  # Replace with YOUR IP
+"http://localhost:5173",
+"http://localhost:5174",
+"http://192.168.1.100:8000", # Replace with YOUR IP
 ]
 ```
 
@@ -69,8 +69,8 @@ Edit `/home/sanjai/dev/uber-backend/docker-compose.yml`:
 Find the `backend` service and ensure ports are exposed:
 ```yaml
 backend:
-  ports:
-    - "8000:8000"
+ports:
+-"8000:8000"
 ```
 
 ---
@@ -80,16 +80,16 @@ backend:
 Edit `/home/sanjai/dev/uber-backend/frontend/driver-app/src/services/api.ts`:
 
 ```typescript
-import axios from "axios";
-import { Storage } from "./storage";
-import { Platform } from "react-native";
+import axios from"axios";
+import {Storage} from"./storage";
+import {Platform} from"react-native";
 
 // REPLACE THIS IP WITH YOUR COMPUTER'S IP
-const YOUR_COMPUTER_IP = "192.168.1.100"; // ← CHANGE THIS!
+const YOUR_COMPUTER_IP ="192.168.1.100"; // ← CHANGE THIS!
 
-const HOST = Platform.OS === "android" 
-  ? YOUR_COMPUTER_IP  // For physical Android device
-  : YOUR_COMPUTER_IP; // For physical iOS device
+const HOST = Platform.OS ==="android"
+? YOUR_COMPUTER_IP // For physical Android device
+: YOUR_COMPUTER_IP; // For physical iOS device
 
 export const API_URL = `http://${HOST}:8000/api`;
 export const WS_URL = `ws://${HOST}:8000/ws`;
@@ -113,22 +113,22 @@ from apps.users.models import User
 from apps.drivers.models import Driver
 
 user = User.objects.create_user(
-    username='9876543210',
-    phone='9876543210',
-    password='driver123',
-    role='driver',
-    first_name='Test',
-    last_name='Driver'
+username='9876543210',
+phone='9876543210',
+password='driver123',
+role='driver',
+first_name='Test',
+last_name='Driver'
 )
 
 driver = Driver.objects.create(
-    user=user, 
-    status='OFFLINE',
-    last_lat=12.9716,
-    last_lng=77.5946
+user=user, 
+status='OFFLINE',
+last_lat=12.9716,
+last_lng=77.5946
 )
 
-print(f'✅ Driver created: {user.phone}')
+print(f'Driver created: {user.phone}')
 exit()
 ```
 
@@ -166,7 +166,7 @@ You'll see output like:
 ### Method 2: Manual Connection
 1. Open **Expo Go** app
 2. Make sure you're on the same WiFi
-3. The app should appear under "Recently opened"
+3. The app should appear under"Recently opened"
 4. Tap to open
 
 ---
@@ -197,24 +197,24 @@ You'll see output like:
 
 ## Troubleshooting
 
-### ❌ "Network request failed"
+###"Network request failed"
 **Problem:** App can't reach backend
 
 **Solutions:**
 1. Verify your computer's IP address is correct
 2. Check both devices are on same WiFi
 3. Disable firewall temporarily:
-   ```bash
-   sudo ufw disable  # Ubuntu
-   ```
+```bash
+sudo ufw disable # Ubuntu
+```
 4. Test backend is accessible:
-   ```bash
-   # On your phone's browser, visit:
-   http://192.168.1.100:8000/api/users/login/
-   # Should show "Method not allowed" or similar
-   ```
+```bash
+# On your phone's browser, visit:
+http://192.168.1.100:8000/api/users/login/
+# Should show"Method not allowed"or similar
+```
 
-### ❌ "Unable to connect to Expo"
+###"Unable to connect to Expo"
 **Problem:** Expo dev server not reachable
 
 **Solutions:**
@@ -222,14 +222,14 @@ You'll see output like:
 2. Try tunnel mode: `npx expo start --tunnel`
 3. Restart Expo Go app
 
-### ❌ "CORS error"
+###"CORS error"
 **Problem:** Backend rejecting requests
 
 **Solutions:**
 1. Add your IP to `CORS_ALLOWED_ORIGINS` in `settings.py`
 2. Restart backend: `docker restart uber_backend`
 
-### ❌ WebSocket not connecting
+### WebSocket not connecting
 **Problem:** Real-time updates not working
 
 **Solutions:**
@@ -270,16 +270,16 @@ docker restart uber_backend
 
 ## Testing Checklist
 
-- [ ] Driver can login
-- [ ] Driver can go online/offline
-- [ ] Location updates are sent (check backend logs)
-- [ ] Rider can book a ride
-- [ ] Driver receives ride offer
-- [ ] Driver can accept ride
-- [ ] Driver can mark arrived
-- [ ] OTP verification works
-- [ ] Driver can start ride
-- [ ] Driver can complete ride
+- [] Driver can login
+- [] Driver can go online/offline
+- [] Location updates are sent (check backend logs)
+- [] Rider can book a ride
+- [] Driver receives ride offer
+- [] Driver can accept ride
+- [] Driver can mark arrived
+- [] OTP verification works
+- [] Driver can start ride
+- [] Driver can complete ride
 
 ---
 
@@ -304,13 +304,13 @@ The emulator will use `10.0.2.2` to access your localhost automatically.
 ```bash
 # Test driver login endpoint
 curl -X POST http://localhost:8000/api/users/driver-login/ \
-  -H "Content-Type: application/json" \
-  -d '{"phone":"9876543210","password":"driver123"}'
+-H"Content-Type: application/json"\
+-d'{"phone":"9876543210","password":"driver123"}'
 ```
 
 ### Check Driver Status:
 ```bash
-docker exec -it uber_backend python manage.py shell -c "
+docker exec -it uber_backend python manage.py shell -c"
 from apps.drivers.models import Driver
 d = Driver.objects.first()
 print(f'Driver: {d.user.phone}, Status: {d.status}')
@@ -328,4 +328,4 @@ print(f'Driver: {d.user.phone}, Status: {d.status}')
 5. **Scan QR code**: Use Expo Go app
 6. **Login and test**: Phone `1234567890`, Password `driver123`
 
-**That's it!** You should now be able to test the complete driver app on your mobile device. 🚀
+**That's it!** You should now be able to test the complete driver app on your mobile device. 

@@ -1,16 +1,17 @@
 from unittest.mock import MagicMock, patch
 from datetime import timedelta
 from django.utils import timezone
-from django.core.exceptions import ValidationError
+import pytest
+from rest_framework.exceptions import ValidationError
 from apps.rides.services.otp import generate_and_attach_otp, verify_and_consume_otp
 
 def test_generate_otp_success():
     # Setup Ride
     ride = MagicMock()
     # Mock status enum logic
-    # The implementation checks: ride.status != ride.Status.ARRIVED
-    # So we need ride.Status to have ARRIVED attribute.
+    # The implementation checks: ride.status not in [ride.Status.ASSIGNED, ride.Status.ARRIVED]
     ride.Status.ARRIVED = "ARRIVED"
+    ride.Status.ASSIGNED = "ASSIGNED"
     ride.status = "ARRIVED"
     ride.otp_code = None
     
@@ -26,13 +27,12 @@ def test_generate_otp_success():
 def test_generate_otp_wrong_state():
     ride = MagicMock()
     ride.Status.ARRIVED = "ARRIVED"
+    ride.Status.ASSIGNED = "ASSIGNED"
     ride.status = "SEARCHING" # Wrong state
     
-    try:
+    with pytest.raises(ValidationError) as excinfo:
         generate_and_attach_otp(ride)
-        assert False
-    except ValidationError:
-        pass
+    assert "OTP generation not allowed" in str(excinfo.value)
 
 def test_verify_otp_success():
     ride = MagicMock()
@@ -54,24 +54,18 @@ def test_verify_otp_failures():
     ride.otp_verified_at = None
     ride.otp_expires_at = timezone.now() + timedelta(minutes=5)
     
-    try:
+    with pytest.raises(ValidationError) as excinfo:
         verify_and_consume_otp(ride, "9999")
-        assert False
-    except ValidationError as e:
-        assert "Invalid OTP" in str(e)
+    assert "Invalid OTP" in str(excinfo.value)
         
     # CASE 2: Expired
     ride.otp_expires_at = timezone.now() - timedelta(minutes=1)
-    try:
+    with pytest.raises(ValidationError) as excinfo:
         verify_and_consume_otp(ride, "1234")
-        assert False
-    except ValidationError as e:
-        assert "OTP expired" in str(e)
+    assert "OTP expired" in str(excinfo.value)
         
     # CASE 3: Already Used (cleared)
     ride.otp_code = None
-    try:
+    with pytest.raises(ValidationError) as excinfo:
         verify_and_consume_otp(ride, "1234")
-        assert False
-    except ValidationError as e:
-        assert "OTP already used" in str(e)
+    assert "already used" in str(excinfo.value)

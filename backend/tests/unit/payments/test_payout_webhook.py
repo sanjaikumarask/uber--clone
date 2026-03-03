@@ -19,17 +19,17 @@ def sign(body):
 from django.test import override_settings
 
 @override_settings(RAZORPAY_PAYOUT_WEBHOOK_SECRET="test_secret")
-def test_payout_success_webhook(client, driver, platform_user):
+def test_payout_success_webhook(client, driver_user, platform_user):
     # Fund the driver first
     LedgerEntry.objects.create(
-        user=driver,
+        user=driver_user,
         amount=Decimal("1000.00"),
         entry_type=LedgerEntry.Type.CREDIT,
         reason=LedgerEntry.Reason.DRIVER_EARNING,
     )
 
     payout = Payout.objects.create(
-        driver=driver,
+        driver=driver_user,
         amount=Decimal("500.00"),
         fee=Decimal("10.00"),
         net_amount=Decimal("490.00"),
@@ -38,7 +38,7 @@ def test_payout_success_webhook(client, driver, platform_user):
     )
 
     LedgerEntry.objects.create(
-        user=driver,
+        user=driver_user,
         amount=Decimal("500.00"),
         entry_type=LedgerEntry.Type.HOLD,
         reference=f"hold:{payout.reference}",
@@ -75,7 +75,7 @@ def test_payout_success_webhook(client, driver, platform_user):
 
     # Debit happened
     assert LedgerEntry.objects.filter(
-        user=driver,
+        user=driver_user,
         entry_type=LedgerEntry.Type.DEBIT,
         reference__contains=payout.reference,
     ).exists()

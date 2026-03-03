@@ -262,7 +262,22 @@ class AdminLiveMapSnapshot(APIView):
 class AdminOverviewView(APIView):
     permission_classes = [IsAdmin]
     def get(self, request):
+        from django.core.cache import cache
+        from apps.common.adaptive import AdaptiveShedder
+        import time
+
         today = now().date()
+        
+        # Calculate Real System Health
+        start = time.time()
+        redis_ok = True
+        try:
+            cache.set("admin:health:ping", "1", timeout=5)
+            redis_latency = f"{int((time.time() - start) * 1000)}ms"
+        except:
+            redis_ok = False
+            redis_latency = "timeout"
+
         return Response({
             "online_drivers": Driver.objects.filter(status=Driver.Status.ONLINE).count(),
             "busy_drivers": Driver.objects.filter(status=Driver.Status.BUSY).count(),
@@ -270,4 +285,39 @@ class AdminOverviewView(APIView):
             "completed_today": Ride.objects.filter(status=Ride.Status.COMPLETED, updated_at__date=today).count(),
             "cancelled_today": Ride.objects.filter(status=Ride.Status.CANCELLED, updated_at__date=today).count(),
             "revenue_today": Ride.objects.filter(status=Ride.Status.COMPLETED, updated_at__date=today).aggregate(Sum('final_fare'))['final_fare__sum'] or 0,
+            
+            # 🔥 Real System Health Object
+            "system_health": {
+                "redis": {"ok": redis_ok, "latency": redis_latency},
+                "shedding_factor": round(AdaptiveShedder.get_factor(), 2),
+                "is_operational": AdaptiveShedder.get_factor() < 0.5,
+                "timestamp": now()
+            }
         })
+
+
+# ============================================================
+# 8. SYSTEM LOGS (REDIS STREAM)
+# ============================================================
+class AdminSystemLogsView(APIView):
+    permission_classes = [IsAdmin]
+    throttle_classes = []  # 🔥 Disable for log stream
+
+    def get(self, request):
+        import json
+        import redis
+        from django.conf import settings
+        
+        try:
+            r = redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
+            # Fetch last 100 log entries
+            raw_logs = r.lrange("system:observability:logs", 0, 99)
+            logs = []
+            for raw in raw_logs:
+                try:
+                    logs.append(json.loads(raw))
+                except:
+                    pass
+            return Response(logs)
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)

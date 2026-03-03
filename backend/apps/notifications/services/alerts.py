@@ -1,5 +1,7 @@
 import logging
 import requests
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.conf import settings
 from django.utils import timezone
 
@@ -26,6 +28,36 @@ def send_critical_alert(title: str, message: str, level: str = "ERROR"):
         logger.warning(alert_text)
     else:
         logger.info(alert_text)
+
+    # 1.5. Broadcast to Admin Live Map (incident panel)
+    from channels.layers import get_channel_layer
+    from asgiref.sync import async_to_sync
+    import asyncio
+    try:
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            payload = {
+                "type": "admin_generic_event",
+                "event": "CRITICAL_ALERT",
+                "data": {
+                    "title": title,
+                    "message": message,
+                    "level": level,
+                    "ts": int(timezone.now().timestamp())
+                }
+            }
+            
+            try:
+                loop = asyncio.get_running_loop()
+                # We are in an async loop, use a Task or just await it if we could (but we are sync)
+                # The safest for a sync function in an async loop is to schedule it
+                loop.create_task(channel_layer.group_send("admin_live_map", payload))
+            except RuntimeError:
+                # No running loop, safe to use async_to_sync
+                async_to_sync(channel_layer.group_send)("admin_live_map", payload)
+                
+    except Exception as e:
+        logger.warning(f"Failed to broadcast alert to admin panel: {e}")
 
     # 2. Transmit to Slack if Webhook configured
     webhook_url = getattr(settings, "SLACK_ALERTS_WEBHOOK_URL", None)

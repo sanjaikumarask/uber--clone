@@ -30,6 +30,16 @@ class GoOnlineView(APIView):
 
     def post(self, request):
         driver = request.user.driver
+        
+        # ── Guard: Suspension Check ──
+        from apps.drivers.models import DriverStats
+        stats, _ = DriverStats.objects.get_or_create(driver=driver)
+        if stats.is_suspended and stats.suspended_until and stats.suspended_until > timezone.now():
+            return Response({
+                "error": "Account suspended",
+                "suspended_until": stats.suspended_until.isoformat()
+            }, status=status.HTTP_403_FORBIDDEN)
+
         driver.status = Driver.Status.ONLINE
         driver.save(update_fields=["status"])
 
@@ -237,6 +247,15 @@ class DriverStatusView(APIView):
                 {"error": "Invalid status. Use ONLINE or OFFLINE"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        if new_status == "ONLINE":
+            from apps.drivers.models import DriverStats
+            stats, _ = DriverStats.objects.get_or_create(driver=driver)
+            if stats.is_suspended and stats.suspended_until and stats.suspended_until > timezone.now():
+                return Response({
+                    "error": "Account suspended",
+                    "suspended_until": stats.suspended_until.isoformat()
+                }, status=status.HTTP_403_FORBIDDEN)
 
         if new_status == "OFFLINE":
             if Ride.objects.filter(
