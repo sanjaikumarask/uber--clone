@@ -16,8 +16,8 @@ from .views_admin import (
     AdminPayoutListView,
     AdminPayoutActionView,
     AdminTicketsView,
-    AdminResolveRideView,
 )
+from apps.rides.admin_views import ResolveRideView
 from .views import AdminSystemLogsView
 
 urlpatterns = [
@@ -46,6 +46,6 @@ urlpatterns = [
     path("payouts/", AdminPayoutListView.as_view()),
     path("payout/<str:action>/<int:id>/", AdminPayoutActionView.as_view()),
     path("tickets/", AdminTicketsView.as_view()),
-    path("resolve-ride/", AdminResolveRideView.as_view()),
+    path("resolve-ride/", ResolveRideView.as_view()),
     path("logs/", AdminSystemLogsView.as_view()),
 ]

@@ -24,6 +24,7 @@ export default function RideTrackingScreen({ navigation, route }: any) {
     const [status, setStatus] = useState("SEARCHING");
     const [path, setPath] = useState<any[]>([]);
     const [socket, setSocket] = useState<WebSocket | null>(null);
+    const [trackingStatus, setTrackingStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected");
     const mapRef = useRef<MapView>(null);
 
     useEffect(() => {
@@ -43,10 +44,12 @@ export default function RideTrackingScreen({ navigation, route }: any) {
 
             const wsUrl = `${WS_URL}/rides/${rideId}/?token=${token}`;
             console.log("🔌 Connecting to:", wsUrl);
+            setTrackingStatus("connecting");
             ws = new WebSocket(wsUrl);
 
             ws.onopen = () => {
                 console.log("✅ Ride WS Connected");
+                setTrackingStatus("connected");
                 retryCount = 0; // Reset backoff on success
             };
 
@@ -57,6 +60,7 @@ export default function RideTrackingScreen({ navigation, route }: any) {
 
             ws.onclose = (e) => {
                 console.warn(`⚠️ WS Closed. Code: ${e.code}, Reason: ${e.reason}`);
+                setTrackingStatus("disconnected");
 
                 if (isActive) {
                     const backoffTime = Math.min(1000 * Math.pow(2, retryCount), 15000); // Max 15 seconds
@@ -156,7 +160,7 @@ export default function RideTrackingScreen({ navigation, route }: any) {
 
     const fetchRideDetails = async () => {
         try {
-            const res = await api.get(`/rides/${rideId}/`);
+            const res = await api.get(`rides/${rideId}/`);
             setRide(res.data);
             setStatus(res.data.status);
             if (res.data.status === "COMPLETED") {
@@ -196,7 +200,7 @@ export default function RideTrackingScreen({ navigation, route }: any) {
                         try {
                             const lat = ride.driver?.lat || ride.pickup_lat;
                             const lng = ride.driver?.lng || ride.pickup_lng;
-                            await api.post(`/supports/rides/${rideId}/sos/`, { lat, lng });
+                            await api.post(`supports/rides/${rideId}/sos/`, { lat, lng });
                             Alert.alert("SOS Triggered", "Help is on the way.");
                         } catch (err) {
                             Alert.alert("Error", "Failed to trigger SOS.");
@@ -290,7 +294,16 @@ export default function RideTrackingScreen({ navigation, route }: any) {
 
             <View style={styles.panel}>
                 <View style={styles.handle} />
-                <Text style={styles.statusTitle}>{getStatusMessage()}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+                    <Text style={styles.statusTitle}>{getStatusMessage()}</Text>
+                    {trackingStatus !== "connected" && (
+                        <View style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, marginBottom: 16 }}>
+                            <Text style={{ color: '#ef4444', fontSize: 10, fontWeight: 'bold' }}>
+                                {trackingStatus === "connecting" ? "CONNECTING..." : "RECONNECTING..."}
+                            </Text>
+                        </View>
+                    )}
+                </View>
 
                 <View style={styles.driverInfo}>
                     <View style={styles.driverMainRow}>

@@ -32,6 +32,7 @@ interface RideState {
   dropoffAddress: string | null;
   completedRoute: LatLng[];
   messages: Array<{ sender_id: number; message: string; created_at: string }>;
+  trackingStatus: "disconnected" | "connecting" | "connected";
 
   driver: {
     first_name: string;
@@ -56,6 +57,7 @@ interface RideState {
   setDriver: (driver: RideState["driver"]) => void;
   setVehicleType: (vType: string | null) => void;
   addMessage: (msg: { sender_id: number; message: string; created_at: string }) => void;
+  setTrackingStatus: (status: "disconnected" | "connecting" | "connected") => void;
 
   createRide: (payload: CreateRidePayload) => Promise<{ ride_id: number }>;
   checkActiveRide: () => Promise<{ ride_id?: number } | null>;
@@ -82,6 +84,7 @@ export const useRideStore = create<RideState>((set, get) => ({
   completedRoute: [],
   messages: [],
   driver: null,
+  trackingStatus: "disconnected",
 
   setRideId: (id) => set({ rideId: id }),
   setStatus: (status) => set({ status }),
@@ -94,6 +97,7 @@ export const useRideStore = create<RideState>((set, get) => ({
   setHeading: (heading) => set({ heading }),
   setDriver: (driver) => set({ driver }),
   setVehicleType: (vehicleType) => set({ vehicleType }),
+  setTrackingStatus: (trackingStatus) => set({ trackingStatus }),
 
   setDriverLocation: (lat, lng) =>
     set((state) => ({
@@ -210,5 +214,6 @@ export const useRideStore = create<RideState>((set, get) => ({
       completedRoute: [],
       messages: [],
       driver: null,
+      trackingStatus: "disconnected",
     }),
 }));

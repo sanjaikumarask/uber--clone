@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import {
     View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
-    Alert, Dimensions, ScrollView, StatusBar, Platform
+    Alert, Dimensions, ScrollView, StatusBar, Platform, Modal
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { api } from "../services/api";
+import { getActiveOffers, Offer } from "../services/offerService";
 
 const { width } = Dimensions.get("window");
 
@@ -15,7 +16,6 @@ const mapStyle = [
     { "elementType": "labels.text.fill", "stylers": [{ "color": "#777777" }] },
     { "elementType": "labels.text.stroke", "stylers": [{ "color": "#1A1B1F" }] },
     { "featureType": "administrative.locality", "elementType": "labels.text.fill", "stylers": [{ "color": "#999999" }] },
-    { "featureType": "poi", "stylers": [{ "visibility": "off" }] },
     { "featureType": "road", "elementType": "geometry.fill", "stylers": [{ "color": "#2A2D32" }] },
     { "featureType": "road", "elementType": "labels.text.fill", "stylers": [{ "color": "#555555" }] },
     { "featureType": "road.arterial", "elementType": "geometry", "stylers": [{ "color": "#33373E" }] },
@@ -78,18 +78,33 @@ export default function ConfirmRideScreen({ navigation, route }: any) {
     const [fareLoading, setFareLoading] = useState(true);
     const [estimate, setEstimate] = useState<any>(null);
     const [selectedVehicle, setSelectedVehicle] = useState(VEHICLE_TYPES[2]); // default UberGo
+    const [promoCode, setPromoCode] = useState("");
+    const [appliedOffer, setAppliedOffer] = useState<Offer | null>(null);
+    const [offers, setOffers] = useState<Offer[]>([]);
+    const [showOffers, setShowOffers] = useState(false);
+    const [calculating, setCalculating] = useState(false);
 
     React.useEffect(() => {
         fetchEstimate();
-    }, []);
+        loadOffers();
+    }, [appliedOffer]);
+
+    const loadOffers = async () => {
+        try {
+            const data = await getActiveOffers("Chennai");
+            setOffers(data);
+        } catch (e) { }
+    };
 
     const fetchEstimate = async () => {
+        setFareLoading(true);
         try {
-            const res = await api.post("/rides/estimate-fare/", {
+            const res = await api.post("rides/estimate-fare/", {
                 pickup_lat: pickupLocation.lat,
                 pickup_lng: pickupLocation.lng,
                 drop_lat: destination.lat,
                 drop_lng: destination.lng,
+                promo_code: appliedOffer?.code || null,
             });
             setEstimate(res.data);
         } catch (err) {
@@ -99,10 +114,15 @@ export default function ConfirmRideScreen({ navigation, route }: any) {
         }
     };
 
+    const handleApplyOffer = (offer: Offer) => {
+        setAppliedOffer(offer);
+        setShowOffers(false);
+    };
+
     const handleConfirmRide = async () => {
         setLoading(true);
         try {
-            const res = await api.post("/rides/request/", {
+            const res = await api.post("rides/request/", {
                 pickup_lat: pickupLocation.lat,
                 pickup_lng: pickupLocation.lng,
                 pickup_address: pickupLocation.address || "My Location",
@@ -110,6 +130,7 @@ export default function ConfirmRideScreen({ navigation, route }: any) {
                 drop_lng: destination.lng,
                 drop_address: destination.description,
                 vehicle_type: selectedVehicle.id,
+                promo_code: appliedOffer?.code || null,
             });
 
             navigation.replace("RideSearching", {
@@ -120,7 +141,7 @@ export default function ConfirmRideScreen({ navigation, route }: any) {
             if (err.response?.status === 409) {
                 Alert.alert("Active Ride Found", "Redirecting to your current ride...");
                 try {
-                    const activeRes = await api.get("/rides/active/");
+                    const activeRes = await api.get("rides/active/");
                     if (activeRes.data.id) {
                         navigation.replace("RideTracking", { rideId: activeRes.data.id });
                         return;
@@ -134,8 +155,12 @@ export default function ConfirmRideScreen({ navigation, route }: any) {
         }
     };
 
-    const getFare = (vt: typeof VEHICLE_TYPES[0]) =>
-        estimate ? `₹${Math.round(estimate.estimated_fare * vt.multiplier)}` : "—";
+    const getFare = (vt: typeof VEHICLE_TYPES[0]) => {
+        if (!estimate) return "—";
+        const base = estimate.estimated_fare * vt.multiplier;
+        const discount = (estimate.discount_applied || 0);
+        return `₹${Math.round(base - discount)}`;
+    };
 
     return (
         <View style={styles.container}>
@@ -246,6 +271,28 @@ export default function ConfirmRideScreen({ navigation, route }: any) {
                     })}
                 </ScrollView>
 
+                {/* Promo / Coupon Section */}
+                <View style={styles.promoContainer}>
+                    <TouchableOpacity
+                        style={styles.promoBtn}
+                        onPress={() => setShowOffers(true)}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.promoLeft}>
+                            <Text style={styles.promoIcon}>🏷️</Text>
+                            <View>
+                                <Text style={styles.promoTitle}>
+                                    {appliedOffer ? `Promo: ${appliedOffer.code}` : "Apply Promo Code"}
+                                </Text>
+                                <Text style={styles.promoSub}>
+                                    {appliedOffer ? `Saved ₹${Math.round(estimate?.discount_applied || 0)}` : "Check for available discounts"}
+                                </Text>
+                            </View>
+                        </View>
+                        <Text style={styles.promoArrow}>{appliedOffer ? "✕" : "→"}</Text>
+                    </TouchableOpacity>
+                </View>
+
                 {/* Confirm Button */}
                 <TouchableOpacity
                     style={[styles.confirmBtn, { backgroundColor: selectedVehicle.accent }, loading && styles.btnDisabled]}
@@ -262,6 +309,48 @@ export default function ConfirmRideScreen({ navigation, route }: any) {
                     )}
                 </TouchableOpacity>
             </View>
+
+            {/* Offers Modal */}
+            <Modal
+                visible={showOffers}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setShowOffers(false)}
+            >
+                <View style={styles.modalBg}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Available Offers</Text>
+                            <TouchableOpacity onPress={() => setShowOffers(false)}>
+                                <Text style={styles.closeModal}>✕</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            {offers.length === 0 ? (
+                                <Text style={styles.noOffers}>No offers available right now.</Text>
+                            ) : (
+                                offers.map((o) => (
+                                    <TouchableOpacity
+                                        key={o.id}
+                                        style={styles.offerItem}
+                                        onPress={() => handleApplyOffer(o)}
+                                    >
+                                        <View style={styles.offerBadge}>
+                                            <Text style={styles.offerBadgeText}>
+                                                {o.discount_type === "FLAT" ? `₹${o.value}` : `${o.value}%`}
+                                            </Text>
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.offerTitle}>{o.title}</Text>
+                                            <Text style={styles.offerCode}>USE CODE: {o.code}</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                ))
+                            )}
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -373,4 +462,74 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: "800",
     },
+
+    // Promo Section
+    promoContainer: {
+        marginTop: 12,
+        marginBottom: 8,
+    },
+    promoBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        backgroundColor: "rgba(39, 110, 241, 0.08)",
+        borderRadius: 14,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: "rgba(39, 110, 241, 0.2)",
+    },
+    promoLeft: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+    },
+    promoIcon: { fontSize: 20 },
+    promoTitle: { fontSize: 13, fontWeight: "800", color: "#fff" },
+    promoSub: { fontSize: 11, color: "#276EF1", fontWeight: "600" },
+    promoArrow: { fontSize: 14, color: "#276EF1", fontWeight: "900" },
+
+    // Modal
+    modalBg: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        justifyContent: "flex-end",
+    },
+    modalContent: {
+        backgroundColor: "#111",
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        maxHeight: "60%",
+        borderTopWidth: 1,
+        borderColor: "rgba(255,255,255,0.1)",
+    },
+    modalHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 20,
+    },
+    modalTitle: { fontSize: 18, fontWeight: "900", color: "#fff" },
+    closeModal: { color: "#666", fontSize: 20, fontWeight: "700" },
+    offerItem: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 16,
+        backgroundColor: "rgba(255,255,255,0.03)",
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.05)",
+    },
+    offerBadge: {
+        backgroundColor: "rgba(39, 110, 241, 0.15)",
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    offerBadgeText: { color: "#276EF1", fontWeight: "900", fontSize: 12 },
+    offerTitle: { color: "#fff", fontSize: 14, fontWeight: "700" },
+    offerCode: { color: "#555", fontSize: 11, fontWeight: "600", marginTop: 2 },
+    noOffers: { textAlign: "center", color: "#666", paddingVertical: 40 },
 });

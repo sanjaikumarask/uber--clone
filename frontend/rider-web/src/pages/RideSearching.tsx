@@ -78,90 +78,141 @@ export default function RideSearching() {
     <div style={{
       display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
-      minHeight: "100vh", backgroundColor: "#0A0A0A", padding: "32px 20px",
+      minHeight: "100vh", backgroundColor: "#020408", padding: "32px 20px",
+      fontFamily: "'Outfit', sans-serif",
+      position: "relative",
+      overflow: "hidden",
     }}>
-      <div style={{ width: "100%", maxWidth: "400px", textAlign: "center" }}>
+      {/* Background Decorative Glows */}
+      <div style={{ position: "absolute", top: "-10%", left: "-10%", width: "40vw", height: "40vw", background: "radial-gradient(circle, rgba(39,110,241,0.05) 0%, transparent 70%)", zIndex: 0 }} />
+      <div style={{ position: "absolute", bottom: "-10%", right: "-10%", width: "50vw", height: "50vw", background: "radial-gradient(circle, rgba(6,182,212,0.03) 0%, transparent 70%)", zIndex: 0 }} />
 
-        {/* Vehicle Animation */}
-        <div style={{ position: "relative", width: "160px", height: "100px", margin: "0 auto 48px" }}>
+      <div style={{ width: "100%", maxWidth: "440px", textAlign: "center", zIndex: 1 }}>
+
+        {/* Vehicle Animation Container */}
+        <div style={{ position: "relative", width: "180px", height: "120px", margin: "0 auto 64px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+
+          {/* Multi-layered Radar Pulses */}
+          {[...Array(4)].map((_, i) => (
+            <div key={i} style={{
+              position: "absolute", top: "50%", left: "50%",
+              width: "200px", height: "200px",
+              marginLeft: "-100px", marginTop: "-100px",
+              borderRadius: "50%",
+              border: `1.5px solid rgba(39,110,241,${0.4 - i * 0.1})`,
+              boxShadow: i === 0 ? "0 0 30px rgba(39,110,241,0.2)" : "none",
+              animation: `radar 3s infinite ${i * 0.7}s cubic-bezier(0.4, 0, 0.2, 1)`,
+            }} />
+          ))}
+
           <img
             src={vehicleType === "moto" ? "/assets/vehicles/moto.png"
               : vehicleType === "auto" ? "/assets/vehicles/auto.png"
                 : vehicleType === "xl" ? "/assets/vehicles/xl.png"
                   : "/assets/vehicles/go.png"}
-            style={{ width: "100%", height: "100%", objectFit: "contain", transform: "scale(1.2)" }}
+            style={{
+              width: "120px", height: "80px", objectFit: "contain",
+              zIndex: 2, filter: "drop-shadow(0 12px 24px rgba(0,0,0,0.5))",
+              animation: "float 4s ease-in-out infinite"
+            }}
           />
-          {/* Radar Ring 1 */}
-          <div style={{
-            position: "absolute", top: "50%", left: "50%",
-            width: "180px", height: "180px",
-            marginLeft: "-90px", marginTop: "-90px",
-            borderRadius: "50%", border: "1.5px solid rgba(39,110,241,0.4)",
-            animation: "radar 2s infinite",
-          }} />
-          {/* Radar Ring 2 */}
-          <div style={{
-            position: "absolute", top: "50%", left: "50%",
-            width: "240px", height: "240px",
-            marginLeft: "-120px", marginTop: "-120px",
-            borderRadius: "50%", border: "1px solid rgba(39,110,241,0.2)",
-            animation: "radar 2s infinite 0.6s",
-          }} />
         </div>
 
-        <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#fff", marginBottom: 8 }}>
-          Finding your ride
+        <h1 style={{ fontSize: "2rem", fontWeight: 800, color: "#f8fafc", marginBottom: 12, letterSpacing: "-0.5px" }}>
+          Finding Your Ride
         </h1>
-        <p style={{ fontSize: "0.95rem", color: "#A6A6A6", marginBottom: 40 }}>
-          Matching you with a nearby driver...
+        <p style={{ fontSize: "1rem", color: "#94a3b8", marginBottom: 48, fontWeight: 500 }}>
+          {status === "OFFERED" ? "Securing your driver..." : "Optimizing for nearby drivers..."}
         </p>
 
-        {/* Info Card */}
+        {/* Info Card / Glass Panel */}
         <div style={{
-          backgroundColor: "rgba(255,255,255,0.04)",
+          background: "rgba(15,23,42,0.4)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
           border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: 16, padding: "20px 24px",
-          marginBottom: 24, textAlign: "left",
-          backdropFilter: "blur(10px)",
+          borderRadius: 28, padding: "28px 32px",
+          marginBottom: 32, textAlign: "left",
+          boxShadow: "0 20px 50px rgba(0,0,0,0.3)",
         }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#666", letterSpacing: "0.1em" }}>REQUEST ID</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>#{rideId}</span>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#666", letterSpacing: "0.1em" }}>STATUS</span>
-            <span style={{ fontSize: 12, fontWeight: 900, color: "#276EF1" }}>
-              {status === "OFFERED" ? "CONFIRMING..." : "SEARCHING..."}
-            </span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <span style={{ fontSize: 10, fontWeight: 900, color: "#64748b", letterSpacing: "1.5px", textTransform: "uppercase" }}>Request ID</span>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9", marginTop: 4 }}># {rideId}</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <span style={{ fontSize: 10, fontWeight: 900, color: "#64748b", letterSpacing: "1.5px", textTransform: "uppercase" }}>Status</span>
+                <div style={{
+                  fontSize: 14, fontWeight: 800, color: "#276EF1", marginTop: 4,
+                  display: "flex", alignItems: "center", gap: 8, justifyContent: "flex-end"
+                }}>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#276EF1", animation: "pulse 1.5s infinite" }} />
+                  {status === "OFFERED" ? "CONFIRMING" : "SCANNING"}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ height: 1, backgroundColor: "rgba(255,255,255,0.06)" }} />
+
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
+                {vehicleType === "moto" ? "🏍" : vehicleType === "auto" ? "🛺" : "🚗"}
+              </div>
+              <div>
+                <span style={{ fontSize: 10, fontWeight: 900, color: "#64748b", letterSpacing: "1.5px", textTransform: "uppercase" }}>Vehicle Class</span>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9", marginTop: 2, textTransform: "capitalize" }}>Metropolis {vehicleType}</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Cancel Button */}
+        {/* Action Button */}
         <button
           onClick={handleCancel}
           style={{
-            width: "100%", padding: "16px",
-            backgroundColor: "rgba(255,255,255,0.07)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: 12, color: "#fff",
-            fontWeight: 700, fontSize: "0.95rem", cursor: "pointer",
+            width: "100%", padding: "18px",
+            backgroundColor: "rgba(255,255,255,0.03)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 20, color: "#94a3b8",
+            fontWeight: 800, fontSize: "12px", cursor: "pointer",
+            textTransform: "uppercase", letterSpacing: "1px",
+            transition: "all 0.3s ease",
           }}
+          onMouseEnter={e => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.08)"; e.currentTarget.style.color = "#ef4444"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.2)"; }}
+          onMouseLeave={e => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)"; e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
         >
           Cancel Request
         </button>
 
-        {/* GPS Status */}
-        <p style={{ marginTop: 20, fontSize: 11, color: "#555" }}>
-          {gpsStatus === "sharing" ? "📍 Location shared for accuracy" : "⌛ Acquiring precise location..."}
-        </p>
+        {/* GPS Insight */}
+        <div style={{
+          marginTop: 32, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          opacity: 0.6
+        }}>
+          <div style={{ width: 4, height: 4, borderRadius: "50%", background: gpsStatus === "sharing" ? "#34C759" : "#f59e0b" }} />
+          <span style={{ fontSize: 11, color: "#64748b", fontWeight: 600, letterSpacing: "0.5px" }}>
+            {gpsStatus === "sharing" ? "TELEMETRY SYNCHRONIZED" : "INITIALIZING SIGNAL..."}
+          </span>
+        </div>
       </div>
 
       <style>{`
         @keyframes radar {
-          0%   { transform: scale(0.5); opacity: 0.8; }
-          100% { transform: scale(1.5); opacity: 0; }
+          0%   { transform: scale(0.5); opacity: 1; }
+          100% { transform: scale(2.5); opacity: 0; }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0) scale(1.1); }
+          50% { transform: translateY(-10px) scale(1.1); }
+        }
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.2); opacity: 0.5; }
         }
       `}</style>
     </div>
   );
 }
+  
+

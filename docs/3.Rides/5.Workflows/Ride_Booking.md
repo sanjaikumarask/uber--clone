@@ -32,27 +32,33 @@ If no drivers are found within the configured radius (10 km):
 ## The Rider Experience (WebSocket)
 
 The rider's app is kept in sync throughout the process:
-- **Connecting**: Connecting to `ws/ride/<ride_id>/`.
-- **Searching**: Showing a"Finding your driver"animation.
-- **Matched**: Transitioning to"Driver is on the way"as soon as a driver accepts or is auto-assigned.
+- **Connecting**: Connecting to `ws/rides/<ride_id>/`.
+- **Searching**: Showing a "Finding your driver" animation.
+- **Matched**: Transitioning to "Driver is on the way" as soon as a driver accepts or is auto-assigned.
 ---
 
 ## Flow Diagram
 
 ```mermaid
 sequenceDiagram
-participant Rider as Rider App
-participant API as Rides API
-participant Match as Matching Engine
-participant Driver as Driver App
-participant WS as WebSocket
+    participant Rider as Rider App
+    participant API as Rides API
+    participant DB as PostgreSQL
+    participant Match as Matching Engine
+    participant Driver as Driver App
+    participant WS as WebSocket (Django Channels)
 
-Rider->>API: POST /api/rides/book/ {pickup, dropoff, vehicle_type}
-API->>API: Calculate fare estimate
-API->>Match: Trigger match_driver_task (Celery)
-Match->>Match: Query Redis GEORADIUS for nearby drivers
-Match->>Driver: WS push ride.offered {ride_id, pickup, fare}
-Driver-->>API: POST /api/rides/accept/ {ride_id}
-API->>WS: Broadcast ride.assigned to rider group
-WS-->>Rider: ride.assigned {driver_name, vehicle, otp}
+    Rider->>API: POST /api/rides/request/ {pickup, dropoff, vehicle_type}
+    API->>API: Validate coords, estimate fare, plan route
+    API->>DB: INSERT Ride {status=SEARCHING, base_fare}
+    DB-->>API: Commit OK
+    API->>Match: transaction.on_commit → find_driver_and_offer_ride(ride_id)
+    Match->>Match: Redis GEORADIUS (10km), sort by Level/Score
+    Match->>WS: group_send driver_{id}_rides ride_offer event
+    WS-->>Driver: {ride_id, pickup, fare, 60s timer}
+    Driver-->>API: POST /api/rides/<ride_id>/accept/
+    API->>WS: update_ride_status → ASSIGNED → triple broadcast
+    WS-->>Rider: ride.assigned {driver_name, otp}
+    WS-->>Driver: ride.assigned confirmation
+    WS-->>Admin: RIDE_STATUS_UPDATED on admin_live_map
 ```

@@ -61,7 +61,7 @@ export default function RideOfferScreen({ route, navigation }: any) {
     }, [secondsLeft]);
 
     async function silentReject() {
-        try { if (rideId) await api.post(`/rides/${rideId}/reject/`); } catch (_) { }
+        try { if (rideId) await api.post(`rides/${rideId}/reject/`); } catch (_) { }
     }
 
     // ── Location display ──────────────────────────────────────────
@@ -81,7 +81,7 @@ export default function RideOfferScreen({ route, navigation }: any) {
     async function handleAccept() {
         if (timerRef.current) clearInterval(timerRef.current);
         try {
-            await api.post(`/rides/${rideId}/accept/`);
+            await api.post(`rides/${rideId}/accept/`);
             navigation.replace("RideTracking", { rideId });
         } catch (err: any) {
             const msg = err?.response?.data?.error || "Failed to accept ride";
@@ -247,137 +247,156 @@ export default function RideOfferScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#0d0d0d",
+        backgroundColor: "#020408",
         justifyContent: "center",
-        padding: 18,
+        padding: 20,
     },
 
     badge: {
         alignSelf: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 7,
-        borderRadius: 20,
-        marginBottom: 10,
-    },
-    badgeOffer: { backgroundColor: "#1A3A5C" },
-    badgeAuto: { backgroundColor: "#5C1A1A" },
-    badgeText: { color: "#fff", fontWeight: "700", fontSize: 13, letterSpacing: 0.3 },
-
-    // Rejection warning banner
-    warningBanner: {
-        borderRadius: 10,
-        paddingHorizontal: 14,
-        paddingVertical: 9,
-        marginBottom: 10,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 30,
+        marginBottom: 16,
         borderWidth: 1,
     },
-    warningRed: { backgroundColor: "#2a0808", borderColor: "#FF3B30" },
-    warningOrange: { backgroundColor: "#2a1800", borderColor: "#FF9500" },
-    warningText: { color: "#fff", fontSize: 12, fontWeight: "600", textAlign: "center" },
+    badgeOffer: { backgroundColor: "rgba(39,110,241,0.1)", borderColor: "rgba(39,110,241,0.3)" },
+    badgeAuto: { backgroundColor: "rgba(239,68,68,0.1)", borderColor: "rgba(239,68,68,0.3)" },
+    badgeText: { color: "#f8fafc", fontWeight: "800", fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase" },
+
+    warningBanner: {
+        borderRadius: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        marginBottom: 16,
+        borderWidth: 1,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+    },
+    warningRed: { backgroundColor: "rgba(239,68,68,0.15)", borderColor: "rgba(239,68,68,0.4)" },
+    warningOrange: { backgroundColor: "rgba(245,158,11,0.15)", borderColor: "rgba(245,158,11,0.4)" },
+    warningText: { color: "#fff", fontSize: 13, fontWeight: "700", textAlign: "center", letterSpacing: 0.3 },
 
     card: {
-        backgroundColor: "#1a1a1a",
-        padding: 22,
-        borderRadius: 20,
+        backgroundColor: "rgba(15,23,42,0.8)",
+        padding: 28,
+        borderRadius: 32,
         borderWidth: 1,
-        borderColor: "#2a2a2a",
+        borderColor: "rgba(255,255,255,0.08)",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.5,
+        shadowRadius: 40,
+        elevation: 10,
     },
 
-    // Rider row
     riderBox: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#111",
-        padding: 13,
-        borderRadius: 14,
-        marginBottom: 14,
-        gap: 12,
+        backgroundColor: "rgba(255,255,255,0.03)",
+        padding: 16,
+        borderRadius: 20,
+        marginBottom: 24,
+        gap: 16,
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.05)",
     },
     avatar: {
-        width: 48, height: 48, borderRadius: 24,
+        width: 56, height: 56, borderRadius: 18,
         backgroundColor: "#276EF1",
         justifyContent: "center", alignItems: "center",
+        shadowColor: "#276EF1",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
     },
-    avatarTxt: { color: "#fff", fontWeight: "bold", fontSize: 20 },
-    riderName: { fontSize: 15, fontWeight: "700", color: "#fff" },
-    riderRating: { fontSize: 13, color: "#aaa", marginTop: 2 },
+    avatarTxt: { color: "#fff", fontWeight: "900", fontSize: 24 },
+    riderName: { fontSize: 18, fontWeight: "800", color: "#f8fafc", letterSpacing: -0.5 },
+    riderRating: { fontSize: 14, color: "#94a3b8", marginTop: 4, fontWeight: "600" },
     fareBadge: {
         alignItems: "center",
-        backgroundColor: "#0a230a",
-        paddingHorizontal: 13,
-        paddingVertical: 8,
-        borderRadius: 12,
+        backgroundColor: "rgba(34,197,94,0.1)",
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 16,
         borderWidth: 1,
-        borderColor: "#1e5c1e",
+        borderColor: "rgba(34,197,94,0.3)",
     },
-    fareAmount: { fontSize: 22, fontWeight: "800", color: "#34C759" },
-    fareLabel: { fontSize: 10, color: "#34C759", opacity: 0.75 },
+    fareAmount: { fontSize: 24, fontWeight: "900", color: "#22C55E", letterSpacing: -1 },
+    fareLabel: { fontSize: 9, color: "#22C55E", fontWeight: "900", textTransform: "uppercase", letterSpacing: 1, marginTop: 2, opacity: 0.8 },
 
-    // Route
     routeBox: {
-        backgroundColor: "#111",
-        borderRadius: 14,
-        padding: 14,
-        marginBottom: 10,
+        backgroundColor: "rgba(255,255,255,0.02)",
+        borderRadius: 24,
+        padding: 20,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.04)",
     },
-    locationRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-    dot: { width: 11, height: 11, borderRadius: 6, marginTop: 4, flexShrink: 0 },
-    connector: { width: 2, height: 20, backgroundColor: "#2a2a2a", marginLeft: 4, marginVertical: 3 },
-    locLabel: { fontSize: 10, color: "#555", fontWeight: "700", letterSpacing: 0.8, marginBottom: 1 },
-    locText: { fontSize: 14, color: "#ddd", fontWeight: "500" },
+    locationRow: { flexDirection: "row", alignItems: "flex-start", gap: 16 },
+    dot: { width: 12, height: 12, borderRadius: 6, marginTop: 6, flexShrink: 0, borderWidth: 2, borderColor: "rgba(0,0,0,0.5)" },
+    connector: { width: 2, height: 28, backgroundColor: "rgba(255,255,255,0.08)", marginLeft: 5, marginVertical: 4, borderRadius: 1 },
+    locLabel: { fontSize: 9, color: "#64748b", fontWeight: "900", letterSpacing: 1.5, marginBottom: 6, textTransform: "uppercase" },
+    locText: { fontSize: 15, color: "#cbd5e1", fontWeight: "600", lineHeight: 20 },
 
-    rideId: { color: "#444", fontSize: 11, textAlign: "right", marginBottom: 14 },
+    rideId: { color: "rgba(255,255,255,0.2)", fontSize: 10, textAlign: "right", marginBottom: 20, fontWeight: "700", letterSpacing: 1 },
 
-    // Timer
     timerRow: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 16,
-        marginBottom: 12,
+        gap: 20,
+        marginBottom: 20,
     },
     timerRing: {
-        width: 80, height: 80, borderRadius: 40,
-        borderWidth: 3,
+        width: 90, height: 90, borderRadius: 45,
+        borderWidth: 4,
         justifyContent: "center", alignItems: "center",
-        backgroundColor: "#111",
+        backgroundColor: "rgba(0,0,0,0.3)",
         flexShrink: 0,
     },
-    timerNum: { fontSize: 30, fontWeight: "800", lineHeight: 34 },
-    timerSec: { fontSize: 10, fontWeight: "600" },
+    timerNum: { fontSize: 36, fontWeight: "900", lineHeight: 40, letterSpacing: -1 },
+    timerSec: { fontSize: 10, fontWeight: "900", textTransform: "uppercase", letterSpacing: 1, marginTop: -4 },
     timerInfo: { flex: 1 },
-    timerTitle: { color: "#fff", fontSize: 15, fontWeight: "700", marginBottom: 4 },
-    timerSub: { color: "#777", fontSize: 12, lineHeight: 17 },
+    timerTitle: { color: "#fff", fontSize: 18, fontWeight: "800", marginBottom: 6, letterSpacing: -0.5 },
+    timerSub: { color: "#64748b", fontSize: 13, lineHeight: 18, fontWeight: "500" },
 
-    // Progress bar
     progressTrack: {
-        height: 4, backgroundColor: "#222",
-        borderRadius: 2, overflow: "hidden",
-        marginBottom: 16,
+        height: 6, backgroundColor: "rgba(255,255,255,0.05)",
+        borderRadius: 3, overflow: "hidden",
+        marginBottom: 28,
     },
-    progressBar: { height: "100%", borderRadius: 2 },
+    progressBar: { height: "100%", borderRadius: 3 },
 
-    // Auto-assigned CTA
     goBtn: {
         backgroundColor: "#FF6B00",
-        padding: 16, borderRadius: 14,
+        padding: 20, borderRadius: 20,
         alignItems: "center",
+        shadowColor: "#FF6B00",
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.4,
+        shadowRadius: 20,
     },
-    goBtnText: { color: "#fff", fontSize: 16, fontWeight: "700", letterSpacing: 0.3 },
+    goBtnText: { color: "#fff", fontSize: 18, fontWeight: "900", letterSpacing: 0.5 },
 
-    // Normal offer buttons
-    btnRow: { flexDirection: "row", gap: 12 },
+    btnRow: { flexDirection: "row", gap: 16 },
     rejectBtn: {
-        flex: 1, padding: 16, borderRadius: 14,
-        borderWidth: 1.5, borderColor: "#FF3B30",
-        backgroundColor: "#150404",
+        flex: 1, padding: 20, borderRadius: 20,
+        borderWidth: 1.5, borderColor: "rgba(239,68,68,0.4)",
+        backgroundColor: "rgba(239,68,68,0.05)",
         alignItems: "center",
     },
-    rejectTxt: { color: "#FF3B30", fontSize: 15, fontWeight: "700" },
+    rejectTxt: { color: "#EF4444", fontSize: 15, fontWeight: "800", textTransform: "uppercase", letterSpacing: 1 },
     acceptBtn: {
-        flex: 1, padding: 16, borderRadius: 14,
-        borderWidth: 1.5, borderColor: "#34C759",
-        backgroundColor: "#041504",
+        flex: 1, padding: 20, borderRadius: 20,
+        borderWidth: 1.5, borderColor: "rgba(34,197,94,0.4)",
+        backgroundColor: "rgba(34,197,94,0.05)",
         alignItems: "center",
+        shadowColor: "#22C55E",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.2,
+        shadowRadius: 15,
     },
-    acceptTxt: { color: "#34C759", fontSize: 15, fontWeight: "700" },
+    acceptTxt: { color: "#22C55E", fontSize: 15, fontWeight: "800", textTransform: "uppercase", letterSpacing: 1 },
 });

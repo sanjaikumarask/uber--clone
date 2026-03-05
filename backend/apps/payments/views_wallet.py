@@ -26,3 +26,24 @@ class WalletBalanceView(APIView):
             "available_balance": str(available),
             "currency": "INR",
         })
+
+class WalletTransactionsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from apps.payments.models import LedgerEntry
+        # Get last 50 transactions for the user
+        entries = LedgerEntry.objects.filter(user=request.user).order_by("-created_at")[:50]
+        
+        data = []
+        for e in entries:
+            data.append({
+                "id": e.id,
+                "amount": str(e.amount),
+                "type": e.entry_type,
+                "reason": e.reason,
+                "reference": e.reference,
+                "created_at": e.created_at.isoformat(),
+            })
+            
+        return Response(data)

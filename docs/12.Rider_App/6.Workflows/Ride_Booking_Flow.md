@@ -47,7 +47,10 @@ The workflow handles several state transitions:
 
 ```mermaid
 flowchart TD
-A[Open App] --> B[Home Screen <br/> Auto-detect location]
+A[Open App] --> Z{Logged in?}
+Z -->|No| Y[Signup / Login Screen]
+Y --> B
+Z -->|Yes| B[Home Screen <br/> Auto-detect location]
 B --> C[User searches destination]
 C --> D[ConfirmRide Screen <br/> fetch fare estimates]
 D --> E{Apply promo code?}

@@ -67,7 +67,7 @@ export default function RideSearchingScreen({ navigation, route }: any) {
         let ws: WebSocket | null = null;
         const setup = async () => {
             try {
-                const res = await api.get(`/rides/${rideId}/`);
+                const res = await api.get(`rides/${rideId}/`);
                 const s = res.data.status;
                 if (["ASSIGNED", "ARRIVED", "ONGOING"].includes(s)) {
                     navigation.replace("RideTracking", { rideId });
@@ -114,7 +114,7 @@ export default function RideSearchingScreen({ navigation, route }: any) {
 
     const handleCancel = async () => {
         try {
-            await api.post(`/rides/${rideId}/cancel/`);
+            await api.post(`rides/${rideId}/cancel/`);
             navigation.replace("Home");
         } catch {
             Alert.alert("Error", "Failed to cancel ride.");
@@ -192,7 +192,7 @@ const RING_SIZE = 180;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#000",
+        backgroundColor: "#020408",
     },
 
     // Radar
@@ -207,98 +207,112 @@ const styles = StyleSheet.create({
         height: RING_SIZE,
         borderRadius: RING_SIZE / 2,
         borderWidth: 1.5,
-        borderColor: "#276EF1",
+        borderColor: "rgba(39,110,241,0.4)",
     },
     vehicleCircle: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: "rgba(39,110,241,0.12)",
-        borderWidth: 1.5,
-        borderColor: "rgba(39,110,241,0.4)",
+        width: 100,
+        height: 100,
+        borderRadius: 32,
+        backgroundColor: "rgba(15,23,42,0.8)",
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.1)",
         alignItems: "center",
         justifyContent: "center",
+        shadowColor: "#276EF1",
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.3,
+        shadowRadius: 24,
+        elevation: 10,
     },
-    vehicleEmoji: { fontSize: 38 },
+    vehicleEmoji: { fontSize: 48 },
 
     // Info
     infoZone: {
-        paddingHorizontal: 24,
-        paddingBottom: 48,
+        paddingHorizontal: 28,
+        paddingBottom: 64,
     },
     title: {
-        fontSize: 34,
+        fontSize: 38,
         fontWeight: "900",
-        color: "#FFFFFF",
-        letterSpacing: -1,
-        lineHeight: 40,
-        marginBottom: 8,
+        color: "#f8fafc",
+        letterSpacing: -1.5,
+        lineHeight: 44,
+        marginBottom: 12,
     },
     subtitle: {
-        fontSize: 14,
-        color: "#555",
-        fontWeight: "500",
-        marginBottom: 24,
+        fontSize: 16,
+        color: "#64748b",
+        fontWeight: "600",
+        marginBottom: 32,
     },
 
     // Card
     card: {
-        backgroundColor: "rgba(255,255,255,0.04)",
-        borderRadius: 20,
+        backgroundColor: "rgba(15,23,42,0.4)",
+        borderRadius: 28,
         borderWidth: 1,
         borderColor: "rgba(255,255,255,0.08)",
-        padding: 20,
-        marginBottom: 16,
+        padding: 24,
+        marginBottom: 24,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.3,
+        shadowRadius: 40,
     },
     cardRow: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        paddingVertical: 6,
+        paddingVertical: 10,
     },
     cardLabel: {
-        fontSize: 11,
-        fontWeight: "700",
-        color: "#444",
-        letterSpacing: 1,
+        fontSize: 10,
+        fontWeight: "900",
+        color: "#64748b",
+        letterSpacing: 1.5,
+        textTransform: "uppercase"
     },
     cardValue: {
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: "800",
-        color: "#FFFFFF",
+        color: "#f1f5f9",
     },
     cardDivider: {
         height: 1,
-        backgroundColor: "rgba(255,255,255,0.05)",
+        backgroundColor: "rgba(255,255,255,0.06)",
         marginVertical: 4,
     },
     statusChip: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 6,
+        gap: 10,
     },
     statusDot: {
-        width: 7,
-        height: 7,
+        width: 8,
+        height: 8,
         borderRadius: 4,
     },
     statusText: {
-        fontSize: 13,
-        fontWeight: "800",
+        fontSize: 14,
+        fontWeight: "900",
+        textTransform: "uppercase",
+        letterSpacing: 0.5,
     },
 
     // Cancel
     cancelBtn: {
-        backgroundColor: "rgba(255,255,255,0.06)",
+        backgroundColor: "rgba(255,255,255,0.03)",
         borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.1)",
-        paddingVertical: 18,
-        borderRadius: 14,
+        borderColor: "rgba(255,255,255,0.07)",
+        paddingVertical: 20,
+        borderRadius: 20,
         alignItems: "center",
     },
     cancelText: {
-        color: "#fff",
-        fontWeight: "700",
-        fontSize: 16,
+        color: "#64748b",
+        fontWeight: "800",
+        fontSize: 14,
+        textTransform: "uppercase",
+        letterSpacing: 1,
     },
 });

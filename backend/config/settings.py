@@ -117,16 +117,18 @@ SIMPLE_JWT = {
 # ============================================================
 
 MIDDLEWARE = [
-    "django_prometheus.middleware.PrometheusBeforeMiddleware",  # 🔥 Track Input
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",  
+    "apps.common.resilience.TracingMiddleware",                # 🔥 1. Trace Entry
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.common.rate_limit.RateLimitMiddleware",              # 🔥 2. Protect Endpoints
     "django.contrib.messages.middleware.MessageMiddleware",
-    "apps.common.idempotency.IdempotencyMiddleware",  # 🔥 NEW: Idempotent Mutations
-    "django_prometheus.middleware.PrometheusAfterMiddleware", # 🔥 Track Output
+    "apps.common.idempotency.IdempotencyMiddleware",           # 🔥 3. Dedup Side-effects
+    "django_prometheus.middleware.PrometheusAfterMiddleware",  
 ]
 
 # ============================================================

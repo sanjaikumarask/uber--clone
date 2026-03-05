@@ -3,6 +3,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { NavigationContainer } from "@react-navigation/native";
 import { ActivityIndicator, View } from "react-native";
 import LoginScreen from "../screens/Login";
+import SignupScreen from "../screens/Signup";
 import HomeScreen from "../screens/Home";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import DestinationSearchScreen from "../screens/DestinationSearch";
@@ -31,7 +32,10 @@ function AppStack() {
         <NavigationContainer>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
                 {!isAuthenticated ? (
-                    <Stack.Screen name="Login" component={LoginScreen} />
+                    <>
+                        <Stack.Screen name="Login" component={LoginScreen} />
+                        <Stack.Screen name="Signup" component={SignupScreen} />
+                    </>
                 ) : (
                     <>
                         <Stack.Screen name="Home" component={HomeScreen} />

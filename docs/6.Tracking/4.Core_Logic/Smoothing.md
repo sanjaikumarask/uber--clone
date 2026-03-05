@@ -32,7 +32,10 @@ def snap_to_roads(lat, lng):
 ```
 
 - **Pros**: Perfectly matches the real-world road network.
-- **Cons**: Higher cost and latency (API call per ping).
+- **Production Performance**:
+    - **Throttling**: To save cost and latency, the system only snaps every **10th** GPS message.
+    - **Circuit Breaker**: If the Google API returns a `403 Forbidden` (billing/quota), the system sets a Redis flag to **disable snapping for 24 hours** and fallback to raw coordinates.
+    - **No-Interruption Fallback**: If snapping fails or is disabled, the system seamlessly uses the raw GPS coordinate to avoid map jumps.
 
 ## Atomic Transitions (Database Integrity)
 

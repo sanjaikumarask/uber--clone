@@ -18,7 +18,7 @@ export default function RegisterScreen({ navigation }: any) {
 
         try {
             setLoading(true);
-            await api.post("/users/register/", {
+            await api.post(`users/register/`, {
                 phone,
                 first_name: firstName,
                 last_name: lastName,

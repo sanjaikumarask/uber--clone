@@ -86,7 +86,17 @@ def driver_client(api_client, driver_user):
 @pytest.fixture(autouse=True)
 def clear_test_cache():
     from django.core.cache import cache
+    from apps.drivers.redis import redis_client
+    
+    # 1. Clear standard Django cache
     cache.clear()
+    
+    # 2. Flush raw Redis (Geospatial index, Heartbeats, Idempotency keys)
+    # This prevents 'Ghost Drivers' and state leakage between test cases.
+    try:
+        redis_client.flushdb()
+    except Exception:
+        pass
 
 @pytest.fixture(autouse=True)
 def disable_notifications(monkeypatch):

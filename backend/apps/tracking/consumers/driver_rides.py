@@ -41,6 +41,21 @@ class DriverRidesConsumer(AsyncWebsocketConsumer):
 
         await self.channel_layer.group_add(self.rides_group, self.channel_name)
         await self.channel_layer.group_add(self.user_group, self.channel_name)
+        
+        # ── HEARTBEAT & STATUS SYNC (NEW) ──
+        # Standardize with LocationSocket to prevent discovery gaps
+        from apps.drivers.redis import redis_client
+        import time
+        heartbeat_key = f"driver:{driver.id}:last_seen"
+        redis_client.set(heartbeat_key, int(time.time()), ex=300)
+        
+        if driver.status == "OFFLINE":
+             def _sync_status():
+                 from apps.drivers.models import Driver
+                 Driver.objects.filter(id=driver.id).update(status="ONLINE")
+             await database_sync_to_async(_sync_status)()
+             driver.status = "ONLINE"
+
         await self.accept()
 
         logger.info("DriverRidesConsumer connected: driver=%s user=%s", driver.id, user.id)
@@ -142,7 +157,8 @@ class DriverRidesConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def _get_driver(self, user):
         try:
-            return user.driver
+            from apps.drivers.models import Driver
+            return Driver.objects.select_related("user").get(user_id=user.id)
         except Exception:
             return None
 

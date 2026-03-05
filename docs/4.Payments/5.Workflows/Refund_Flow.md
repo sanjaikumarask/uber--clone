@@ -4,8 +4,8 @@ The Payment Refund workflow is an asynchronous reversal sequence that ensures fu
 
 ## The Refund Sequence
 
-### 1. Request Initiation (`POST /api/payments/refund/`)
-- An Admin (or the Rider via support) chooses a `CAPTURED` payment for a specific ride to refund.
+### 1. Request Initiation (`POST /api/payments/refund/<payment_id>/`)
+- An Admin (or the Rider via support) chooses a `COMPLETED` payment for a specific ride to refund.
 - **Backend**: 
 - Verifies the `refundable_amount` (`amount - refunded_amount`).
 - Ensures the refund is within policy limits (e.g. within 30 days).
@@ -48,7 +48,7 @@ participant API as Payments API
 participant GW as Razorpay
 participant DB as Ledger
 
-Admin->>API: POST /api/payments/refund/ {payment_id, amount}
+Admin->>API: POST /api/payments/refund/<payment_id>/
 API->>DB: Verify original Payment exists
 API->>GW: Call Razorpay Refund API
 GW-->>API: refund_id confirmed

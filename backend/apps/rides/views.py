@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 from django.db import transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import status
 from django.utils import timezone
 from datetime import timedelta
@@ -421,42 +421,6 @@ class CompleteRideView(APIView):
         # ── BACKPRESSURE: API Throttling ──
         if not endpoint_cooldown(request.user.id, "complete_ride", max_calls=10, window=60):
             return Response({"error": "Too many complete requests. Please wait."}, status=429)
-        with transaction.atomic():
-        # ── CONTENTION CONTROL: SKIP LOCKED ──
-        # Under 10k users, multiple matching workers might target the same set of drivers.
-        # skip_locked=True allows this worker to ignore drivers being locked by others,
-        # moving immediately to the next candidate and eliminating lock contention.
-            ride = get_object_or_404(
-                Ride.objects.select_for_update(of=("self",)).select_related("driver", "rider"),
-                id=ride_id,
-                driver__user=request.user,
-            )
-
-            # ── Guard 1: Already completed (idempotent) ──
-            if ride.status == Ride.Status.COMPLETED:
-                return Response(
-                    {
-                        "status": "already_completed",
-                        "end_time": ride.end_time,
-                        "final_fare": str(ride.final_fare),
-                    },
-                    status=status.HTTP_200_OK,
-                )
-
-            # ── Guard 2: Only allowed from ONGOING ──
-            if ride.status != Ride.Status.ONGOING:
-                return Response(
-                    {"error": f"Cannot complete ride from status '{ride.status}'. Ride must be ONGOING."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            # ── Guard 3: start_time must be locked ──
-            if not ride.start_time:
-                logger.error(f"CompleteRide: Ride {ride.id} has no start_time. Data corruption risk.")
-                return Response(
-                    {"error": "Ride start was not properly recorded. Contact support."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
 
         # ── Complete Ride (fare calculation + status + broadcasts) ──
         # This is done OUTSIDE the above lock to let complete_ride() get its own lock
@@ -664,17 +628,19 @@ class NearbyDriversView(APIView):
     """
     Rider-facing view to see available drivers within a radius (e.g. 5km).
     Used to show car icons on the map before booking.
+    Now allows public access to improve initial app experience.
     """
-    permission_classes = [IsAuthenticated, IsRider]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         try:
-            lat = float(request.data["lat"])
-            lng = float(request.data["lng"])
-            radius_km = float(request.data.get("radius_km", 5))
-            limit = int(request.data.get("limit", 10))
+            data = request.data
+            lat = float(data.get("lat"))
+            lng = float(data.get("lng"))
+            radius_km = float(data.get("radius_km", 5))
+            limit = int(data.get("limit", 10))
         except (KeyError, ValueError, TypeError):
-            return Response({"error": "lat and lng are required"}, status=400)
+            return Response({"error": "Valid 'lat' and 'lng' are required"}, status=400)
 
         from apps.drivers.services.geo import get_nearby_driver_ids
         driver_ids = get_nearby_driver_ids(lat=lat, lng=lng, radius_km=radius_km, limit=limit)

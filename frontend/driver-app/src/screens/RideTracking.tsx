@@ -82,7 +82,7 @@ export default function RideTrackingScreen({ route, navigation }: any) {
           text: "YES, HELP!",
           onPress: async () => {
             try {
-              await api.post(`/supports/rides/${rideId}/sos/`, {
+              await api.post(`supports/rides/${rideId}/sos/`, {
                 lat: currentLocation?.latitude || 0,
                 lng: currentLocation?.longitude || 0
               });
@@ -244,7 +244,7 @@ export default function RideTrackingScreen({ route, navigation }: any) {
 
   async function fetchRideDetails() {
     try {
-      const { data } = await api.get(`/rides/${rideId}/`);
+      const { data } = await api.get(`rides/${rideId}/`);
       setRideData(data);
       setRideStatus(data.status);
       if (data.planned_route_polyline) {
@@ -257,7 +257,7 @@ export default function RideTrackingScreen({ route, navigation }: any) {
 
   async function markArrived() {
     try {
-      await api.post(`/rides/${rideId}/arrived/`);
+      await api.post(`rides/${rideId}/arrived/`);
       setRideStatus("ARRIVED");
     } catch (err: any) {
       Alert.alert("Error", err.response?.data?.error || "Failed to mark arrived");
@@ -270,7 +270,7 @@ export default function RideTrackingScreen({ route, navigation }: any) {
       return;
     }
     try {
-      await api.post(`/rides/${rideId}/start/`, { otp });
+      await api.post(`rides/${rideId}/start/`, { otp });
       setRideStatus("ONGOING");
     } catch (err: any) {
       Alert.alert("Error", err.response?.data?.error || "Invalid OTP");
@@ -280,7 +280,7 @@ export default function RideTrackingScreen({ route, navigation }: any) {
   async function completeRide() {
     try {
       if (locationIntervalRef.current) clearInterval(locationIntervalRef.current);
-      await api.post(`/rides/${rideId}/complete/`);
+      await api.post(`rides/${rideId}/complete/`);
       setShowRating(true);
     } catch (err: any) {
       Alert.alert("Error", err.response?.data?.error || "Failed to complete ride");
@@ -293,7 +293,7 @@ export default function RideTrackingScreen({ route, navigation }: any) {
       return;
     }
     try {
-      await api.post(`/rides/${rideId}/feedback/`, { rating, comment });
+      await api.post(`rides/${rideId}/feedback/`, { rating, comment });
       Alert.alert("Success", "Rating submitted!");
       navigation.replace("Home");
     } catch (err: any) {
@@ -499,67 +499,248 @@ function statusColor(status: string): object {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: { flex: 1, backgroundColor: "#020408" },
   mapContainer: { flex: 1 },
   map: { ...StyleSheet.absoluteFillObject },
   controls: {
     position: "absolute",
     bottom: 0,
     width: "100%",
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 40,
+    backgroundColor: "rgba(15,23,42,0.9)",
+    borderTopLeftRadius: 36,
+    borderTopRightRadius: 36,
+    padding: 28,
+    paddingBottom: 48,
+    borderTopWidth: 1, // dummy for consistency
+    borderColor: "rgba(255,255,255,0.1)",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 10,
+    shadowOffset: { width: 0, height: -20 },
+    shadowOpacity: 0.5,
+    shadowRadius: 40,
+    elevation: 20,
   },
-  header: { marginBottom: 15, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  title: { fontSize: 20, fontWeight: "bold" },
-  statusBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 15 },
-  statusText: { color: "#fff", fontSize: 12, fontWeight: "600" },
+  header: {
+    marginBottom: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  title: { fontSize: 22, fontWeight: "800", color: "#f8fafc", letterSpacing: -0.5 },
+  statusBadge: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)"
+  },
+  statusText: { color: "#fff", fontSize: 11, fontWeight: "900", textTransform: "uppercase", letterSpacing: 1 },
   routeHeader: {
     flexDirection: "row",
-    gap: 20,
-    backgroundColor: "#f0f7ff",
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 15,
+    gap: 16,
+    backgroundColor: "rgba(39,110,241,0.1)",
+    padding: 14,
+    borderRadius: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "rgba(39,110,241,0.2)",
   },
   routeStat: {
     fontSize: 14,
-    fontWeight: "700",
-    color: "#2563eb",
+    fontWeight: "800",
+    color: "#3b82f6",
   },
-  card: { gap: 10 },
-  addressContainer: { marginBottom: 15, paddingHorizontal: 4 },
-  addressLabel: { color: "#6b7280", fontSize: 11, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 },
-  addressText: { fontSize: 18, fontWeight: "700", color: "#111827", lineHeight: 22 },
-  btn: { backgroundColor: "#000", padding: 16, borderRadius: 12, alignItems: "center" },
-  btnText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  input: { borderWidth: 1, borderColor: "#ddd", padding: 12, borderRadius: 8, textAlign: "center", fontSize: 20, letterSpacing: 10 },
-  sosCircle: { backgroundColor: "#ef4444", width: 28, height: 28, borderRadius: 14, justifyContent: "center", alignItems: "center" },
-  helpCircle: { backgroundColor: "#6b7280", width: 32, height: 28, borderRadius: 14, justifyContent: "center", alignItems: "center" },
-  chatBadge: { backgroundColor: "#000", width: 28, height: 28, borderRadius: 14, justifyContent: "center", alignItems: "center", position: "relative" },
-  redDot: { position: "absolute", top: -2, right: -2, backgroundColor: "red", width: 8, height: 8, borderRadius: 4 },
-  chatModal: { position: "absolute", bottom: 0, width: "100%", height: "50%", backgroundColor: "#fff", borderTopLeftRadius: 20, borderTopRightRadius: 20, shadowColor: "#000", shadowOffset: { width: 0, height: -5 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 20 },
-  chatHeader: { flexDirection: "row", justifyContent: "space-between", padding: 15, borderBottomWidth: 1, borderColor: "#eee" },
-  myMsg: { backgroundColor: "#000", padding: 10, borderRadius: 10, alignSelf: "flex-end", marginBottom: 5, maxWidth: "80%" },
-  theirMsg: { backgroundColor: "#f0f0f0", padding: 10, borderRadius: 10, alignSelf: "flex-start", marginBottom: 5, maxWidth: "80%" },
-  chatInputRow: { flexDirection: "row", padding: 10, borderTopWidth: 1, borderColor: "#eee" },
-  chatInput: { flex: 1, backgroundColor: "#f9f9f9", paddingHorizontal: 15, borderRadius: 20, marginRight: 10 },
-  sendBtn: { backgroundColor: "#000", paddingVertical: 10, paddingHorizontal: 20, borderRadius: 20, justifyContent: "center" },
-  ratingOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.8)", justifyContent: "center", alignItems: "center", zIndex: 100 },
-  ratingCard: { backgroundColor: "#fff", width: "85%", padding: 25, borderRadius: 20, alignItems: "center" },
-  ratingTitle: { fontSize: 22, fontWeight: "bold", marginBottom: 20 },
-  starsRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
-  star: { fontSize: 40, color: "#ddd" },
-  starActive: { color: "#FF9500" },
-  ratingInput: { width: "100%", height: 80, borderWidth: 1, borderColor: "#eee", borderRadius: 12, padding: 12, marginBottom: 20, textAlignVertical: "top" },
-  submitBtn: { backgroundColor: "#000", width: "100%", padding: 16, borderRadius: 12, alignItems: "center", marginBottom: 15 },
-  submitBtnText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
-  skipText: { color: "#888", fontSize: 14 }
+  card: { gap: 16 },
+  addressContainer: { marginBottom: 24, paddingHorizontal: 4 },
+  addressLabel: {
+    color: "#64748b",
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+    marginBottom: 8
+  },
+  addressText: { fontSize: 20, fontWeight: "800", color: "#f1f5f9", lineHeight: 26, letterSpacing: -0.3 },
+  btn: {
+    backgroundColor: "#276EF1",
+    padding: 20,
+    borderRadius: 20,
+    alignItems: "center",
+    shadowColor: "#276EF1",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+  },
+  btnText: { color: "#fff", fontSize: 16, fontWeight: "900", textTransform: "uppercase", letterSpacing: 1 },
+  input: {
+    backgroundColor: "rgba(255,255,255,0.03)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    padding: 20,
+    borderRadius: 16,
+    textAlign: "center",
+    fontSize: 28,
+    letterSpacing: 20,
+    color: "#34C759",
+    fontWeight: "900",
+    marginBottom: 16
+  },
+  sosCircle: {
+    backgroundColor: "rgba(239, 68, 68, 0.15)",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.3)"
+  },
+  helpCircle: {
+    backgroundColor: "rgba(255,255,255,0.05)",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)"
+  },
+  chatBadge: {
+    backgroundColor: "rgba(39, 110, 241, 0.15)",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+    borderWidth: 1,
+    borderColor: "rgba(39, 110, 241, 0.3)"
+  },
+  redDot: {
+    position: "absolute",
+    top: 2,
+    right: 2,
+    backgroundColor: "#ef4444",
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: "#020408"
+  },
+  chatModal: {
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#020408",
+    zIndex: 5000
+  },
+  chatHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 24,
+    paddingTop: 64,
+    borderBottomWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(15,23,42,0.95)"
+  },
+  myMsg: {
+    backgroundColor: "#276EF1",
+    padding: 16,
+    borderRadius: 20,
+    alignSelf: "flex-end",
+    marginBottom: 12,
+    maxWidth: "85%",
+    borderBottomRightRadius: 4
+  },
+  theirMsg: {
+    backgroundColor: "rgba(255,255,255,0.06)",
+    padding: 16,
+    borderRadius: 20,
+    alignSelf: "flex-start",
+    marginBottom: 12,
+    maxWidth: "85%",
+    borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.05)"
+  },
+  chatInputRow: {
+    flexDirection: "row",
+    padding: 20,
+    paddingBottom: 48,
+    borderTopWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(15,23,42,0.98)",
+    alignItems: "center",
+    gap: 16
+  },
+  chatInput: {
+    flex: 1,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    paddingHorizontal: 20,
+    borderRadius: 28,
+    height: 52,
+    color: "#f8fafc",
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)"
+  },
+  sendBtn: {
+    backgroundColor: "#276EF1",
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#276EF1",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8
+  },
+  ratingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(2,4,8,0.95)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10000
+  },
+  ratingCard: {
+    backgroundColor: "rgba(15,23,42,0.8)",
+    width: "90%",
+    padding: 32,
+    borderRadius: 32,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)"
+  },
+  ratingTitle: { fontSize: 24, fontWeight: "900", marginBottom: 24, color: "#f8fafc" },
+  starsRow: { flexDirection: "row", gap: 12, marginBottom: 32 },
+  star: { fontSize: 44, color: "rgba(255,255,255,0.1)" },
+  starActive: { color: "#fbbf24" },
+  ratingInput: {
+    width: "100%",
+    height: 100,
+    backgroundColor: "rgba(255,255,255,0.03)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 32,
+    textAlignVertical: "top",
+    color: "#f1f5f9",
+    fontSize: 15
+  },
+  submitBtn: {
+    backgroundColor: "#276EF1",
+    width: "100%",
+    padding: 20,
+    borderRadius: 20,
+    alignItems: "center",
+    marginBottom: 20,
+    shadowColor: "#276EF1",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15
+  },
+  submitBtnText: { color: "#fff", fontSize: 16, fontWeight: "900", textTransform: "uppercase", letterSpacing: 1 },
+  skipText: { color: "#64748b", fontSize: 14, fontWeight: "700" }
 });

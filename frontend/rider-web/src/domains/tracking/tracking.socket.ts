@@ -25,10 +25,12 @@ export function startTrackingSocket(rideId: number) {
   const wsUrl = `${protocol}://${window.location.host}/ws/rides/${rideId}/?token=${token}`;
 
   console.log("🔌 Connecting WS:", wsUrl);
+  useRideStore.getState().setTrackingStatus("connecting");
   socket = new WebSocket(wsUrl);
 
   socket.onopen = () => {
     console.log("✅ WS connected");
+    useRideStore.getState().setTrackingStatus("connected");
     if (reconnectTimer) {
       clearTimeout(reconnectTimer);
       reconnectTimer = null;
@@ -154,6 +156,7 @@ export function startTrackingSocket(rideId: number) {
 
   socket.onclose = async (e) => {
     console.warn("[TrackingSocket] ⚠️ Closed. Code:", e.code);
+    useRideStore.getState().setTrackingStatus("disconnected");
     socket = null;
 
     // If it's a normal closure or an eviction, don't reconnect

@@ -7,9 +7,9 @@ The login workflow is a secure sequence that verifies a user's identity and issu
 This sequence is initiated via a POST request to one of the role-specific login endpoints:
 
 1. **Request Login**:
-- Riders use `POST /api/users/login/rider/`.
-- Drivers use `POST /api/users/login/driver/`.
-- Admins use `POST /api/users/login/admin/`.
+- Riders use `POST /api/users/login/`.
+- Drivers use `POST /api/users/driver-login/`.
+- Admins use `POST /api/users/admin-login/`.
 2. **Input Verification**:
 - The API server verifies the provided phone number (or username) exists.
 - The password is checked against the encrypted hash stored in PostgreSQL.
@@ -43,7 +43,7 @@ participant App as Mobile/Web App
 participant API as Django Auth API
 participant DB as PostgreSQL
 
-App->>API: POST /api/auth/login/ {phone, password, role}
+App->>API: POST /api/users/login/ (or role-specific endpoint) {phone, password}
 API->>DB: Lookup User by phone + role
 DB-->>API: User record
 API->>API: Validate password (bcrypt)

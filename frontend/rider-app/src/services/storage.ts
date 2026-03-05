@@ -10,6 +10,9 @@ export const Storage = {
     async setRefresh(token: string) {
         await AsyncStorage.setItem("refresh", token);
     },
+    async getRefreshToken() {
+        return await AsyncStorage.getItem("refresh");
+    },
     async getUser() {
         const user = await AsyncStorage.getItem("user");
         return user ? JSON.parse(user) : null;

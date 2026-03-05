@@ -10,6 +10,7 @@ Ride completion service.
 import logging
 from django.db import transaction
 from apps.rides.models import Ride
+from apps.rides.services.realtime import persist_ride_history_to_db
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +22,19 @@ def complete_ride(ride_id: int) -> Ride:
 
     IDEMPOTENT: if the ride is already COMPLETED, returns it unchanged.
     """
+    # ── Step 0: Sync buffered tracking data from Redis to Postgres ─────
+    # This must happen before we calculate the final fare to ensure distance is accurate.
+    try:
+        persist_ride_history_to_db(ride_id)
+    except Exception as e:
+        logger.error(f"Failed to persist ride history for {ride_id}: {e}")
+
     with transaction.atomic():
-        ride = Ride.objects.select_for_update(of=("self",)).select_related("driver", "rider").get(id=ride_id)
+        ride = (
+            Ride.objects.select_for_update(of=("self",))
+            .select_related("driver", "rider")
+            .get(id=ride_id)
+        )
 
         # ── Guard: already completed ──────────────────────────────────────
         if ride.status == Ride.Status.COMPLETED:
@@ -57,7 +69,6 @@ def complete_ride(ride_id: int) -> Ride:
             logger.error(f"Failed to generate fare breakdown for {ride.id}: {e}")
 
         # ── Step 2.5: ADVANCED FRAUD DETECTION ───────────────────────────────
-        # Runs cross-ride pattern checks (ghost, route inflation, frequency, pair abuse)
         try:
             from apps.common.fraud import run_fraud_checks, apply_fraud_penalties
             fraud_signals = run_fraud_checks(ride)

@@ -10,6 +10,7 @@ from apps.payments.models import LedgerEntry, Payout
 from apps.supports.models import SupportTicket, Emergency
 from apps.rides.models import Ride
 from apps.rides.services.cancellation import CANCEL_FEE_ASSIGNED, cancel_ride
+from apps.payments.tasks import execute_driver_payout
 
 class AdminLedgerView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
@@ -45,6 +46,7 @@ class AdminPayoutListView(APIView):
                 "driver_phone": phone,
                 "amount": str(p.amount),
                 "status": p.status,
+                "failure_reason": p.failure_reason,
                 "reference": p.reference,
                 "created_at": p.created_at.isoformat()
             })
@@ -55,18 +57,33 @@ class AdminPayoutActionView(APIView):
     
     def post(self, request, action, id):
         payout = get_object_or_404(Payout, id=id)
-        if payout.status != Payout.Status.REQUESTED:
-            return Response({"error": "Payout is not in REQUESTED status"}, status=400)
-            
+        
         if action == "approve":
-            payout.status = Payout.Status.PAID
+            if payout.status not in [Payout.Status.REQUESTED, Payout.Status.FAILED]:
+                return Response({"error": "Can only approve REQUESTED or FAILED payouts"}, status=400)
+            
+            # Transition to processing and trigger task
+            payout.status = Payout.Status.PROCESSING
+            payout.save(update_fields=["status"])
+            execute_driver_payout.delay(payout_id=payout.id)
+            
         elif action == "reject":
+            if payout.status != Payout.Status.REQUESTED:
+                return Response({"error": "Can only reject REQUESTED payouts"}, status=400)
             payout.status = Payout.Status.FAILED
             payout.failure_reason = "Rejected by Admin"
+            payout.save(update_fields=["status", "failure_reason"])
+            
+        elif action == "resolve":
+            # Manual payout - mark as PAID directly
+            # Note: This assumes the admin has handled the financial transfer externally
+            payout.status = Payout.Status.PAID
+            payout.failure_reason = "Resolved manually by Admin"
+            payout.save(update_fields=["status", "failure_reason"])
+            
         else:
             return Response({"error": "Invalid action"}, status=400)
             
-        payout.save(update_fields=["status", "failure_reason"])
         return Response({"status": payout.status})
 
 class AdminTicketsView(APIView):

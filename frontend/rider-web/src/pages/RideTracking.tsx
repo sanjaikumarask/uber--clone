@@ -11,7 +11,7 @@ export default function RideTracking() {
   const navigate = useNavigate();
   const {
     rideId, status, driverLocation, otpCode, eta,
-    pickupAddress, dropoffAddress, messages, driver, vehicleType
+    pickupAddress, dropoffAddress, messages, driver, vehicleType, trackingStatus
   } = useRideStore();
 
   const hasNavigated = useRef(false);
@@ -91,6 +91,17 @@ export default function RideTracking() {
           <span style={styles.statusText}>{getStatusText()}</span>
         </div>
         {eta && <span style={styles.etaBadge}>{eta}</span>}
+        {trackingStatus !== "connected" && (
+          <span style={{
+            ...styles.etaBadge,
+            background: "rgba(239,68,68,0.1)",
+            color: "#ef4444",
+            borderColor: "rgba(239,68,68,0.3)",
+            marginLeft: 10
+          }}>
+            {trackingStatus === "connecting" ? "Connecting..." : "Offline - Reconnecting..."}
+          </span>
+        )}
       </div>
 
       {/* SOS Button */}
@@ -207,85 +218,91 @@ const styles: Record<string, CSSProperties> = {
   page: {
     display: "flex", flexDirection: "column", height: "100vh",
     position: "relative", backgroundColor: "#000", overflow: "hidden",
+    fontFamily: "'Outfit', sans-serif"
   },
   topBar: {
     position: "absolute", top: 20, left: 16, right: 16, zIndex: 100,
-    backgroundColor: "rgba(10,10,10,0.9)", backdropFilter: "blur(20px)",
-    borderRadius: "14px", padding: "14px 18px",
+    backgroundColor: "rgba(10,12,18,0.7)", backdropFilter: "blur(24px)",
+    WebkitBackdropFilter: "blur(24px)",
+    borderRadius: "20px", padding: "16px 22px",
     border: "1px solid rgba(255,255,255,0.08)",
     display: "flex", justifyContent: "space-between", alignItems: "center",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+    boxShadow: "0 12px 40px rgba(0,0,0,0.7)",
   },
   statusDot: {
-    width: 8, height: 8, borderRadius: "50%",
+    width: 6, height: 6, borderRadius: "50%",
     animation: "pulse 2s infinite",
   },
-  statusText: { color: "#fff", fontSize: "14px", fontWeight: 600 },
+  statusText: { color: "#f1f5f9", fontSize: "14px", fontWeight: 700, letterSpacing: "-0.2px" },
   etaBadge: {
-    backgroundColor: "rgba(39,110,241,0.15)", color: "#276EF1",
-    padding: "4px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: 700,
-    border: "1px solid rgba(39,110,241,0.3)",
+    backgroundColor: "rgba(39,110,241,0.1)", color: "#276EF1",
+    padding: "6px 14px", borderRadius: "12px", fontSize: "12px", fontWeight: 800,
+    border: "1px solid rgba(39,110,241,0.25)",
+    boxShadow: "0 4px 12px rgba(39,110,241,0.15)",
   },
   sosBtn: {
-    position: "absolute", top: 90, right: 16, zIndex: 100,
-    backgroundColor: "#FF3B30", color: "#fff", border: "none",
-    borderRadius: "20px", padding: "6px 14px", fontSize: "11px",
-    fontWeight: 800, cursor: "pointer", letterSpacing: "0.05em",
-    boxShadow: "0 4px 16px rgba(255,59,48,0.5)",
+    position: "absolute", top: 100, right: 16, zIndex: 100,
+    backgroundColor: "rgba(255,59,48,0.9)", color: "#fff", border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: "14px", padding: "8px 16px", fontSize: "11px",
+    fontWeight: 900, cursor: "pointer", letterSpacing: "0.1em",
+    boxShadow: "0 8px 24px rgba(255,59,48,0.4)", backdropFilter: "blur(8px)",
   },
   mapWrapper: { flex: 1 },
   bottomSheet: {
-    position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 200,
-    background: "rgba(10,10,10,0.97)", backdropFilter: "blur(30px)",
-    WebkitBackdropFilter: "blur(30px)",
-    borderTopLeftRadius: "24px", borderTopRightRadius: "24px",
-    padding: "12px 20px 36px",
-    border: "1px solid rgba(255,255,255,0.08)",
-    boxShadow: "0 -10px 50px rgba(0,0,0,0.9)",
-    animation: "slideUp 0.4s ease-out",
+    position: "absolute", bottom: 20, left: 20, right: 20, zIndex: 200,
+    background: "rgba(10,12,18,0.75)", backdropFilter: "blur(40px)",
+    WebkitBackdropFilter: "blur(40px)",
+    borderRadius: "28px",
+    padding: "16px 24px 32px",
+    border: "1px solid rgba(255,255,255,0.1)",
+    boxShadow: "0 -20px 80px rgba(0,0,0,0.8)",
+    animation: "slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+    maxWidth: "500px", margin: "0 auto",
   },
   handle: {
-    width: 40, height: 4, backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: 10, margin: "0 auto 18px",
+    width: 44, height: 4, backgroundColor: "rgba(255,255,255,0.12)",
+    borderRadius: 10, margin: "0 auto 20px",
   },
-  driverRow: { display: "flex", alignItems: "center", gap: 14, marginBottom: 16 },
+  driverRow: { display: "flex", alignItems: "center", gap: 18, marginBottom: 20 },
   avatar: {
-    width: 48, height: 48, borderRadius: "50%",
-    backgroundColor: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)",
+    width: 56, height: 56, borderRadius: "18px",
+    backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.1)",
     display: "flex", justifyContent: "center", alignItems: "center",
-    fontSize: 20, fontWeight: 800, color: "#fff",
+    fontSize: 24, fontWeight: 800, color: "#fff",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
   },
-  driverName: { fontSize: 16, fontWeight: 700, color: "#fff" },
-  driverMeta: { display: "flex", gap: 8, marginTop: 2 },
-  ratingBadge: { fontSize: 12, color: "#FFCC00", fontWeight: 700 },
-  vehicleBadge: { fontSize: 12, color: "#A6A6A6" },
+  driverName: { fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.4px" },
+  driverMeta: { display: "flex", gap: 10, marginTop: 4, alignItems: "center" },
+  ratingBadge: { fontSize: 13, color: "#FFB000", fontWeight: 800, display: "flex", alignItems: "center", gap: 4 },
+  vehicleBadge: { fontSize: 13, color: "#94a3b8", fontWeight: 500 },
   plateBadge: {
-    marginTop: 4, display: "inline-block",
-    backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 4,
-    padding: "2px 8px", fontSize: 11, fontWeight: 700,
-    color: "#A6A6A6", letterSpacing: "0.08em",
+    marginTop: 6, display: "inline-block",
+    backgroundColor: "rgba(255,255,255,0.05)", borderRadius: "8px",
+    padding: "4px 10px", fontSize: 11, fontWeight: 800,
+    color: "#cbd5e1", letterSpacing: "0.12em", border: "1px solid rgba(255,255,255,0.07)",
   },
-  divider: { height: 1, backgroundColor: "rgba(255,255,255,0.07)", margin: "14px 0" },
-  otpSection: { textAlign: "center", padding: "8px 0" },
-  otpLabel: { fontSize: 10, fontWeight: 700, color: "#A6A6A6", display: "block", letterSpacing: "0.1em", marginBottom: 6 },
-  otpCode: { fontSize: 36, fontWeight: 900, letterSpacing: 10, color: "#34C759" },
-  addressSection: { display: "flex", flexDirection: "column" },
-  addressRow: { display: "flex", alignItems: "center", gap: 12, padding: "4px 0" },
-  dot: { width: 7, height: 7, borderRadius: "50%", flexShrink: 0 },
-  addressText: { fontSize: 13, color: "#A6A6A6", fontWeight: 500 },
+  divider: { height: 1, backgroundColor: "rgba(255,255,255,0.06)", margin: "20px 0" },
+  otpSection: { textAlign: "center", padding: "12px 0", background: "rgba(52,199,89,0.03)", borderRadius: "20px", border: "1px solid rgba(52,199,89,0.1)" },
+  otpLabel: { fontSize: 9, fontWeight: 900, color: "#34C759", display: "block", letterSpacing: "0.2em", marginBottom: 8, opacity: 0.8 },
+  otpCode: { fontSize: 38, fontWeight: 900, letterSpacing: 14, color: "#34C759", textShadow: "0 0 20px rgba(52,199,89,0.3)" },
+  addressSection: { display: "flex", flexDirection: "column", gap: 4 },
+  addressRow: { display: "flex", alignItems: "center", gap: 14, padding: "2px 0" },
+  dot: { width: 8, height: 8, borderRadius: "50%", flexShrink: 0, border: "2px solid rgba(0,0,0,0.5)" },
+  addressText: { fontSize: 14, color: "#94a3b8", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
   actionRow: {
-    display: "flex", gap: 10, marginTop: 18,
-    borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: 16,
+    display: "flex", gap: 12, marginTop: 24,
   },
   actionBtn: {
-    flex: 1, padding: "12px 0", borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)",
-    color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer",
+    flex: 1, padding: "14px 0", borderRadius: "16px",
+    backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+    color: "#f8fafc", fontWeight: 800, fontSize: 12, cursor: "pointer",
+    transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+    textTransform: "uppercase", letterSpacing: "0.5px"
   },
   chatOverlay: {
     position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000,
-    background: "rgba(5,5,5,0.98)", backdropFilter: "blur(30px)",
-    display: "flex", flexDirection: "column",
+    background: "rgba(5,7,12,0.95)", backdropFilter: "blur(40px)",
+    display: "flex", flexDirection: "column", animation: "slideUp 0.4s ease-out",
   },
   chatHeader: {
     padding: "20px 20px 16px",

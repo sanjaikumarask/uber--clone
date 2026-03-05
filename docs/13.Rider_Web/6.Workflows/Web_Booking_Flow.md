@@ -43,7 +43,10 @@ The Web Ride Booking workflow is a multi-step, real-time sequence designed to de
 
 ```mermaid
 flowchart TD
-A[Open Browser] --> B[Home Page <br/> Browser geolocation]
+A[Open Browser] --> Z{Logged in?}
+Z -->|No| Y[Signup / Login Page]
+Y --> B
+Z -->|Yes| B[Home Page <br/> Browser geolocation]
 B --> C[Google Places search <br/> for destination]
 C --> D[BookRide Page <br/> Pre-fetched fare estimates]
 D --> E[Select vehicle type <br/> Apply promo optional]

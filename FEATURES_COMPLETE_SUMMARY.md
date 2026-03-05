@@ -114,6 +114,23 @@ onClose={() => setSelectedRideId(null)}
 
 ---
 
+### 6. Admin Dashboard Auth & Operational Resilience - **COMPLETE**
+
+**Implementation**: 
+- Frontend: `admin-dashboard/src/pages/LiveMap.tsx`
+- Backend: `backend/apps/admin_dashboard/views.py`, `backend/apps/admin_dashboard/urls.py`
+
+**Solved Issues**:
+- **WebSocket Auth Flood**: Fixed "Unauthenticated" socket rejections by ensuring the frontend only connects if a valid token exists, and always retrieves the freshest token from storage on connection.
+- **Fare Config Fix**: Resolved `TypeError` in `AdminFareConfigView` by correctly handling individual configuration retrieval by `pk`.
+- **Advanced Resolution Workflow**: Migrated the `resolve-ride` endpoint to use production-grade logic for handling rider refunds, driver penalties, and platform fee waiving.
+- **GIS Schema Sync**: Expanded `AdminRideSerializer` to sync GIS coordinates and User IDs, enabling full visual detail in the admin monitoring panels.
+
+**Impact**:
+Stable real-time monitoring of the fleet without console errors, and a fully functional resolution tool for operations managers to handle stuck or disputed rides.
+
+---
+
 ## Complete Polyline Drawing Flow
 
 ### Step 1: Ride Creation (Backend)
@@ -252,6 +269,7 @@ MINIMUM_FARE = Decimal("75.00") # Change minimum
 |Route Switching|Complete|`driver_location.py`|Status triggers|
 |Running Fare|Complete|`final_fare.py`|Rates, formula|
 |Admin Detail Panel|Complete|`RideDetailPanel.tsx`|Styling|
+|Admin Auth & Resilience|Complete|`LiveMap.tsx` / `views.py`|Timeout/Policy|
 
 ---
 
@@ -295,6 +313,15 @@ MINIMUM_FARE = Decimal("75.00") # Change minimum
 5. Verify all data is displayed correctly
 6. Click"Close"or outside panel to dismiss
 
+### Test Admin Resolution Logic
+1. Navigate to **Live Map** (`/live-map`).
+2. Select an active ride from the list.
+3. Click **Resolve Issue**.
+4. In the modal, select **CANCEL RIDE & RESOLVE**.
+5. Adjust **Refund** and **Penalty** amounts.
+6. Click **Confirm Resolution**.
+7. Verify the ride transitions to `CANCELLED` and ledger entries are created.
+
 ---
 
 ## Final Checklist
@@ -313,18 +340,22 @@ MINIMUM_FARE = Decimal("75.00") # Change minimum
 - [x] Admin ride detail panel
 - [x] Click-to-view functionality
 - [x] Comprehensive ride information display
+- [x] WebSocket Auto-Auth logic (token validation)
+- [x] Fare Config robust retrieval (single-item PK fix)
+- [x] Admin Resolution API (Refunds/Compensations)
 
 ---
 
 ## Summary
 
-**ALL 5 FEATURES ARE FULLY IMPLEMENTED AND PRODUCTION-READY!**
+**ALL 6 FEATURES ARE FULLY IMPLEMENTED AND PRODUCTION-READY!**
 
 1. **Google Directions API Polyline Drawing** - Working perfectly
 2. **Interpolation Animation (500-800ms)** - Easily adjustable
 3. **Switch Route on Ride Start** - Automatic on status change
 4. **Running Fare Calculation** - Real-time distance tracking
 5. **Admin Ride Detail Panel** - Just implemented with full details
+6. **Admin Dashboard Auth & Ops Resilience** - Fixed WS auth and enhanced ride resolution logic.
 
 **Your Uber Clone has all advanced features implemented with:**
 - Clean, maintainable code

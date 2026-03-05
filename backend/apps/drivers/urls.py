@@ -18,10 +18,12 @@ from .views import (
     DriverStatusView,
     DriverActiveRideView,
     DocumentUploadView,
+    DriverRideHistoryView,
 )
 from apps.rides.views import NearbyDriversView
 
 urlpatterns = [
+    path("ride-history/", DriverRideHistoryView.as_view(), name="driver-ride-history-new"),
     # ── Driver self-service ──────────────────────────────────────────
     path("me/",          DriverProfileView.as_view(), name="driver-profile"),
     path("status/",      DriverStatusView.as_view(),  name="driver-status"),

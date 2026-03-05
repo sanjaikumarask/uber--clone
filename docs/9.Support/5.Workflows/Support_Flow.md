@@ -4,7 +4,7 @@ The Support Issue workflow is an asynchronous sequence designed to handle user i
 
 ## The Support Sequence
 
-### 1. Request Initiation (`POST /api/support/tickets/`)
+### 1. Request Initiation (`POST /api/supports/<ride_id>/ticket/`)
 - User (Rider or Driver) submits a support ticket (e.g. `reason: OVERCHARGED`).
 - **Backend**: 
 - Validates the `ride_id` context.
@@ -49,11 +49,11 @@ participant API as Support API
 participant Admin as Admin Dashboard
 participant Notify as Notifications
 
-User->>API: POST /api/support/tickets/ {ride_id, reason, description}
+User->>API: POST /api/supports/<ride_id>/ticket/ {reason, description}
 API->>API: INSERT SupportTicket (status=OPEN)
 API-->>User: 201 Created {ticket_id}
-Admin->>API: GET /admin/tickets/list/ (filter=OPEN)
-Admin->>API: PATCH /admin/tickets/{id}/resolve/ {note}
+Admin->>API: GET /api/admin/tickets/
+Admin->>API: POST /api/supports/tickets/<id>/resolve/ {note}
 API->>API: Call ticket.resolve(admin, note)
 API->>Notify: Send ticket.resolved push to user
 API-->>Admin: 200 OK

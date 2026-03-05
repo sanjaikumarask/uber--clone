@@ -31,7 +31,7 @@ export default function CreateSupportScreen() {
 
         setLoading(true);
         try {
-            await api.post(`/supports/rides/${rideId}/tickets/`, {
+            await api.post(`supports/rides/${rideId}/tickets/`, {
                 reason,
                 description
             });

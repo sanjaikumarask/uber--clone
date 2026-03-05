@@ -70,7 +70,7 @@ export default function Login() {
 
         <div className="text-center" style={{ marginTop: "var(--spacing-xl)" }}>
           <p className="text-sm">
-            Don't have an account? <span className="text-accent" style={{ cursor: "pointer", fontWeight: "600" }}>Sign Up</span>
+            Don't have an account? <span className="text-accent" style={{ cursor: "pointer", fontWeight: "600" }} onClick={() => navigate("/signup")}>Sign Up</span>
           </p>
         </div>
       </div>

@@ -4,7 +4,7 @@ The Driver Payout workflow is an asynchronous withdrawal sequence that ensures f
 
 ## The Payout Sequence
 
-### 1. Request Initiation (`POST /api/payments/payouts/request/`)
+### 1. Request Initiation (`POST /api/payments/payout/`)
 - Driver chooses an amount to withdraw (e.g., ₹1,000.00).
 - **Backend**: 
 - Calculates the driver's current balance from the `LedgerEntry` table. 
@@ -54,7 +54,7 @@ participant DB as Ledger
 Driver->>API: POST /api/payments/payout/ {amount}
 API->>DB: Verify wallet_balance >= amount
 API->>DB: INSERT Payout record (PENDING)
-API->>Celery: Queue process_payout_task
+API->>Celery: Queue execute_driver_payout
 Celery->>GW: Transfer to driver bank account
 GW-->>Celery: Transfer confirmed
 Celery->>DB: UPDATE Payout.status = PAID

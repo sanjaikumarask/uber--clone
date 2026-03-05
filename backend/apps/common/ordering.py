@@ -1,29 +1,9 @@
 # apps/common/ordering.py
-"""
-Distributed Event Fencing — Monotonic Status Ordering.
-
-At 10k+ concurrent users, the following race is real and destructive:
-  1. Driver completes ride (COMPLETED) — API call hits first
-  2. A delayed reconciliation task processes a stale ONGOING webhook
-  3. System reverts COMPLETED → stuck in ONGOING forever
-
-The SequenceFencer prevents this with a monotonically increasing rank
-persisted in Redis per resource. Any event with rank <= current is silently
-dropped without touching the database.
-
-Usage in lifecycle.py:
-    from apps.common.ordering import SequenceFencer, RIDE_STATUS_RANK
-    can_proceed = SequenceFencer.fence_event("ride", ride.id, RIDE_STATUS_RANK[new_status])
-    if not can_proceed:
-        return  # stale event, skip
-"""
 import logging
-from django.core.cache import cache
+from apps.drivers.redis import redis_client
 
 logger = logging.getLogger(__name__)
 
-# Monotonic rank for each Ride status.
-# Terminal states get rank 10 — nothing can overwrite them.
 RIDE_STATUS_RANK = {
     "SEARCHING": 1,
     "OFFERED":   2,
@@ -38,39 +18,48 @@ RIDE_STATUS_RANK = {
 class SequenceFencer:
     """
     Redis-backed monotonic event fence.
-    Thread-safe via cache.add() (atomic SET-if-not-exists) for the initial
-    set, and explicit CAS-style get/check/set for updates.
+    Utilizes Lua scripts for ATOMIC Compare-And-Swap (CAS).
+    Essential for high-concurrency state machine integrity.
     """
 
-    @staticmethod
-    def fence_event(resource_type: str, resource_id, incoming_rank: int) -> bool:
+    # Lua script to ensure: if incoming > current then current = incoming; return true
+    # Else return false.
+    LUA_FENCE = """
+    local current = tonumber(redis.call('get', KEYS[1]) or '0')
+    local incoming = tonumber(ARGV[1])
+    if incoming > current then
+        redis.call('set', KEYS[1], incoming)
+        redis.call('expire', KEYS[1], ARGV[2])
+        return 1
+    end
+    return 0
+    """
+
+    @classmethod
+    def fence_event(cls, resource_type: str, resource_id, incoming_rank: int) -> bool:
         """
-        Returns True  → event is fresh, caller should proceed.
-        Returns False → event is stale/duplicate, caller must drop it.
+        ATOMICALLY validates and updates the event rank in Redis.
+        Returns True if fresh, False if stale/duplicate.
         """
         redis_key = f"fence:{resource_type}:{resource_id}"
+        
+        # Execute Lua script for atomicity
+        result = redis_client.register_script(cls.LUA_FENCE)(
+            keys=[redis_key],
+            args=[incoming_rank, 86400] # 24h TTL
+        )
 
-        # Fetch current fence rank (None = never fenced before)
-        current_rank = cache.get(redis_key) or 0
-
-        if incoming_rank <= current_rank:
-            logger.warning(
-                f"[Fencer] STALE event dropped: {resource_type}/{resource_id} "
-                f"incoming_rank={incoming_rank} current_rank={current_rank}"
-            )
+        if result == 0:
+            # We don't log warning here to prevent log floods on dupe events
             return False
-
-        # Update the fence to the new rank.
-        # TTL = 24h to cover all background reconciliation windows.
-        cache.set(redis_key, incoming_rank, timeout=86400)
+            
         return True
 
-    @staticmethod
-    def get_rank(resource_type: str, resource_id) -> int:
-        """Returns the current fence rank (0 if not set)."""
-        return cache.get(f"fence:{resource_type}:{resource_id}") or 0
+    @classmethod
+    def get_rank(cls, resource_type: str, resource_id) -> int:
+        val = redis_client.get(f"fence:{resource_type}:{resource_id}")
+        return int(val) if val else 0
 
-    @staticmethod
-    def clear_fence(resource_type: str, resource_id):
-        """Clears once a terminal state is safely persisted to DB."""
-        cache.delete(f"fence:{resource_type}:{resource_id}")
+    @classmethod
+    def clear_fence(cls, resource_type: str, resource_id):
+        redis_client.delete(f"fence:{resource_type}:{resource_id}")

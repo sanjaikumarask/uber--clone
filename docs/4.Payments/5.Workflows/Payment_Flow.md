@@ -4,7 +4,7 @@ The Rider Payment workflow is a two-phase commit sequence that ensures funds are
 
 ## The Payment Sequence
 
-### 1. Initialization (`POST /api/payments/create-order/`)
+### 1. Initialization (`POST /api/payments/create/<ride_id>/`)
 - Rider chooses a ride to pay for.
 - **Backend**: 
 - Calculates the authoritative ride fare (`final_fare`).
@@ -17,12 +17,11 @@ The Rider Payment workflow is a two-phase commit sequence that ensures funds are
 - Rider enters payment details (Card/UPI/Netbanking).
 - **Successful Auth**: The gateway returns a `gateway_payment_id` and `gateway_signature` to the app.
 
-### 3. Verification & Capture (`POST /api/payments/capture/`)
-- Mobile app POSTs the `gateway_payment_id` and `signature` to the backend.
+### 3. Verification & Capture (`POST /api/payments/verify/`)
+- Mobile app POSTs the `razorpay_payment_id`, `razorpay_order_id`, and `razorpay_signature` to the backend.
 - **Backend**: 
 - Verifies the signature using the gateway's secret.
-- Calls the gateway's `/payments/<id>/capture` API.
-- Updates `Payment.status` to `CAPTURED`.
+- Updates `Payment.status` to `COMPLETED`.
 - Inserts the corresponding **LedgerEntry** (DEBIT) for the Rider and **Credit** for the Driver/Platform.
 
 ## The Rider Experience
@@ -49,12 +48,13 @@ participant API as Payments API
 participant GW as Razorpay
 participant DB as PostgreSQL Ledger
 
-Rider->>API: POST /api/payments/create-order/ {ride_id}
+Rider->>API: POST /api/payments/create/<ride_id>/
 API->>GW: Create Razorpay order
-GW-->>API: {order_id, amount}
-API-->>Rider: {order_id, key}
+GW-->>API: {razorpay_order_id, amount}
+API-->>Rider: {razorpay_order_id, razorpay_key}
 Rider->>GW: Complete payment (card / UPI)
-GW->>API: Webhook: payment.captured
+GW-->>Rider: {payment_id, signature}
+Rider->>API: POST /api/payments/verify/ {payment_id, order_id, signature}
 API->>API: Verify signature
 API->>DB: INSERT LedgerEntry DEBIT rider
 API->>DB: INSERT LedgerEntry CREDIT driver

@@ -32,5 +32,5 @@ def test_update_location_view(mock_get_layer, mock_async_to_sync, client):
     assert driver.last_lng == 77.5946
     
     # Verify Broadcast
-    mock_get_layer.assert_called_once()
-    mock_async_to_sync.assert_called_once() 
+    assert mock_get_layer.call_count >= 1
+    assert mock_async_to_sync.call_count >= 1

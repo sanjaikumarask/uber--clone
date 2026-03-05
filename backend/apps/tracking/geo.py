@@ -1,8 +1,10 @@
 import math
 import polyline
+import logging
+from apps.common.http import get_async_client
 
 DEVIATION_THRESHOLD_METERS = 50
-
+logger = logging.getLogger(__name__)
 
 def decode_route(polyline_str):
     return polyline.decode(polyline_str)
@@ -82,31 +84,37 @@ def accumulate_distance(prev, curr):
     ) / 1000.0
 
 
-def snap_to_roads(lat, lng, api_key=None):
+async def snap_to_roads(lat, lng, api_key=None):
     """
-    Calls Google Roads API to snap a point to the nearest road.
-    Fallbacks to input if fails.
+    ASYNCHRONOUSLY calls Google Roads API to snap a point to the nearest road.
     """
     if not api_key:
         return (lat, lng)
 
+    client = get_async_client()
+    url = "https://roads.googleapis.com/v1/snapToRoads"
+    params = {
+        "path": f"{lat},{lng}",
+        "interpolate": "false",
+        "key": api_key
+    }
+    
     try:
-        import requests
-        url = "https://roads.googleapis.com/v1/snapToRoads"
-        params = {
-            "path": f"{lat},{lng}",
-            "interpolate": "false",
-            "key": api_key
-        }
-        resp = requests.get(url, params=params, timeout=2)
+        resp = await client.get(url, params=params)
         if resp.status_code == 200:
             data = resp.json()
             snapped_points = data.get("snappedPoints", [])
             if snapped_points:
                 loc = snapped_points[0].get("location", {})
                 return (loc.get("latitude", lat), loc.get("longitude", lng))
+        elif resp.status_code == 403:
+            # 🚨 CIRCUIT BREAKER: If 403, stop calling Google for 24h to avoid waste.
+            from apps.drivers.redis import redis_client
+            redis_client.set("google_roads_403_circuit_breaker", "true", ex=86400)
+            logger.error("[Geo] Google Roads API returned 403. Disabling snapping for 24h.")
+        else:
+            logger.warning(f"[Geo] snap_to_roads unexpected status {resp.status_code}")
     except Exception as e:
-        import logging
-        logging.getLogger(__name__).error(f"snap_to_roads error: {e}")
+        logger.error(f"snap_to_roads error: {e}")
 
     return (lat, lng)

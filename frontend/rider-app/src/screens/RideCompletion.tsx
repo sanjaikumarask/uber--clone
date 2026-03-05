@@ -22,8 +22,8 @@ export default function RideCompletionScreen({ navigation, route }: any) {
     const fetchRideAndBreakdown = async () => {
         try {
             const [rideRes, breakdownRes] = await Promise.all([
-                api.get(`/rides/${rideId}/`),
-                api.get(`/rides/${rideId}/fare-breakdown/`).catch(() => null)
+                api.get(`rides/${rideId}/`),
+                api.get(`rides/${rideId}/fare-breakdown/`).catch(() => null)
             ]);
 
             setRide(rideRes.data);
@@ -55,7 +55,7 @@ export default function RideCompletionScreen({ navigation, route }: any) {
         }
 
         try {
-            const orderRes = await api.post(`/payments/create/${rideId}/`);
+            const orderRes = await api.post(`payments/create/${rideId}/`);
             const { order_id, amount, key, currency } = orderRes.data;
 
             const options = {
@@ -76,7 +76,7 @@ export default function RideCompletionScreen({ navigation, route }: any) {
 
             RazorpayCheckout.open(options).then(async (data: any) => {
                 try {
-                    await api.post(`/payments/verify/`, {
+                    await api.post(`payments/verify/`, {
                         razorpay_order_id: data.razorpay_order_id,
                         razorpay_payment_id: data.razorpay_payment_id,
                         razorpay_signature: data.razorpay_signature,
@@ -103,12 +103,12 @@ export default function RideCompletionScreen({ navigation, route }: any) {
 
         setTipSubmitting(true);
         try {
-            await api.post(`/rides/${rideId}/tip/`, {
+            await api.post(`rides/${rideId}/tip/`, {
                 tip_amount: finalAmount
             });
             Alert.alert("Thank You!", `₹${finalAmount} tip has been sent to the driver.`);
             // Refresh breakdown to show tip
-            const res = await api.get(`/rides/${rideId}/fare-breakdown/`);
+            const res = await api.get(`rides/${rideId}/fare-breakdown/`);
             setBreakdown(res.data);
             setTipAmount("");
         } catch (err: any) {
@@ -125,7 +125,7 @@ export default function RideCompletionScreen({ navigation, route }: any) {
         }
         setSubmitting(true);
         try {
-            await api.post(`/rides/${rideId}/feedback/`, {
+            await api.post(`rides/${rideId}/feedback/`, {
                 rating: rating,
                 comment: comment
             });

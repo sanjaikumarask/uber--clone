@@ -10,6 +10,7 @@ The Rides API provides a comprehensive set of endpoints for riders, drivers, and
 |`GET`|`/active/`|Get details of the current active ride for the logged-in user.|
 |`GET`|`/history/`|List past rides for the rider with summary data.|
 |`GET`|`/estimate-fare/`|Get price estimates for different vehicle types (moto, go, xl).|
+|`GET`|`/nearby-drivers/`|Fetch nearby drivers for UI markers (online drivers within 10km).|
 |`PATCH`|`/<id>/cancel/`|Cancel a ride request (supports cancellation fees).|
 |`POST`|`/<id>/feedback/`|Submit a rating (1-5) and comment after a completed trip.|
 |`PATCH`|`/<id>/update-destination/`|Update the drop-off location while the ride is ongoing.|
@@ -37,6 +38,7 @@ The Rides API provides a comprehensive set of endpoints for riders, drivers, and
 
 ## WebSocket Consumers
 
-- **`RiderTrackingConsumer`**: `ws/ride/<ride_id>/`
-- **`DriverRidesConsumer`**: `ws/driver/rides/`
+- **`RiderTrackingConsumer`**: `ws/rides/<ride_id>/`
+- **`DriverLocationConsumer`**: `ws/tracking/driver-location/`
+- **`DriverRidesConsumer`**: `ws/tracking/driver-rides/`
 - **`AdminLiveMapConsumer`**: `ws/admin/live-map/`

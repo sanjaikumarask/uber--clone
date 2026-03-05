@@ -15,7 +15,7 @@ export default function HomeScreen({ navigation }: any) {
     useEffect(() => {
         const checkActive = async () => {
             try {
-                const res = await api.get("/rides/active/");
+                const res = await api.get("rides/active/");
                 if (res.data?.id) {
                     const status = res.data.status;
                     if (status === "SEARCHING" || status === "OFFERED") {

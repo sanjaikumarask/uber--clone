@@ -4,6 +4,7 @@ import { Storage } from "./storage";
 import { WS_URL } from "./api";
 import * as Notifications from "expo-notifications";
 import { playNotificationSound } from "./sound";
+import { useRideStore } from "../domains/rides/ride.store";
 
 // ─────────────────────────────────────────────────────────────
 // LOCATION SOCKET — driver sends GPS pings
@@ -11,6 +12,7 @@ import { playNotificationSound } from "./sound";
 let locationSocket: WebSocket | null = null;
 let locationSeq = 0;
 let locationReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let locationRetryCount = 0;
 
 export async function connectLocationSocket(): Promise<void> {
   if (locationSocket?.readyState === WebSocket.OPEN) return;
@@ -21,23 +23,39 @@ export async function connectLocationSocket(): Promise<void> {
   const url = `${WS_URL}/tracking/driver-location/?token=${token}`;
   console.log("[LocationSocket] Connecting:", url);
 
+  const setStatus = useRideStore.getState().setLocationSocketStatus;
+  setStatus("connecting");
+
   locationSocket = new WebSocket(url);
 
   locationSocket.onopen = () => {
     console.log("[LocationSocket] ✅ Connected");
+    setStatus("connected");
     locationSeq = 0;
+    locationRetryCount = 0; // Reset on success
   };
 
   locationSocket.onclose = (e) => {
-    console.warn("[LocationSocket] ⚠️ Closed, reconnecting...");
     locationSocket = null;
-    locationReconnectTimer = setTimeout(connectLocationSocket, 3000);
+    setStatus("disconnected");
+    const delay = Math.min(30000, 3000 * Math.pow(2, locationRetryCount));
+    console.warn(`[LocationSocket] ⚠️ Closed, retrying in ${delay}ms...`);
+    locationReconnectTimer = setTimeout(() => {
+      locationRetryCount++;
+      connectLocationSocket();
+    }, delay);
   };
 }
 
 export function disconnectLocationSocket(): void {
   if (locationReconnectTimer) clearTimeout(locationReconnectTimer);
-  if (locationSocket) locationSocket.close();
+  const setStatus = useRideStore.getState().setLocationSocketStatus;
+  if (locationSocket) {
+    locationSocket.onclose = () => { };
+    locationSocket.close();
+    locationSocket = null;
+  }
+  setStatus("disconnected");
 }
 
 export function sendLocation(
@@ -65,6 +83,7 @@ export function sendLocation(
 let ridesSocket: WebSocket | null = null;
 const ridesListeners: Map<string, Array<(data: any) => void>> = new Map();
 let ridesReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let ridesRetryCount = 0;
 
 export async function connectRidesSocket(): Promise<void> {
   if (ridesSocket?.readyState === WebSocket.OPEN) return;
@@ -73,6 +92,9 @@ export async function connectRidesSocket(): Promise<void> {
   if (!token) return;
 
   const url = `${WS_URL}/tracking/driver-rides/?token=${token}`;
+
+  const setStatus = useRideStore.getState().setSocketStatus;
+  setStatus("connecting");
 
   ridesSocket = new WebSocket(url);
   ridesSocket.onmessage = (event) => {
@@ -84,7 +106,6 @@ export async function connectRidesSocket(): Promise<void> {
         playNotificationSound();
 
         const isAuto = type === "ride_assigned";
-        // 🔥 Trigger Local Pop-up 
         Notifications.scheduleNotificationAsync({
           content: {
             title: isAuto ? "New Ride Assigned! ⚡" : "New Ride Offer! 🚗",
@@ -94,28 +115,42 @@ export async function connectRidesSocket(): Promise<void> {
             sound: true,
             priority: Notifications.AndroidNotificationPriority.HIGH,
           },
-          trigger: null, // show immediately
+          trigger: null,
         });
       }
 
       ridesListeners.get(type)?.forEach(cb => cb(msg));
     } catch (err) { }
   };
+  ridesSocket.onopen = () => {
+    console.log("[RidesSocket] ✅ Connected");
+    setStatus("connected");
+    ridesRetryCount = 0;
+  };
   ridesSocket.onclose = () => {
     ridesSocket = null;
-    ridesReconnectTimer = setTimeout(connectRidesSocket, 3000);
+    setStatus("disconnected");
+    const delay = Math.min(30000, 3000 * Math.pow(2, ridesRetryCount));
+    console.warn(`[RidesSocket] ⚠️ Closed, retrying in ${delay}ms...`);
+    ridesReconnectTimer = setTimeout(() => {
+      ridesRetryCount++;
+      connectRidesSocket();
+    }, delay);
   };
 }
 
 export function disconnectRidesSocket(): void {
+  const setStatus = useRideStore.getState().setSocketStatus;
   if (ridesReconnectTimer) {
     clearTimeout(ridesReconnectTimer);
     ridesReconnectTimer = null;
   }
   if (ridesSocket) {
+    ridesSocket.onclose = () => { };
     ridesSocket.close();
     ridesSocket = null;
   }
+  setStatus("disconnected");
   ridesListeners.clear();
 }
 

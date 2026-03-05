@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from apps.rides.services.matching import find_driver_and_offer_ride
 
+@patch("apps.rides.services.matching.update_ride_status")
 @patch("apps.drivers.services.metrics.update_driver_metrics", create=True)
 @patch("apps.drivers.services.geo.lock_driver_for_offer", create=True)
 @patch("apps.drivers.services.geo.is_driver_locked", create=True)
@@ -11,7 +12,8 @@ from apps.rides.services.matching import find_driver_and_offer_ride
 @patch("apps.rides.services.matching.Driver")
 @patch("apps.rides.services.matching.transaction.atomic")
 def test_matching_logic_success(mock_atomic, mock_Driver_cls, mock_Ride_cls, mock_geo, 
-                                 mock_stats_cls, mock_is_locked, mock_lock, mock_metrics):
+                                 mock_stats_cls, mock_is_locked, mock_lock, mock_metrics,
+                                 mock_update_status):
     # Setup Constants
     mock_Ride_cls.Status.SEARCHING = "SEARCHING"
     mock_Ride_cls.Status.OFFERED = "OFFERED"
@@ -50,10 +52,8 @@ def test_matching_logic_success(mock_atomic, mock_Driver_cls, mock_Ride_cls, moc
     find_driver_and_offer_ride(1)
 
     # Assert success
-    mock_ride.save.assert_called_once()
+    mock_update_status.assert_called_once_with(mock_ride, "OFFERED")
     assert mock_ride.driver == mock_driver
-    # We check transition_to CALL instead of status attribute on mock
-    mock_ride.transition_to.assert_called_once_with("OFFERED")
 
 @patch("apps.rides.services.matching.get_nearby_driver_ids")
 @patch("apps.rides.services.matching.Ride")

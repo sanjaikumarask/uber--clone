@@ -35,7 +35,10 @@ logger = logging.getLogger(__name__)
 class AdminFareConfigView(APIView):
     permission_classes = [IsAdmin]
 
-    def get(self, request):
+    def get(self, request, pk=None):
+        if pk:
+            config = get_object_or_404(FareConfig, pk=pk)
+            return Response(FareConfigSerializer(config).data)
         configs = FareConfig.objects.all().order_by("vehicle_type")
         serializer = FareConfigSerializer(configs, many=True)
         return Response(serializer.data)

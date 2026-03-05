@@ -99,7 +99,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
  */
 export async function updatePushTokenOnBackend(token: string): Promise<void> {
     try {
-        await api.post('/users/push-token/update/', { token });
+        await api.post(`users/push-token/update/`, { token });
         console.log('[Push] Token successfully synced with backend');
     } catch (err) {
         console.error('[Push] Failed to sync token with backend:', err);

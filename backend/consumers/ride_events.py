@@ -67,15 +67,14 @@ def match_and_assign_driver(event: dict):
             # -------------------------------------------------
             # ATOMIC ASSIGNMENT
             # -------------------------------------------------
+            from apps.rides.services.lifecycle import update_ride_status
+            
+            # Attach driver and update search_attempt before transition
             ride.driver = driver
-            ride.status = Ride.Status.OFFERED
             ride.search_attempt = attempt
-            ride.save(update_fields=["driver", "status", "search_attempt", "updated_at"])
-
-            driver.status = Driver.Status.BUSY
-            driver.save(update_fields=["status", "updated_at"])
-
-            remove_driver_from_geo(driver_id=driver.id)
+            
+            # This triggers FSM check, Driver BUSY status, and Triple Broadcast
+            update_ride_status(ride, Ride.Status.OFFERED)
 
             driver_accept_timeout.apply_async(
                 args=[ride.id, driver.id],

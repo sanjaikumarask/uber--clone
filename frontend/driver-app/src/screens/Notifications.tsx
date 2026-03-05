@@ -21,7 +21,7 @@ export default function NotificationsScreen({ navigation }: any) {
     async function fetchNotifications() {
         try {
             setLoading(true);
-            const res = await api.get("/notifications/");
+            const res = await api.get("notifications/");
             setNotifications(res.data.results || res.data || []);
         } catch (err: any) {
             console.error("Failed to fetch notifications", err);
@@ -36,7 +36,7 @@ export default function NotificationsScreen({ navigation }: any) {
 
     async function markAsRead(id: string) {
         try {
-            await api.post(`/notifications/${id}/mark-read/`);
+            await api.post(`notifications/${id}/mark-read/`);
             setNotifications(prev =>
                 prev.map(n => n.id === id ? { ...n, is_read: true } : n)
             );

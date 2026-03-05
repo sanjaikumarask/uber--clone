@@ -21,7 +21,7 @@ export default function LoginScreen({ navigation }: any) {
         }
         setLoading(true);
         try {
-            const res = await api.post("/users/login/", { phone, password });
+            const res = await api.post("users/login/", { phone, password });
             const { access, refresh, user } = res.data;
             if (user.role !== "rider") {
                 Alert.alert("Error", "This app is for Riders only");
@@ -108,7 +108,7 @@ export default function LoginScreen({ navigation }: any) {
                     <View style={styles.footer}>
                         <Text style={styles.footerText}>
                             Don't have an account?{" "}
-                            <Text style={styles.footerAccent}>Sign Up</Text>
+                            <Text style={styles.footerAccent} onPress={() => navigation.navigate("Signup")}>Sign Up</Text>
                         </Text>
                     </View>
                 </View>

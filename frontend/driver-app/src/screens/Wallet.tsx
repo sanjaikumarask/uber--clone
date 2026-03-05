@@ -9,6 +9,7 @@ export default function WalletScreen({ navigation }: any) {
 
     useEffect(() => {
         fetchWalletData();
+        fetchTransactions();
     }, []);
 
     async function fetchWalletData() {
@@ -16,16 +17,22 @@ export default function WalletScreen({ navigation }: any) {
             setLoading(true);
             const res = await api.get("payments/wallet/");
             setBalance(res.data.available_balance || res.data.total_balance || "0.00");
-            // Assuming transactions are at /payments/wallet/transactions/ or part of wallet response
-            // For now, let's just show balance.
         } catch (err: any) {
             console.error("Failed to fetch wallet", err);
-            // Don't show alert for 401 - user might not be logged in yet
             if (err.response?.status !== 401) {
                 Alert.alert("Error", "Could not load wallet details");
             }
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function fetchTransactions() {
+        try {
+            const res = await api.get("payments/transactions/");
+            setTransactions(res.data || []);
+        } catch (err) {
+            console.error("Failed to fetch transactions", err);
         }
     }
 
@@ -46,11 +53,12 @@ export default function WalletScreen({ navigation }: any) {
                         text: "Confirm",
                         onPress: async () => {
                             try {
-                                await api.post("payments/payout/instant/", {
+                                await api.post(`payments/payout/instant/`, {
                                     amount: amount
                                 });
                                 Alert.alert("Success", "Withdrawal initiated!");
-                                fetchWalletData(); // Refresh
+                                fetchWalletData();
+                                fetchTransactions();
                             } catch (err: any) {
                                 Alert.alert("Error", err.response?.data?.error || "Withdrawal failed");
                             }
@@ -62,6 +70,28 @@ export default function WalletScreen({ navigation }: any) {
             console.error("Withdraw error", err);
         }
     }
+
+    const renderTransactionItem = ({ item }: { item: any }) => {
+        const isCredit = item.type === "CREDIT";
+        return (
+            <View style={styles.transactionItem}>
+                <View style={styles.transactionLeft}>
+                    <View style={[styles.typeBadge, { backgroundColor: isCredit ? "#E8F5E9" : "#FFEBEE" }]}>
+                        <Text style={[styles.typeText, { color: isCredit ? "#2E7D32" : "#C62828" }]}>
+                            {isCredit ? "↑" : "↓"}
+                        </Text>
+                    </View>
+                    <View>
+                        <Text style={styles.reasonText}>{item.reason?.replace("_", " ")}</Text>
+                        <Text style={styles.dateText}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                    </View>
+                </View>
+                <Text style={[styles.amountText, { color: isCredit ? "#2E7D32" : "#000" }]}>
+                    {isCredit ? "+" : "-"}₹{parseFloat(item.amount).toFixed(2)}
+                </Text>
+            </View>
+        );
+    };
 
     if (loading) {
         return (
@@ -92,9 +122,17 @@ export default function WalletScreen({ navigation }: any) {
             </View>
 
             <Text style={styles.sectionTitle}>Recent Transactions</Text>
-            <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>No recent transactions</Text>
-            </View>
+            <FlatList
+                data={transactions}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderTransactionItem}
+                contentContainerStyle={{ paddingBottom: 40 }}
+                ListEmptyComponent={
+                    <View style={styles.emptyState}>
+                        <Text style={styles.emptyText}>No recent transactions</Text>
+                    </View>
+                }
+            />
         </View>
     );
 }
@@ -178,5 +216,45 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         color: "#999",
+    },
+    transactionItem: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        backgroundColor: "#fff",
+        padding: 15,
+        borderRadius: 12,
+        marginBottom: 10,
+    },
+    transactionLeft: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+    },
+    typeBadge: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    typeText: {
+        fontSize: 20,
+        fontWeight: "bold",
+    },
+    reasonText: {
+        fontSize: 14,
+        fontWeight: "600",
+        color: "#333",
+        textTransform: "capitalize",
+    },
+    dateText: {
+        fontSize: 12,
+        color: "#999",
+        marginTop: 2,
+    },
+    amountText: {
+        fontSize: 16,
+        fontWeight: "bold",
     },
 });

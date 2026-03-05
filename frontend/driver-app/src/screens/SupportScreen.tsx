@@ -24,7 +24,7 @@ export default function SupportScreen() {
 
     const fetchTickets = async () => {
         try {
-            const res = await api.get("/supports/tickets/");
+            const res = await api.get("supports/tickets/");
             if (Array.isArray(res.data)) {
                 setTickets(res.data);
             }

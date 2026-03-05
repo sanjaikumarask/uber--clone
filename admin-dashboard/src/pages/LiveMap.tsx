@@ -171,7 +171,7 @@ function createPin(color: string, label: string, size = 20): HTMLElement {
 function createDriverEl(ping: DriverPing): HTMLElement {
   const color = STATUS_COLOR[ping.status] ?? STATUS_COLOR.ONLINE;
   const rs = ping.ride?.status;
-  const border = rs === "ARRIVED" ? "#8b5cf6" : rs === "ONGOING" ? "#ef4444" : rs === "ASSIGNED" ? "#3b82f6" : color;
+  const border = rs === "ARRIVED" ? "var(--purple)" : rs === "ONGOING" ? "var(--red)" : rs === "ASSIGNED" ? "var(--accent)" : color;
   const name = ping.name || `D#${ping.driver_id}`;
   const speedTxt = ping.speed_kmh != null ? `${ping.speed_kmh.toFixed(0)} km/h` : "";
 
@@ -179,20 +179,22 @@ function createDriverEl(ping: DriverPing): HTMLElement {
   const iconUrl = VEHICLE_ICONS[vType] || VEHICLE_ICONS.go;
 
   const el = document.createElement("div");
-  el.style.cssText = "position:relative;width:40px;height:48px;cursor:pointer;";
+  el.style.cssText = "position:relative;width:42px;height:50px;cursor:pointer;display:flex;flex-direction:column;align-items:center;";
   el.innerHTML = `
-    <img src="${iconUrl}"
-      style="width:36px;height:36px;border-radius:50%;border:2px solid ${border};box-sizing:border-box;background:#fff;object-fit:contain;transition:transform 0.3s ease;" />
-    <div class="s-dot" style="position:absolute;bottom:14px;right:0;width:12px;height:12px;
-      border-radius:50%;background:${color};border:2px solid #000;"></div>
-    <div class="d-lbl" style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);
-      background:rgba(0,0,0,0.85);color:#fff;font-size:10px;font-weight:600;padding:2px 6px;
-      border-radius:4px;white-space:nowrap;font-family:sans-serif;box-shadow:0 2px 4px rgba(0,0,0,0.3);">
+    <div style="position:relative;width:38px;height:38px;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.4));">
+      <img src="${iconUrl}"
+        style="width:38px;height:38px;border-radius:50%;border:2px solid ${border};box-sizing:border-box;background:var(--bg-3);object-fit:contain;transition:transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);box-shadow: 0 0 10px ${border}44;" />
+      <div class="s-dot" style="position:absolute;bottom:0;right:0;width:12px;height:12px;
+        border-radius:50%;background:${color};border:2px solid var(--bg);box-shadow: 0 0 8px ${color}66;"></div>
+    </div>
+    <div class="d-lbl" style="position:absolute;top:-22px;left:50%;transform:translateX(-50%);
+      background:rgba(7,11,20,0.9);color:var(--text-1);font-size:9px;font-weight:700;padding:3px 8px;
+      border-radius:20px;white-space:nowrap;font-family:var(--font);border:1px solid var(--border);backdrop-filter:blur(4px);box-shadow:var(--shadow-md);">
       ${name}${rs ? ` · ${rs}` : ""}
     </div>
-    <div class="d-spd" style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);
-      background:rgba(0,0,0,0.75);color:#22d3ee;font-size:9px;font-weight:700;padding:1px 5px;
-      border-radius:3px;white-space:nowrap;font-family:sans-serif;display:${speedTxt ? "block" : "none"}">
+    <div class="d-spd" style="position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);
+      background:rgba(59,130,246,0.1);color:var(--cyan);font-size:8px;font-weight:800;padding:2px 6px;
+      border-radius:4px;white-space:nowrap;font-family:var(--font);border:1px solid rgba(6,182,212,0.2);backdrop-filter:blur(4px);display:${speedTxt ? "block" : "none"};text-shadow:0 0 8px rgba(6,182,212,0.4);">
       ${speedTxt}
     </div>`;
   return el;
@@ -200,15 +202,15 @@ function createDriverEl(ping: DriverPing): HTMLElement {
 
 function createRiderEl(ping: RiderPing): HTMLElement {
   const el = document.createElement("div");
-  el.style.cssText = "position:relative;width:34px;height:34px;cursor:pointer;";
+  el.style.cssText = "position:relative;width:36px;height:36px;cursor:pointer;filter:drop-shadow(0 4px 12px rgba(39,110,241,0.3));";
   const name = ping.rider_name || `R#${ping.rider_id}`;
   el.innerHTML = `
-    <div style="width:34px;height:34px;border-radius:50%;background:#276EF1;
-      border:3px solid #fff;display:flex;align-items:center;justify-content:center;
-      box-shadow:0 3px 8px rgba(0,0,0,0.5);font-size:17px;">👤</div>
-    <div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);
-      background:rgba(39,110,241,0.9);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;
-      border-radius:4px;white-space:nowrap;font-family:sans-serif;box-shadow:0 2px 4px rgba(0,0,0,0.3);">
+    <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg, #276EF1, #06b6d4);
+      border:2px solid #fff;display:flex;align-items:center;justify-content:center;
+      box-shadow:0 0 20px rgba(39,110,241,0.4);font-size:18px;">👤</div>
+    <div style="position:absolute;top:-22px;left:50%;transform:translateX(-50%);
+      background:rgba(39,110,241,0.95);color:#fff;font-size:9px;font-weight:800;padding:3px 8px;
+      border-radius:20px;white-space:nowrap;font-family:var(--font);box-shadow:var(--shadow-md);border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(4px);">
       ${name}
     </div>`;
   return el;
@@ -218,7 +220,6 @@ function createRiderEl(ping: RiderPing): HTMLElement {
 
 export default function AdminLiveMap() {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string;
-  const token = localStorage.getItem("access") ?? "";
 
   const { isLoaded } = useJsApiLoader({ googleMapsApiKey: apiKey, libraries: LIBRARIES, version: "beta" });
 
@@ -271,7 +272,7 @@ export default function AdminLiveMap() {
   const deviationTimersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
   const [incidents, setIncidents] = useState<{ id: string; type: string; driver_name: string; driver_id: number; msg: string; ts: number }[]>([]);
   const [rideAction, setRideAction] = useState<{ action: "cancel" | "reassign" | "refund"; rideId: number; label: string } | null>(null);
-  const [rideActionResult, setRideActionResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [_rideActionResult, setRideActionResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [rideActionLoading, setRideActionLoading] = useState(false);
   const [showResolution, setShowResolution] = useState(false);
   const deadReconTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -767,6 +768,13 @@ export default function AdminLiveMap() {
       setDriverCount(driversRef.current.size);
       setDriverList(Array.from(driversRef.current.values()).map(d => ({ ...d })));
 
+      // Perform culling for the new driver
+      const bounds = map.getBounds();
+      if (bounds && !bounds.contains({ lat: ping.lat, lng: ping.lng })) {
+        marker.map = null;
+        standaloneTrail.setMap(null);
+      }
+
       if (driversRef.current.size === 1) {
         const ctr = map.getCenter();
         if (ctr && Math.abs(ctr.lat() - DEFAULT_CENTER.lat) < 0.01) {
@@ -775,7 +783,47 @@ export default function AdminLiveMap() {
         }
       }
     }
+    cullMarkers();
   }
+
+  const cullMarkers = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const bounds = map.getBounds();
+    if (!bounds) return;
+
+    // Use a small padding (e.g. 500m) to avoid markers flickering at edges
+    const PADDING = 0.005;
+    const paddedBounds = new google.maps.LatLngBounds(
+      { lat: bounds.getSouthWest().lat() - PADDING, lng: bounds.getSouthWest().lng() - PADDING },
+      { lat: bounds.getNorthEast().lat() + PADDING, lng: bounds.getNorthEast().lng() + PADDING }
+    );
+
+    driversRef.current.forEach((d) => {
+      const isVisible = paddedBounds.contains({ lat: d.lat, lng: d.lng }) || selectedDriverRef.current?.driver_id === d.driver_id;
+
+      if (d.marker) d.marker.map = isVisible ? map : null;
+
+      if (d.rideGraphics) {
+        // Only show ride graphics if driver is visible OR it's the selected driver
+        const showGraphics = isVisible && showRoutes;
+        d.rideGraphics.routePolyline.setMap(showGraphics ? map : null);
+        d.rideGraphics.progressPolyline.setMap(showGraphics ? map : null);
+        d.rideGraphics.toPickupPolyline.setMap(showGraphics ? map : null);
+        d.rideGraphics.pickupMarker.map = showGraphics ? map : null;
+        d.rideGraphics.dropoffMarker.map = showGraphics ? map : null;
+      }
+
+      if (d.trailPolyline) {
+        d.trailPolyline.setMap(isVisible && showTrails ? map : null);
+      }
+    });
+
+    ridersRef.current.forEach((r) => {
+      const isVisible = paddedBounds.contains({ lat: r.lat, lng: r.lng });
+      if (r.marker) r.marker.map = isVisible && showRiders ? map : null;
+    });
+  }, [showRoutes, showTrails, showRiders]);
 
   function handleRiderUpdate(ping: RiderPing) {
     const map = mapRef.current;
@@ -897,6 +945,11 @@ export default function AdminLiveMap() {
 
   function connect() {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    const token = localStorage.getItem("access");
+    if (!token) {
+      console.warn("[AdminLiveMap] No token found, skipping connection");
+      return;
+    }
     const proto = window.location.protocol === "https:" ? "wss" : "ws";
     const url = `${proto}://${window.location.host}/ws/admin/live-map/?token=${token}`;
     const ws = new WebSocket(url);
@@ -1872,6 +1925,8 @@ export default function AdminLiveMap() {
                 mapReadyRef.current = true;
                 flushPending();
               }}
+              onIdle={cullMarkers}
+              onBoundsChanged={cullMarkers}
               center={DEFAULT_CENTER}
               zoom={12}
               mapContainerStyle={MAP_CONTAINER}
@@ -1915,9 +1970,9 @@ export default function AdminLiveMap() {
               <div className="ds-slideup" style={{ position: "absolute", top: 12, right: 16, background: "rgba(8,8,8,0.9)", border: `1px solid ${dispatch.step === "ongoing" ? "#ef444444" : dispatch.step === "assigned" ? "#22c55e44" : dispatch.step === "notifying" ? "#f59e0b44" : "#3b82f644"}`, borderRadius: 12, padding: "10px 14px", backdropFilter: "blur(10px)", minWidth: 190, boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: dispatch.step === "ongoing" ? "#ef4444" : dispatch.step === "assigned" ? "#22c55e" : dispatch.step === "notifying" ? "#f59e0b" : "#3b82f6", boxShadow: `0 0 8px ${dispatch.step === "ongoing" ? "#ef4444" : dispatch.step === "assigned" ? "#22c55e" : dispatch.step === "notifying" ? "#f59e0b" : "#3b82f6"}` }} />
-                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: dispatch.step === "ongoing" ? "#ef4444" : dispatch.step === "assigned" ? "#22c55e" : dispatch.step === "notifying" ? "#f59e0b" : "#3b82f6" }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: dispatch.step === "ongoing" ? "var(--red)" : dispatch.step === "assigned" ? "var(--green)" : dispatch.step === "notifying" ? "var(--yellow)" : "var(--accent)" }}>
                     {dispatch.step === "pickup_placed" && "📍 PICKUP PLACED"}
-                    {dispatch.step === "notifying" && `🔔 NOTIFYING — ${dispatch.notifyCountdown}s`}
+                    {dispatch.step === "notifying" && `🔔 NOTIFYING — ${dispatch.notifyCountdown}S`}
                     {dispatch.step === "assigned" && "✅ DRIVER ASSIGNED"}
                     {dispatch.step === "ongoing" && "🚗 TRIP ONGOING"}
                   </span>
@@ -1954,235 +2009,226 @@ export default function AdminLiveMap() {
           <div style={S.rightPanel}>
             {selectedDriver ? (
               <>
-                <div style={{ padding: "14px 16px", borderBottom: "1px solid #1a1a1a", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#444", letterSpacing: 1 }}>DRIVER DETAIL</span>
-                  <button onClick={() => setSelectedDriver(null)} style={{ background: "none", border: "none", color: "#444", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>✕</button>
+                <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.02)" }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: "var(--text-3)", letterSpacing: 1.5 }}>OPERATIONAL DETAIL</span>
+                  <button onClick={() => setSelectedDriver(null)} style={{ background: "var(--bg-4)", border: "none", color: "var(--text-2)", cursor: "pointer", width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>✕</button>
                 </div>
-                <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
+                <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
                   {/* Driver header */}
-                  <div style={{ display: "flex", gap: 14, marginBottom: 20, alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: 16, marginBottom: 24, alignItems: "center" }}>
                     <div style={{ position: "relative" }}>
-                      <div style={{ width: 56, height: 56, borderRadius: 12, background: "#111", border: `2px solid ${STATUS_COLOR[selectedDriver.status] || "#333"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <img src={VEHICLE_ICONS[selectedDriver.ride?.vehicle_type || "go"]} style={{ width: 38, height: 38, objectFit: "contain" }} />
+                      <div style={{ width: 64, height: 64, borderRadius: "var(--r-md)", background: "var(--bg-2)", border: `2px solid ${STATUS_COLOR[selectedDriver.status] || "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 0 20px ${(STATUS_COLOR[selectedDriver.status] || "#3b82f6")}22` }}>
+                        <img src={VEHICLE_ICONS[selectedDriver.ride?.vehicle_type || "go"]} style={{ width: 44, height: 44, objectFit: "contain" }} />
                       </div>
                       {deviationAlerts.has(selectedDriver.driver_id) && (
-                        <div style={{ position: "absolute", top: -4, right: -4, width: 18, height: 18, borderRadius: "50%", background: "#ef4444", border: "2px solid #0d0d0d", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9 }}>⚠</div>
+                        <div style={{ position: "absolute", top: -6, right: -6, width: 22, height: 22, borderRadius: "50%", background: "var(--red)", border: "2px solid var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, boxShadow: "0 4px 12px rgba(239,68,68,0.4)" }}>⚠</div>
                       )}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", marginBottom: 4 }}>{selectedDriver.name || `Driver #${selectedDriver.driver_id}`}</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-                        <Dot color={STATUS_COLOR[selectedDriver.status] || "#555"} pulse />
-                        <span style={{ fontSize: 11, fontWeight: 700, color: STATUS_COLOR[selectedDriver.status] || "#555" }}>{selectedDriver.status}</span>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-1)", marginBottom: 4, letterSpacing: "-0.5px" }}>{selectedDriver.name || `Driver #${selectedDriver.driver_id}`}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <Dot color={STATUS_COLOR[selectedDriver.status] || "var(--text-3)"} pulse />
+                        <span style={{ fontSize: 12, fontWeight: 700, color: STATUS_COLOR[selectedDriver.status] || "var(--text-3)", textTransform: "uppercase", letterSpacing: 0.5 }}>{selectedDriver.status}</span>
                       </div>
-                      <div style={{ fontSize: 11, color: "#444" }}>#{selectedDriver.driver_id} · {selectedDriver.phone || "—"}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-3)", fontWeight: 500 }}>UID: {selectedDriver.driver_id} · {selectedDriver.phone || "No Phone"}</div>
                     </div>
                   </div>
 
                   {/* Live metrics grid */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
-                    {[{ label: "SPEED", value: selectedDriver.speed_kmh != null ? `${selectedDriver.speed_kmh.toFixed(0)} km/h` : "—", color: (selectedDriver.speed_kmh ?? 0) > 80 ? "#ef4444" : "#fff", sub: (selectedDriver.speed_kmh ?? 0) > 80 ? "⚠ OVERSPEEDING" : " " },
-                    { label: "ETA", value: selectedDriver.eta != null ? `${selectedDriver.eta} min` : "—", color: "#fff", sub: " " },
-                    { label: "LATENCY", value: selectedDriver.latency_ms != null ? `${selectedDriver.latency_ms}ms` : "—", color: (selectedDriver.latency_ms ?? 0) > 2000 ? "#ef4444" : "#22c55e", sub: (selectedDriver.latency_ms ?? 0) > 2000 ? "HIGH LATENCY" : "GOOD" },
-                    { label: "PING", value: selectedDriver.interval_s ? `${selectedDriver.interval_s}s` : "Live", color: "#3b82f6", sub: " " },
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+                    {[
+                      { label: "VELOCITY", value: selectedDriver.speed_kmh != null ? `${selectedDriver.speed_kmh.toFixed(0)} km/h` : "N/A", color: (selectedDriver.speed_kmh ?? 0) > 80 ? "var(--red)" : "var(--text-1)", sub: (selectedDriver.speed_kmh ?? 0) > 80 ? "CRITICAL SPEED" : "NOMINAL" },
+                      { label: "ARRIVAL", value: selectedDriver.eta != null ? `${selectedDriver.eta} min` : "N/A", color: "var(--text-1)", sub: "ESTIMATED" },
+                      { label: "LATENCY", value: selectedDriver.latency_ms != null ? `${selectedDriver.latency_ms}ms` : "N/A", color: (selectedDriver.latency_ms ?? 0) > 2000 ? "var(--red)" : "var(--green)", sub: (selectedDriver.latency_ms ?? 0) > 2000 ? "DEGRADED" : "HEALTHY" },
+                      { label: "STREAM", value: selectedDriver.interval_s ? `${selectedDriver.interval_s}s` : "LIVE", color: "var(--accent)", sub: "FREQUENCY" },
                     ].map(m => (
-                      <div key={m.label} style={{ background: "#111", border: "1px solid #1a1a1a", borderRadius: 10, padding: "10px 12px" }}>
-                        <div style={{ fontSize: 8, fontWeight: 800, color: "#333", letterSpacing: 1, marginBottom: 4 }}>{m.label}</div>
+                      <div key={m.label} style={{ background: "var(--bg-2)", border: "1px solid var(--border)", borderRadius: "var(--r-md)", padding: "12px 14px", position: "relative", overflow: "hidden" }}>
+                        <div style={{ fontSize: 8, fontWeight: 800, color: "var(--text-3)", letterSpacing: 1.2, marginBottom: 6, textTransform: "uppercase" }}>{m.label}</div>
                         <div style={{ fontSize: 16, fontWeight: 800, color: m.color }}>{m.value}</div>
-                        <div style={{ fontSize: 8, color: "#333", marginTop: 2 }}>{m.sub}</div>
+                        <div style={{ fontSize: 8, color: "var(--text-3)", marginTop: 4, fontWeight: 700 }}>{m.sub}</div>
                       </div>
                     ))}
                   </div>
 
                   {/* Deviation alert */}
                   {deviationAlerts.has(selectedDriver.driver_id) && (
-                    <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 10, padding: "12px 14px", marginBottom: 14, display: "flex", gap: 10, alignItems: "flex-start" }}>
-                      <span style={{ fontSize: 16 }}>🚨</span>
+                    <div style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "var(--r-md)", padding: "14px", marginBottom: 20, display: "flex", gap: 12, alignItems: "flex-start" }}>
+                      <span style={{ fontSize: 20 }}>🚨</span>
                       <div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#ef4444", marginBottom: 2 }}>Route Deviation</div>
-                        <div style={{ fontSize: 11, color: "#f87171" }}>{deviationAlerts.get(selectedDriver.driver_id)?.deviation_m}m off planned route</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: "var(--red)", marginBottom: 2 }}>SECURITY ALERT: DEVIATION</div>
+                        <div style={{ fontSize: 11, color: "var(--text-2)", fontWeight: 500 }}>Current trajectory is {deviationAlerts.get(selectedDriver.driver_id)?.deviation_m}m off the designated route.</div>
                       </div>
                     </div>
                   )}
 
                   {/* Ride info */}
                   {selectedDriver.ride ? (
-                    <div style={{ background: "#111", border: "1px solid #1a1a1a", borderRadius: 12, overflow: "hidden" }}>
-                      <div style={{ padding: "10px 14px", background: "#0f1829", borderBottom: "1px solid #1a1a1a", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 10, fontWeight: 800, color: "#3b82f6" }}>RIDE #{selectedDriver.ride.id}</span>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <Dot color={STATUS_COLOR[selectedDriver.ride.status] || "#555"} pulse />
-                          <span style={{ fontSize: 10, fontWeight: 700, color: STATUS_COLOR[selectedDriver.ride.status] || "#555" }}>{selectedDriver.ride.status}</span>
+                    <div style={{ background: "var(--bg-2)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
+                      <div style={{ padding: "12px 16px", background: "rgba(59,130,246,0.05)", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: "var(--accent)", letterSpacing: 1 }}>ACTIVE TRIP #{selectedDriver.ride.id}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <Dot color={STATUS_COLOR[selectedDriver.ride.status] || "var(--text-3)"} pulse />
+                          <span style={{ fontSize: 10, fontWeight: 800, color: STATUS_COLOR[selectedDriver.ride.status] || "var(--text-3)", textTransform: "uppercase" }}>{selectedDriver.ride.status}</span>
                         </div>
                       </div>
-                      <div style={{ padding: "12px 14px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, paddingBottom: 14, borderBottom: "1px solid #191919" }}>
-                          <div style={{ width: 30, height: 30, borderRadius: 8, background: "#1a1a2e", border: "1px solid #2a2a4e", display: "flex", alignItems: "center", justifyContent: "center" }}>👤</div>
+                      <div style={{ padding: "16px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, paddingBottom: 16, borderBottom: "1px solid var(--border)" }}>
+                          <div style={{ width: 36, height: 36, borderRadius: "var(--r-sm)", background: "var(--bg-3)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>👤</div>
                           <div>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc" }}>{selectedDriver.ride.rider_name || "Guest Rider"}</div>
-                            <div style={{ fontSize: 10, color: "#444" }}>Rider #{selectedDriver.ride.rider_id}</div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-1)" }}>{selectedDriver.ride.rider_name || "Anonymous Rider"}</div>
+                            <div style={{ fontSize: 10, color: "var(--text-3)", fontWeight: 500 }}>ID: {selectedDriver.ride.rider_id} · Verified Passenger</div>
                           </div>
                         </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                          <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", marginTop: 3, flexShrink: 0 }} />
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                          <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--green)", marginTop: 4, flexShrink: 0, border: "2px solid var(--bg)" }} />
                             <div>
-                              <div style={{ fontSize: 9, color: "#444", fontWeight: 700, letterSpacing: 1, marginBottom: 2 }}>PICKUP</div>
-                              <div style={{ fontSize: 11, color: "#aaa", lineHeight: 1.4 }}>{selectedDriver.ride.pickup_address || `${selectedDriver.ride.pickup.lat.toFixed(4)}, ${selectedDriver.ride.pickup.lng.toFixed(4)}`}</div>
+                              <div style={{ fontSize: 8, color: "var(--text-3)", fontWeight: 800, letterSpacing: 1, marginBottom: 4 }}>PICKUP LOCATION</div>
+                              <div style={{ fontSize: 11, color: "var(--text-2)", lineHeight: 1.5, fontWeight: 500 }}>{selectedDriver.ride.pickup_address || `${selectedDriver.ride.pickup.lat.toFixed(4)}, ${selectedDriver.ride.pickup.lng.toFixed(4)}`}</div>
                             </div>
                           </div>
-                          <div style={{ marginLeft: 4, width: 0, borderLeft: "1px dashed #2a2a2a", height: 14 }} />
-                          <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444", marginTop: 3, flexShrink: 0 }} />
+                          <div style={{ marginLeft: 4, width: 0, borderLeft: "1px dashed var(--border-2)", height: 20 }} />
+                          <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--red)", marginTop: 4, flexShrink: 0, border: "2px solid var(--bg)" }} />
                             <div>
-                              <div style={{ fontSize: 9, color: "#444", fontWeight: 700, letterSpacing: 1, marginBottom: 2 }}>DROPOFF</div>
-                              <div style={{ fontSize: 11, color: "#aaa", lineHeight: 1.4 }}>{selectedDriver.ride.drop_address || `${selectedDriver.ride.dropoff.lat.toFixed(4)}, ${selectedDriver.ride.dropoff.lng.toFixed(4)}`}</div>
+                              <div style={{ fontSize: 8, color: "var(--text-3)", fontWeight: 800, letterSpacing: 1, marginBottom: 4 }}>DESTINATION</div>
+                              <div style={{ fontSize: 11, color: "var(--text-2)", lineHeight: 1.5, fontWeight: 500 }}>{selectedDriver.ride.drop_address || `${selectedDriver.ride.dropoff.lat.toFixed(4)}, ${selectedDriver.ride.dropoff.lng.toFixed(4)}`}</div>
                             </div>
                           </div>
                         </div>
                         {selectedDriver.ride.status === "ONGOING" && selectedDriver.ride.distance_km != null && (
-                          <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #191919", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <span style={{ fontSize: 10, color: "#444", fontWeight: 700 }}>DISTANCE COVERED</span>
-                            <span style={{ fontSize: 15, fontWeight: 800, color: "#22c55e" }}>{selectedDriver.ride.distance_km.toFixed(2)} <span style={{ fontSize: 10, color: "#3a7a3a" }}>km</span></span>
+                          <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: 10, color: "var(--text-3)", fontWeight: 800, letterSpacing: 1 }}>MILEAGE TRACKED</span>
+                            <span style={{ fontSize: 18, fontWeight: 800, color: "var(--green)", letterSpacing: "-0.5px" }}>{selectedDriver.ride.distance_km.toFixed(2)} <span style={{ fontSize: 10, color: "var(--text-3)", fontWeight: 600 }}>KM</span></span>
                           </div>
                         )}
                       </div>
 
                       {/* ── Admin Actions ── */}
-                      <div style={{ padding: "12px 14px", borderTop: "1px solid #1a1a1a" }}>
-                        <div style={{ fontSize: 9, fontWeight: 800, color: "#333", letterSpacing: 1, marginBottom: 10 }}>ADMIN ACTIONS</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ padding: "16px", borderTop: "1px solid var(--border)", background: "rgba(255,255,255,0.01)" }}>
+                        <div style={{ fontSize: 9, fontWeight: 800, color: "var(--text-3)", letterSpacing: 1.5, marginBottom: 12, textTransform: "uppercase" }}>Administrative Controls</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                           {["ASSIGNED", "ARRIVED", "ONGOING", "OFFERED", "SEARCHING"].includes(selectedDriver.ride.status) && (
                             <button
                               onClick={() => setShowResolution(true)}
-                              style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", fontSize: 11, fontWeight: 700, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 8 }}
-                              onMouseEnter={e => e.currentTarget.style.background = "rgba(239,68,68,0.15)"}
-                              onMouseLeave={e => e.currentTarget.style.background = "rgba(239,68,68,0.08)"}
+                              style={{ padding: "10px 14px", borderRadius: "var(--r-md)", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", color: "var(--red)", fontSize: 11, fontWeight: 700, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10, transition: "0.2s" }}
+                              onMouseEnter={e => { e.currentTarget.style.background = "rgba(239,68,68,0.12)"; e.currentTarget.style.borderColor = "var(--red)"; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = "rgba(239,68,68,0.06)"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.2)"; }}
                             >
-                              ⚠️ Resolve & Cancel
+                              ⚠️ Terminate & Resolve Trip
                             </button>
                           )}
                           {["ASSIGNED", "ARRIVED", "OFFERED"].includes(selectedDriver.ride.status) && (
                             <button
-                              onClick={() => setRideAction({ action: "reassign", rideId: selectedDriver.ride!.id, label: "Reassign to a new driver?" })}
-                              style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", color: "#f59e0b", fontSize: 11, fontWeight: 700, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 8 }}
-                              onMouseEnter={e => e.currentTarget.style.background = "rgba(245,158,11,0.15)"}
-                              onMouseLeave={e => e.currentTarget.style.background = "rgba(245,158,11,0.08)"}
+                              onClick={() => setRideAction({ action: "reassign", rideId: selectedDriver.ride!.id, label: "Hot-swap driver for this active ride?" })}
+                              style={{ padding: "10px 14px", borderRadius: "var(--r-md)", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", color: "var(--yellow)", fontSize: 11, fontWeight: 700, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10, transition: "0.2s" }}
+                              onMouseEnter={e => { e.currentTarget.style.background = "rgba(245,158,11,0.12)"; e.currentTarget.style.borderColor = "var(--yellow)"; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = "rgba(245,158,11,0.06)"; e.currentTarget.style.borderColor = "rgba(245,158,11,0.2)"; }}
                             >
-                              🔄 Reassign Driver
-                            </button>
-                          )}
-                          {["COMPLETED"].includes(selectedDriver.ride.status) && (
-                            <button
-                              onClick={() => setShowResolution(true)}
-                              style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.3)", color: "#3b82f6", fontSize: 11, fontWeight: 700, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 8 }}
-                              onMouseEnter={e => e.currentTarget.style.background = "rgba(59,130,246,0.15)"}
-                              onMouseLeave={e => e.currentTarget.style.background = "rgba(59,130,246,0.08)"}
-                            >
-                              💸 Resolve & Refund
+                              🔄 Emergency Reassign
                             </button>
                           )}
                         </div>
-                        {/* Action result toast */}
-                        {rideActionResult && (
-                          <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, background: rideActionResult.ok ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", border: `1px solid ${rideActionResult.ok ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`, fontSize: 11, fontWeight: 600, color: rideActionResult.ok ? "#22c55e" : "#ef4444" }}>
-                            {rideActionResult.ok ? "✓" : "✗"} {rideActionResult.msg}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                      </div >
+                    </div >
                   ) : (
-                    <div style={{ textAlign: "center", padding: "40px 20px", color: "#2a2a2a" }}>
-                      <div style={{ fontSize: 36, marginBottom: 10 }}>🚗</div>
-                      <div style={{ fontSize: 12, fontWeight: 600 }}>No active ride</div>
-                      <div style={{ fontSize: 10, marginTop: 4 }}>Awaiting dispatch</div>
-                    </div>
+                    <div style={{ textAlign: "center", padding: "60px 20px", background: "var(--bg-2)", borderRadius: "var(--r-lg)", border: "1px dashed var(--border)" }}>
+                      <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.5 }}>🚗</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-2)" }}>In Standby Mode</div>
+                      <div style={{ fontSize: 10, marginTop: 6, color: "var(--text-3)", fontWeight: 500 }}>No active trip assigned to this asset</div>
+                    </div >
                   )}
-                </div>
+                </div >
               </>
             ) : (
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#222", padding: 24 }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>👆</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#333", marginBottom: 6 }}>Select a Driver</div>
-                <div style={{ fontSize: 11, color: "#222", textAlign: "center", lineHeight: 1.6 }}>Click any driver on the map or in the left panel to view real-time details</div>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "var(--text-3)", padding: 40 }}>
+                <div style={{ fontSize: 56, marginBottom: 20, opacity: 0.3 }}>🎯</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-2)", marginBottom: 8, letterSpacing: "-0.5px" }}>Telemetry Standby</div>
+                <div style={{ fontSize: 11, color: "var(--text-3)", textAlign: "center", lineHeight: 1.8, maxWidth: 240, fontWeight: 500 }}>
+                  Select a driver from the map or registry to initialize real-time operational oversight.
+                </div>
               </div>
             )}
-          </div>
-        </div>
-      </div>
+          </div >
+        </div >
+      </div >
 
       {/* ── Admin Action Confirm Modal ── */}
-      {rideAction && (
-        <div
-          onClick={() => !rideActionLoading && setRideAction(null)}
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", zIndex: 5000, display: "flex", alignItems: "center", justifyContent: "center" }}
-        >
+      {
+        rideAction && (
           <div
-            onClick={e => e.stopPropagation()}
-            style={{ background: "#0f0f0f", border: "1px solid #2a2a2a", borderRadius: 16, padding: "28px 32px", minWidth: 320, boxShadow: "0 24px 80px rgba(0,0,0,0.8)" }}
+            onClick={() => !rideActionLoading && setRideAction(null)}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", zIndex: 5000, display: "flex", alignItems: "center", justifyContent: "center" }}
           >
-            <div style={{ fontSize: 32, marginBottom: 16, textAlign: "center" }}>
-              {rideAction?.action === "cancel" ? "🚫" : rideAction?.action === "reassign" ? "🔄" : "💸"}
-            </div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#fff", textAlign: "center", marginBottom: 8 }}>
-              {rideAction?.label}
-            </div>
-            <div style={{ fontSize: 12, color: "#555", textAlign: "center", marginBottom: 24 }}>
-              Ride #{rideAction?.rideId} · This action cannot be undone.
-            </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button
-                onClick={() => setRideAction(null)}
-                disabled={rideActionLoading}
-                style={{ flex: 1, padding: "10px 0", borderRadius: 8, background: "#1a1a1a", border: "1px solid #2a2a2a", color: "#aaa", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-              >
-                Cancel
-              </button>
-              <button
-                disabled={rideActionLoading}
-                onClick={async () => {
-                  if (!rideAction) return;
-                  const { action, rideId } = rideAction;
-                  setRideActionLoading(true);
-                  try {
-                    const { api } = await import("../services/api");
-                    await api.post("/rides/admin/rides/actions/", {
-                      ride_id: rideId,
-                      action: action,
-                    });
-                    setRideActionResult({ ok: true, msg: `${action.charAt(0).toUpperCase() + action.slice(1)} successful!` });
-                    setRideAction(null);
-                    setTimeout(() => setRideActionResult(null), 4000);
-                  } catch (err: any) {
-                    const detail = err?.response?.data?.error || "Action failed. Try again.";
-                    setRideActionResult({ ok: false, msg: detail });
-                    setRideAction(null);
-                    setTimeout(() => setRideActionResult(null), 5000);
-                  } finally {
-                    setRideActionLoading(false);
-                  }
-                }}
-                style={{
-                  flex: 1, padding: "10px 0", borderRadius: 8, border: "none",
-                  background: rideAction?.action === "cancel" ? "#ef4444" : rideAction?.action === "reassign" ? "#f59e0b" : "#3b82f6",
-                  color: "#fff", fontSize: 12, fontWeight: 700, cursor: rideActionLoading ? "not-allowed" : "pointer",
-                  opacity: rideActionLoading ? 0.6 : 1,
-                }}
-              >
-                {rideActionLoading ? "Processing…" : `Confirm ${rideAction?.action.charAt(0).toUpperCase() + rideAction?.action.slice(1)}`}
-              </button>
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{ background: "#0f0f0f", border: "1px solid #2a2a2a", borderRadius: 16, padding: "28px 32px", minWidth: 320, boxShadow: "0 24px 80px rgba(0,0,0,0.8)" }}
+            >
+              <div style={{ fontSize: 32, marginBottom: 16, textAlign: "center" }}>
+                {rideAction?.action === "cancel" ? "🚫" : rideAction?.action === "reassign" ? "🔄" : "💸"}
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#fff", textAlign: "center", marginBottom: 8 }}>
+                {rideAction?.label}
+              </div>
+              <div style={{ fontSize: 12, color: "#555", textAlign: "center", marginBottom: 24 }}>
+                Ride #{rideAction?.rideId} · This action cannot be undone.
+              </div>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={() => setRideAction(null)}
+                  disabled={rideActionLoading}
+                  style={{ flex: 1, padding: "10px 0", borderRadius: 8, background: "#1a1a1a", border: "1px solid #2a2a2a", color: "#aaa", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={rideActionLoading}
+                  onClick={async () => {
+                    if (!rideAction) return;
+                    const { action, rideId } = rideAction;
+                    setRideActionLoading(true);
+                    try {
+                      const { api } = await import("../services/api");
+                      await api.post("/rides/admin/rides/actions/", {
+                        ride_id: rideId,
+                        action: action,
+                      });
+                      setRideActionResult({ ok: true, msg: `${action.charAt(0).toUpperCase() + action.slice(1)} successful!` });
+                      setRideAction(null);
+                      setTimeout(() => setRideActionResult(null), 4000);
+                    } catch (err: any) {
+                      const detail = err?.response?.data?.error || "Action failed. Try again.";
+                      setRideActionResult({ ok: false, msg: detail });
+                      setRideAction(null);
+                      setTimeout(() => setRideActionResult(null), 5000);
+                    } finally {
+                      setRideActionLoading(false);
+                    }
+                  }}
+                  style={{
+                    flex: 1, padding: "10px 0", borderRadius: 8, border: "none",
+                    background: rideAction?.action === "cancel" ? "#ef4444" : rideAction?.action === "reassign" ? "#f59e0b" : "#3b82f6",
+                    color: "#fff", fontSize: 12, fontWeight: 700, cursor: rideActionLoading ? "not-allowed" : "pointer",
+                    opacity: rideActionLoading ? 0.6 : 1,
+                  }}
+                >
+                  {rideActionLoading ? "Processing…" : `Confirm ${rideAction?.action.charAt(0).toUpperCase() + rideAction?.action.slice(1)}`}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {showResolution && selectedDriver?.ride && (
-        <ResolutionModal
-          ride={selectedDriver.ride}
-          onClose={() => setShowResolution(false)}
-          onSubmit={handleResolutionSubmit}
-        />
-      )}
+      {
+        showResolution && selectedDriver?.ride && (
+          <ResolutionModal
+            ride={selectedDriver.ride}
+            onClose={() => setShowResolution(false)}
+            onSubmit={handleResolutionSubmit}
+          />
+        )
+      }
     </>
   );
 }

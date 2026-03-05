@@ -156,6 +156,13 @@ def validate_gps_velocity(driver_id, new_lat, new_lng):
     now = int(time.time())
 
     time_diff = now - last_time
+    # 🚨 RESILIENCE FIX: If last ping was > 5 mins ago, reset velocity tracking.
+    # Prevents false "teleportation" flags when driver re-opens app in a new location.
+    if time_diff > 300:
+        logger.info(f"[SPOOF] Resetting velocity tracking for Driver {driver_id} (Stale data: {time_diff}s)")
+        redis_client.hset(meta_key, mapping={"lat": new_lat, "lng": new_lng, "last_seen": now})
+        return True
+
     if time_diff < MIN_PING_INTERVAL:
         return True # Too frequent pings, skip velocity check to avoid noise
 

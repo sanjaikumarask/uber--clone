@@ -98,12 +98,34 @@ class AdminLoginSerializer(serializers.Serializer):
 
 class UserSerializer(serializers.ModelSerializer):
     is_verified = serializers.SerializerMethodField()
+    completed_rides = serializers.SerializerMethodField()
+    avg_rating = serializers.SerializerMethodField()
+    level = serializers.SerializerMethodField()
     
     class Meta:
         model = User
-        fields = ["id", "phone", "role", "first_name", "last_name", "is_verified", "expo_push_token"]
+        fields = ["id", "phone", "role", "first_name", "last_name", "is_verified", "expo_push_token", "completed_rides", "avg_rating", "level"]
 
     def get_is_verified(self, obj):
         if obj.role == "driver":
             return getattr(obj, 'driver', None).is_verified if hasattr(obj, 'driver') else False
         return True
+
+    def get_completed_rides(self, obj):
+        if obj.role == "driver" and hasattr(obj, 'driver'):
+            from apps.drivers.models import DriverStats
+            stats, _ = DriverStats.objects.get_or_create(driver=obj.driver)
+            return stats.completed_rides
+        return 0
+
+    def get_avg_rating(self, obj):
+        if obj.role == "driver" and hasattr(obj, 'driver'):
+            from apps.drivers.models import DriverStats
+            stats, _ = DriverStats.objects.get_or_create(driver=obj.driver)
+            return stats.avg_rating
+        return 5.0
+
+    def get_level(self, obj):
+        if obj.role == "driver" and hasattr(obj, 'driver'):
+            return obj.driver.level
+        return "NORMAL"

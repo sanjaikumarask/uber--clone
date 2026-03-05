@@ -14,9 +14,11 @@ import {
   disconnectRidesSocket,
   onRidesEvent,
 } from "../services/socket";
+import { useRideStore } from "../domains/rides/ride.store";
 
 export default function HomeScreen({ navigation }: any) {
   const { user, logout, syncUser } = useAuthStore();
+  const { socketStatus, locationSocketStatus } = useRideStore();
   const [isOnline, setIsOnline] = useState(false);
 
   useFocusEffect(
@@ -83,12 +85,12 @@ export default function HomeScreen({ navigation }: any) {
 
   async function checkForActiveRide() {
     try {
-      const { data } = await api.get("/drivers/active-ride/");
+      const { data } = await api.get("drivers/active-ride/");
       if (data && data.status) {
         setIsOnline(true);
         navigation.replace("RideTracking", { rideId: data.id });
       } else {
-        const profile = await api.get("/drivers/me/");
+        const profile = await api.get("drivers/me/");
         setIsOnline(profile.data.status === "ONLINE");
       }
     } catch (err) {
@@ -167,7 +169,7 @@ export default function HomeScreen({ navigation }: any) {
     }
     try {
       const newStatus = !isOnline;
-      await api.post("/drivers/status/", {
+      await api.post(`drivers/status/`, {
         status: newStatus ? "ONLINE" : "OFFLINE",
       });
       setIsOnline(newStatus);
@@ -205,9 +207,21 @@ export default function HomeScreen({ navigation }: any) {
         <Text style={styles.phoneText}>{user?.phone}</Text>
       </View>
 
-      {/* DEBUG: Remove this in production */}
-      <View style={{ padding: 10, backgroundColor: "#eee", borderRadius: 8, marginBottom: 10 }}>
-        <Text style={{ fontSize: 12 }}>Debug | Role: {user?.role} | Verified: {String(user?.is_verified)}</Text>
+      <View style={styles.statsRow}>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{user?.completed_rides || 0}</Text>
+          <Text style={styles.statLabel}>Rides</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>★ {user?.avg_rating || "5.0"}</Text>
+          <Text style={styles.statLabel}>Rating</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{user?.level || "NORMAL"}</Text>
+          <Text style={styles.statLabel}>Level</Text>
+        </View>
       </View>
 
       {(user?.role === "driver" && user?.is_verified === false) ? (
@@ -236,12 +250,34 @@ export default function HomeScreen({ navigation }: any) {
         <View style={styles.statusRow}>
           <Text style={styles.statusLabel}>Status:</Text>
           <View style={styles.statusToggle}>
-            <Text style={[styles.statusText, { color: isOnline ? "#34C759" : "#8E8E93" }]}>
+            <Text style={[styles.statusText, { color: isOnline ? "#22C55E" : "#6B7280" }]}>
               {isOnline ? "ONLINE" : "OFFLINE"}
             </Text>
-            <Switch value={isOnline} onValueChange={toggleOnlineStatus} />
+            <Switch
+              value={isOnline}
+              onValueChange={toggleOnlineStatus}
+              trackColor={{ false: "#E5E7EB", true: "#DCFCE7" }}
+              thumbColor={isOnline ? "#22C55E" : "#9CA3AF"}
+            />
           </View>
         </View>
+
+        {isOnline && (
+          <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F3F4F6", gap: 5 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              <Text style={{ fontSize: 11, color: "#6B7280" }}>Offer Connection:</Text>
+              <Text style={{ fontSize: 11, color: socketStatus === "connected" ? "#22C55E" : "#EF4444", fontWeight: "bold" }}>
+                {socketStatus.toUpperCase()}
+              </Text>
+            </View>
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              <Text style={{ fontSize: 11, color: "#6B7280" }}>GPS Broadcast:</Text>
+              <Text style={{ fontSize: 11, color: locationSocketStatus === "connected" ? "#22C55E" : "#EF4444", fontWeight: "bold" }}>
+                {locationSocketStatus.toUpperCase()}
+              </Text>
+            </View>
+          </View>
+        )}
       </View>
 
       {location && (
@@ -260,15 +296,22 @@ export default function HomeScreen({ navigation }: any) {
         <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate("Wallet")}>
           <Text style={styles.actionButtonText}>💰 Wallet</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate("Notifications")}>
-          <Text style={styles.actionButtonText}>🔔 Notifications</Text>
+        <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate("RideHistory")}>
+          <Text style={styles.actionButtonText}>📜 History</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate("Incentives")}>
           <Text style={styles.actionButtonText}>🎁 Gift</Text>
         </TouchableOpacity>
+      </View>
+
+      <View style={styles.actionsRow}>
+        <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate("Notifications")}>
+          <Text style={styles.actionButtonText}>🔔 Notifications</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate("Support")}>
           <Text style={styles.actionButtonText}>🎧 Help</Text>
         </TouchableOpacity>
+        <View style={{ flex: 1 }} />
       </View>
 
       <View style={styles.infoCard}>
@@ -317,4 +360,32 @@ const styles = StyleSheet.create({
   bannerTitle: { fontSize: 16, fontWeight: "700", color: "#9B1C1C" },
   bannerSubtitle: { fontSize: 13, color: "#9B1C1C", opacity: 0.8 },
   bannerArrow: { fontSize: 18, fontWeight: "700", color: "#9B1C1C" },
+  statsRow: {
+    flexDirection: "row",
+    backgroundColor: "#fff",
+    paddingVertical: 15,
+    borderRadius: 12,
+    marginBottom: 20,
+    justifyContent: "space-around",
+    alignItems: "center",
+  },
+  statItem: {
+    alignItems: "center",
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#000",
+  },
+  statLabel: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 4,
+  },
+  statDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: "#eee",
+  },
 });

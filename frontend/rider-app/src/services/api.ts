@@ -1,13 +1,13 @@
 import axios from "axios";
 import { Storage } from "./storage";
 import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Change this to your computer's IP address
-// Use '10.0.2.2' for Android Emulator, or your local LAN IP for physical device
 const YOUR_COMPUTER_IP = "192.169.1.137";
 
 const HOST = YOUR_COMPUTER_IP;
-export const API_URL = `http://${HOST}/api`;
+export const API_URL = `http://${HOST}/api/`;
 export const WS_URL = `ws://${HOST}/ws`;
 
 console.log("📡 RIDER API Config:", API_URL);
@@ -18,6 +18,20 @@ export const api = axios.create({
         "Content-Type": "application/json",
     },
 });
+
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+    failedQueue.forEach((prom) => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+};
 
 // Simple UUID generator for idempotency
 const generateUUID = () => {
@@ -34,7 +48,6 @@ api.interceptors.request.use(async (config) => {
         config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // Attach Idempotency Header for Mutations
     if (config.method && ['post', 'put', 'patch'].includes(config.method.toLowerCase())) {
         if (!config.headers['X-Idempotency-Key']) {
             config.headers['X-Idempotency-Key'] = generateUUID();
@@ -44,13 +57,9 @@ api.interceptors.request.use(async (config) => {
     return config;
 });
 
-// Response Interceptor: Handle Errors
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
 const OFFLINE_QUEUE_KEY = "@offline_request_queue";
 let isFlushing = false;
 
-// 🔴 Auto-Retry Unsent Requests with Backpressure Control
 export const flushOfflineQueue = async () => {
     if (isFlushing) return;
     try {
@@ -61,7 +70,6 @@ export const flushOfflineQueue = async () => {
         let queue: any[] = JSON.parse(queueStr);
         if (queue.length === 0) return;
 
-        // ✅ Backpressure: Process max 5-10 requests at a time to avoid DDOSing the server
         const MAX_BATCH_SIZE = 10;
         const currentBatch = queue.slice(0, MAX_BATCH_SIZE);
         const remainingQueue = queue.slice(MAX_BATCH_SIZE);
@@ -70,16 +78,11 @@ export const flushOfflineQueue = async () => {
 
         for (const req of currentBatch) {
             try {
-                // ✅ USE API INSTANCE: Ensures interceptors (token refresh) are applied
                 await api({ ...req });
                 console.log(`✅ [Offline Queue] Success: ${req.url}`);
-
-                // Add tiny 100ms artificial delay to prevent socket flooding
                 await new Promise(resolve => setTimeout(resolve, 100));
             } catch (err: any) {
                 console.warn(`⏳ [Offline Queue] Retry still failing for: ${req.url}`);
-                // ✅ PREVENT DATA LOSS: If 401 (Unauthorized/Expired), keep in queue!
-                // Don't discard until the user successfully logs back in and retry succeeds.
                 if (!err.response || err.response.status >= 500 || err.response.status === 401) {
                     remainingQueue.push(req);
                 }
@@ -98,41 +101,78 @@ setInterval(flushOfflineQueue, 15000);
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
-        // Detect Hard Network failures
+        const originalRequest = error.config;
+
+        // Hard Network failures handling
         if (!error.response || error.code === 'ERR_NETWORK') {
-            const config = error.config;
-            if (config && ['post', 'put', 'patch'].includes(config.method?.toLowerCase() || '')) {
+            if (originalRequest && ['post', 'put', 'patch'].includes(originalRequest.method?.toLowerCase() || '')) {
                 try {
                     const queueStr = await AsyncStorage.getItem(OFFLINE_QUEUE_KEY);
                     const queue = queueStr ? JSON.parse(queueStr) : [];
-
-                    // Prevent duplicate queuing of exact identical API calls targeting same location
                     const isDuplicate = queue.find((q: any) =>
-                        q.url === config.url &&
-                        JSON.stringify(q.data) === JSON.stringify(config.data)
+                        q.url === originalRequest.url &&
+                        JSON.stringify(q.data) === JSON.stringify(originalRequest.data)
                     );
 
                     if (!isDuplicate) {
                         queue.push({
-                            url: config.url,
-                            method: config.method,
-                            data: config.data,
-                            headers: config.headers
+                            url: originalRequest.url,
+                            method: originalRequest.method,
+                            data: originalRequest.data,
+                            headers: originalRequest.headers
                         });
                         await AsyncStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
-                        console.log(`📉 [Offline Mode] Request queued securely: ${config.url}`);
                     }
                 } catch (e) { }
             }
             return Promise.reject(new Error("You are offline. Action securely queued."));
         }
 
-        if (error.response?.status === 401) {
-            // Token expired or invalid
-            await Storage.clear();
-            console.error("Token Expired - session dropping");
+        // 401 Handle session expiry with Refresh Token
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            if (isRefreshing) {
+                return new Promise((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                })
+                    .then((token) => {
+                        originalRequest.headers.Authorization = `Bearer ${token}`;
+                        return api(originalRequest);
+                    })
+                    .catch((err) => Promise.reject(err));
+            }
+
+            originalRequest._retry = true;
+            isRefreshing = true;
+
+            const refreshToken = await Storage.getRefreshToken();
+            if (!refreshToken) {
+                isRefreshing = false;
+                await Storage.clear();
+                return Promise.reject(error);
+            }
+
+            try {
+                const res = await axios.post(`${API_URL}users/token/refresh/`, {
+                    refresh: refreshToken,
+                });
+                const { access } = res.data;
+
+                await Storage.setToken(access);
+                api.defaults.headers.common["Authorization"] = `Bearer ${access}`;
+                originalRequest.headers.Authorization = `Bearer ${access}`;
+
+                processQueue(null, access);
+                isRefreshing = false;
+
+                return api(originalRequest);
+            } catch (refreshErr) {
+                processQueue(refreshErr, null);
+                isRefreshing = false;
+                await Storage.clear();
+                return Promise.reject(refreshErr);
+            }
         }
+
         return Promise.reject(error);
     }
 );
-

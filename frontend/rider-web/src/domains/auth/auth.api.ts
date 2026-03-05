@@ -23,3 +23,21 @@ export async function login(
 
   return res.data; // ✅ RETURN FULL PAYLOAD
 }
+
+export async function register(
+  firstName: string,
+  lastName: string,
+  phone: string,
+  password: string,
+  role: "rider" | "driver" = "rider"
+) {
+  const res = await api.post("/users/register/", {
+    first_name: firstName,
+    last_name: lastName,
+    phone,
+    password,
+    role,
+  });
+
+  return res.data;
+}

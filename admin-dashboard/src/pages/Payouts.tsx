@@ -6,6 +6,7 @@ interface AdminPayout {
     driver_phone: string;
     amount: string;
     status: string;
+    failure_reason: string | null;
     reference: string | null;
     created_at: string;
 }
@@ -26,7 +27,7 @@ export default function Payouts() {
         fetchData();
     }, []);
 
-    const handleAction = async (id: number, action: "approve" | "reject") => {
+    const handleAction = async (id: number, action: "approve" | "reject" | "resolve") => {
         try {
             await api.post(`/admin/payout/${action}/${id}/`);
             fetchData();
@@ -61,7 +62,14 @@ export default function Payouts() {
                             payouts.map(p => (
                                 <tr key={p.id}>
                                     <td style={{ color: "var(--text-dim)" }}>#{p.id}</td>
-                                    <td style={{ fontWeight: 500 }}>{p.driver_phone}</td>
+                                    <td style={{ fontWeight: 500 }}>
+                                        {p.driver_phone}
+                                        {p.failure_reason && (
+                                            <div style={{ fontSize: '0.7rem', color: '#F87171', marginTop: 4 }}>
+                                                Error: {p.failure_reason}
+                                            </div>
+                                        )}
+                                    </td>
                                     <td style={{ fontWeight: 500 }}>₹{p.amount}</td>
                                     <td>
                                         <span className="badge" style={{
@@ -78,38 +86,40 @@ export default function Payouts() {
                                     </td>
                                     <td style={{ color: "var(--text-dim)", fontSize: '0.85rem' }}>{new Date(p.created_at).toLocaleString()}</td>
                                     <td>
-                                        {p.status === "REQUESTED" && (
-                                            <div style={{ display: "flex", gap: "8px" }}>
-                                                <button
-                                                    onClick={() => handleAction(p.id, "approve")}
-                                                    style={{
-                                                        background: "#065F46",
-                                                        color: "#34D399",
-                                                        border: "none",
-                                                        padding: "6px 12px",
-                                                        fontSize: "0.8rem",
-                                                        borderRadius: "4px",
-                                                        cursor: "pointer"
-                                                    }}
-                                                >
-                                                    Approve
-                                                </button>
-                                                <button
-                                                    onClick={() => handleAction(p.id, "reject")}
-                                                    style={{
-                                                        background: "#7F1D1D",
-                                                        color: "#F87171",
-                                                        border: "none",
-                                                        padding: "6px 12px",
-                                                        fontSize: "0.8rem",
-                                                        borderRadius: "4px",
-                                                        cursor: "pointer"
-                                                    }}
-                                                >
-                                                    Reject
-                                                </button>
-                                            </div>
-                                        )}
+                                        <div style={{ display: "flex", gap: "8px" }}>
+                                            {p.status === "REQUESTED" && (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleAction(p.id, "approve")}
+                                                        style={{ background: "#065F46", color: "#34D399", border: "none", padding: "6px 12px", fontSize: "0.8rem", borderRadius: "4px", cursor: "pointer" }}
+                                                    >
+                                                        Approve
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleAction(p.id, "reject")}
+                                                        style={{ background: "#7F1D1D", color: "#F87171", border: "none", padding: "6px 12px", fontSize: "0.8rem", borderRadius: "4px", cursor: "pointer" }}
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                </>
+                                            )}
+                                            {p.status === "FAILED" && (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleAction(p.id, "approve")}
+                                                        style={{ background: "#272e3a", color: "#60a5fa", border: "1px solid #3b82f6", padding: "6px 12px", fontSize: "0.8rem", borderRadius: "4px", cursor: "pointer" }}
+                                                    >
+                                                        Retry
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleAction(p.id, "resolve")}
+                                                        style={{ background: "#374151", color: "#E5E7EB", border: "none", padding: "6px 12px", fontSize: "0.8rem", borderRadius: "4px", cursor: "pointer" }}
+                                                    >
+                                                        Force Mark Paid
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))
@@ -120,3 +130,4 @@ export default function Payouts() {
         </div>
     );
 }
+

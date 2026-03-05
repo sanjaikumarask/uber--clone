@@ -43,13 +43,13 @@ The system uses `transaction.on_commit` for all Celery task triggers. This ensur
 flowchart TD
 A[Business Event <br/> e.g. ride.assigned] --> B[Call send_notification <br/> service]
 B --> C{Check User Preference}
-C -->|Push enabled|D[Celery: send_push_task]
-C -->|SMS enabled|E[Celery: send_sms_task]
-C -->|Email enabled|F[Celery: send_email_task]
+C -->|Push enabled|D[Celery: deliver_notification]
+C -->|SMS enabled|E[Celery: deliver_notification]
+C -->|Email enabled|F[Celery: deliver_notification]
 D -->|Try|G[Expo Push API]
 E -->|Try|H[Twilio API]
-F -->|Try|I[SendGrid API]
-G & H & I -->|Success|J[Mark Notification DELIVERED]
+F -->|Try|I[SMTP API]
+G & H & I -->|Success|J[Mark Notification SENT]
 G & H & I -->|Fail transient|K[Retry with backoff <br/> max 3 attempts]
 K -->|Still fails|L[Move to Dead Letter Queue]
 J --> M[Audit Log INSERT]

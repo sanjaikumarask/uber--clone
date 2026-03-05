@@ -39,10 +39,10 @@ participant App as Mobile/Web App
 participant API as Django Auth API
 participant DB as PostgreSQL
 
-App->>API: POST /api/auth/register/ {name, phone, password, role}
+App->>API: POST /api/users/register/ {first_name, phone, password, role}
 API->>DB: Check phone uniqueness
 DB-->>API: OK
 API->>DB: INSERT User
 DB-->>API: User created
-API-->>App: 201 Created {access_token, refresh_token}
+API-->>App: 201 Created {id, phone, role, first_name}
 ```

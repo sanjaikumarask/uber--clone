@@ -35,9 +35,10 @@ class AdminRideSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ride
         fields = [
-            "id", "rider_name", "driver_name", "status", 
-            "pickup_address", "drop_address", "final_fare", 
-            "actual_distance_km", "created_at", "vehicle_type"
+            "id", "rider_id", "rider_name", "driver_id", "driver_name", "status", 
+            "pickup_address", "drop_address", "pickup_lat", "pickup_lng", 
+            "drop_lat", "drop_lng", "final_fare", "actual_distance_km", 
+            "created_at", "vehicle_type"
         ]
 
     def get_driver_name(self, obj):

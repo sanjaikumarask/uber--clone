@@ -92,9 +92,11 @@ def endpoint_cooldown(user_id, endpoint: str, max_calls: int = 10, window: int =
 
     try:
         from apps.drivers.redis import redis_client as r
+        # Use a more unique member to allow multiple requests in same second
+        member = f"{now}:{random.getrandbits(32)}"
         pipe = r.pipeline()
         pipe.zremrangebyscore(key, 0, now - window)
-        pipe.zadd(key, {str(now): now})
+        pipe.zadd(key, {member: now})
         pipe.zcard(key)
         pipe.expire(key, window * 2)
         _, _, count, _ = pipe.execute()

@@ -11,8 +11,14 @@ This document covers the most critical day-to-day operational workflows performe
 2. WebSocket connection is established — all `ONLINE` drivers appear as green markers.
 3. Admin sees a **red pulsing marker** → SOS alert triggered by a rider.
 4. A high-visibility modal appears with ride details, driver/rider contact info, and the GPS snapshot.
-5. Admin contacts emergency services if needed, then clicks **Resolve** or **False Alarm**.
-6. The alert is dismissed from the map and a `resolution_note` is saved to the `Emergency` record.
+5. Admin contacts emergency services if needed, then clicks **Resolve Issue**.
+6. A comprehensive **Resolution Modal** opens, allowing the admin to:
+    - **Cancel Ride**: Forcibly terminate the ride for safety.
+    - **Issue Refund**: Full or partial refund to the rider's ledger.
+    - **Compensate Driver**: Add manual earnings for driver's time.
+    - **Apply Penalty**: Deduct from driver's ledger for misconduct.
+    - **Waive Fees**: Remove platform commission for the trip.
+7. On confirmation, the backend triggers atomic ledger updates and the alert is dismissed.
 ---
 
 ## 2. Verifying a New Driver

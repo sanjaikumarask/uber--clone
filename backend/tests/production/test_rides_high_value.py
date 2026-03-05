@@ -135,9 +135,17 @@ class TestRidesHighValue:
 
         idem_key = f"collision_{uuid.uuid4().hex}"
 
+        # Mock helper that only returns 'IN_FLIGHT' for our target idempotency key
+        # to avoid breaking other cache-dependent systems (like Adaptive Shedder).
+        def smart_cache_get(key, default=None):
+            if "idem:api" in key:
+                return "IN_FLIGHT"
+            return 0.0 # Default for adaptive shedder / throttle
+
         # First call — seed the IN_FLIGHT marker
+        # We patch the cache specifically in the idempotency module to isolate side-effects
         with patch("apps.common.idempotency.cache.add", return_value=False), \
-             patch("apps.common.idempotency.cache.get", return_value="IN_FLIGHT"):
+             patch("apps.common.idempotency.cache.get", side_effect=smart_cache_get):
             response = client.post(
                 "/api/rides/request/",
                 {"pickup_lat": 12.9716, "pickup_lng": 77.5946,

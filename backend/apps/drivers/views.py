@@ -16,9 +16,19 @@ class DriverProfileView(APIView):
 
     def get(self, request):
         driver = request.user.driver
+        from apps.drivers.models import DriverStats
+        stats, _ = DriverStats.objects.get_or_create(driver=driver)
+        
         return Response({
             "id": driver.id,
             "status": driver.status,
+            "level": driver.level,
+            "is_verified": driver.is_verified,
+            "total_rides": driver.total_rides,
+            "completed_rides": stats.completed_rides,
+            "avg_rating": stats.avg_rating,
+            "acceptance_rate": stats.acceptance_rate,
+            "weekly_rides": stats.weekly_rides,
         })
 
 
@@ -391,3 +401,21 @@ class DocumentUploadView(APIView):
             "document_type": doc.document_type,
             "created": created
         })
+
+class DriverRideHistoryView(APIView):
+    permission_classes = [IsDriver]
+
+    def get(self, request):
+        from apps.rides.serializers import RideDetailSerializer
+        from apps.rides.models import Ride
+        
+        # Get past rides for this driver (assigned, arrived, ongoing, completed, cancelled)
+        # Exclude only searching/offered which are pre-assignment
+        rides = Ride.objects.filter(
+            driver=request.user.driver
+        ).exclude(
+            status__in=[Ride.Status.SEARCHING, Ride.Status.OFFERED]
+        ).select_related("rider").order_by("-created_at")[:50]
+        
+        serializer = RideDetailSerializer(rides, many=True)
+        return Response(serializer.data)

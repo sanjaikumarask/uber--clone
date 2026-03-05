@@ -14,7 +14,9 @@ from apps.tracking.geo import (
     snap_to_route,
     is_deviated,
     accumulate_distance,
+    snap_to_roads,
 )
+from apps.rides.services.realtime import buffer_ride_progress
 from apps.tracking.smoothing import smooth
 from apps.drivers.redis import (
     update_driver_location,
@@ -45,6 +47,7 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
         self.prev_point = None
         self.last_ping_ts = None  # ⏱️ Track time between pings for speed/waiting logic
         self.last_deviation_alert_ts = 0  # 🚨 Rate limit deviation alerts
+        self.last_admin_broadcast_ts = 0  # 📡 Rate limit admin map flood
 
         # ── BACKPRESSURE: Connection Rate Limiting (10k+ Scale) ──
         from apps.common.backpressure import ConnectionRateLimiter
@@ -68,6 +71,21 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
         
         # Register this channel as the active one
         redis_client.set(session_key, self.channel_name, ex=3600)  # 1h expiry
+
+        # ── HEARTBEAT & STATUS SYNC (NEW) ──
+        # Register liveness immediately on connect to prevent matching engine gaps
+        heartbeat_key = f"driver:{self.driver.id}:last_seen"
+        redis_client.set(heartbeat_key, int(time.time()), ex=300)
+        
+        # Ensure DB status is synced to ONLINE (Refresh with select_related to keep .user cached)
+        self.driver = await self._get_driver(user)
+        
+        if self.driver.status == "OFFLINE":
+             def _sync_status():
+                 from apps.drivers.models import Driver
+                 Driver.objects.filter(id=self.driver.id).update(status="ONLINE")
+             await database_sync_to_async(_sync_status)()
+             self.driver.status = "ONLINE" # Optimistic update for the broadcast below
 
         await self.accept()
         logger.info(f"[LocationSocket] ✅ Connected: Driver {driver.id}")
@@ -106,10 +124,13 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         data = json.loads(text_data)
         
-        # ── HEARTBEAT (NEW) ──
-        # Handle ping from client to verify liveness
+        # ── HEARTBEAT (Consolidated) ──
+        # Register liveness in Redis with standardized key for Matching Engine
+        heartbeat_key = f"driver:{self.driver.id}:last_seen"
+        redis_client.set(heartbeat_key, int(time.time()), ex=300)
+
+        # Handle ping from client
         if data.get("type") == "ping":
-            redis_client.set(f"driver_last_seen:{self.driver.id}", int(time.time()), ex=300)
             await self.send(json.dumps({"type": "pong", "ts": int(time.time())}))
             return
 
@@ -119,8 +140,6 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
 
         self.last_seq = seq
         
-        # Update last seen on every GPS update too
-        redis_client.set(f"driver_last_seen:{self.driver.id}", int(time.time()), ex=300)
 
         raw_lat, raw_lng = float(data["lat"]), float(data["lng"])
         accuracy_m = data.get("accuracy_m")
@@ -135,15 +154,32 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
             )
             return
 
-        # 🚀 2. Road Snapping (Google Roads API) - only on clean data
-        from django.conf import settings
+        # 🚀 2. Road Snapping (Google Roads API) - throttled for efficiency
+        # We only snap if:
+        # a) No 403/Forbidden error state in Redis
+        # b) Every 10th message (save cost/latency)
+        # c) Active ride is ONGOING (precision matters more)
         from apps.tracking.geo import snap_to_roads
-        final_lat, final_lng = snap_to_roads(raw_lat, raw_lng, api_key=settings.GOOGLE_MAPS_API_KEY)
+        
+        snap_error_key = "google_roads_403_circuit_breaker"
+        should_snap = (seq % 10 == 0) and not redis_client.get(snap_error_key)
+        
+        final_lat, final_lng = raw_lat, raw_lng # Default to raw
+        
+        if should_snap:
+            from django.conf import settings
+            try:
+                snapped = await snap_to_roads(raw_lat, raw_lng, api_key=settings.GOOGLE_MAPS_API_KEY)
+                if snapped:
+                    final_lat, final_lng = snapped
+            except Exception as e:
+                logger.error(f"[LocationSocket] SnapToRoads failed: {e}")
+        
         
         heading = data.get("heading")
         speed_kmh = data.get("speed_kmh")
 
-        # � 3. Update Redis (Real-time, extremely fast)
+        #  3. Update Redis (Real-time, extremely fast)
         await database_sync_to_async(update_driver_location)(
             self.driver.id, final_lat, final_lng,
         )
@@ -238,23 +274,8 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
                     # let it accumulate in Redis until ride completion.
                 # ──────────────────────────────────────────────────────────────
 
-                def _update_ride_history():
-                    import polyline
-                    # 1. Update distance
-                    if delta_km > 0:
-                        ride.actual_distance_km += delta_km
-                    
-                    # 2. Append to actual route polyline
-                    existing_path = []
-                    if ride.actual_route_polyline:
-                        existing_path = polyline.decode(ride.actual_route_polyline)
-                    
-                    existing_path.append((final_lat, final_lng))
-                    ride.actual_route_polyline = polyline.encode(existing_path)
-                    
-                    ride.save(update_fields=["actual_distance_km", "actual_route_polyline"])
-                
-                await database_sync_to_async(_update_ride_history)()
+                # Buffer ride progress (distance and polyline) in Redis
+                buffer_ride_progress(ride.id, final_lat, final_lng, delta_km)
                 
                 await database_sync_to_async(set_driver_last_point)(
                     self.driver.id, final_lat, final_lng
@@ -308,10 +329,18 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
                 "vehicle_type": ride.vehicle_type,
             }
 
-        await self.channel_layer.group_send(
-            "admin_live_map",
-            {"type": "driver_location_updated", "data": admin_data},
-        )
+        # 5️⃣ Throttled Broadcast to admin live map (Production Fix)
+        # Prevents "Broadcast Death-Star" (5M+ msgs/sec fanout) at 100k driver scale.
+        now = time.time()
+        if now - self.last_admin_broadcast_ts >= 1.0: # Throttle to 1Hz for Admin
+            self.last_admin_broadcast_ts = now
+            await self.channel_layer.group_send(
+                "admin_live_map",
+                {"type": "driver_location_updated", "data": admin_data},
+            )
+        else:
+            # Skip broadcast to save Redis/Channels CPU
+            pass
 
         # 6️⃣ Broadcast to rider group
         if ride:

@@ -79,7 +79,7 @@ export default function DestinationSearchScreen({ navigation }: any) {
 
     const fetchNearbyDrivers = async (lat: number, lng: number) => {
         try {
-            const res = await api.post("/rides/nearby-drivers/", { lat, lng, radius_km: 5 });
+            const res = await api.post("rides/nearby-drivers/", { lat, lng, radius_km: 5 });
             if (res.data?.drivers) {
                 setNearbyDrivers(res.data.drivers);
             }

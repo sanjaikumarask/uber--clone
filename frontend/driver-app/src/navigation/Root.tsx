@@ -12,6 +12,7 @@ import IncentivesScreen from "../screens/Incentives";
 import DocumentUploadScreen from "../screens/DocumentUpload";
 import SupportScreen from "../screens/SupportScreen";
 import CreateSupportScreen from "../screens/CreateSupportScreen";
+import RideHistoryScreen from "../screens/RideHistory";
 
 import RegisterScreen from "../screens/Register";
 
@@ -60,6 +61,7 @@ export default function RootNavigator() {
                         <Stack.Screen name="DocumentUpload" component={DocumentUploadScreen} />
                         <Stack.Screen name="Support" component={SupportScreen} />
                         <Stack.Screen name="CreateSupport" component={CreateSupportScreen} />
+                        <Stack.Screen name="RideHistory" component={RideHistoryScreen} />
                     </>
                 )}
             </Stack.Navigator>

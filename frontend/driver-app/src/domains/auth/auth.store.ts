@@ -8,6 +8,9 @@ interface User {
     first_name: string;
     last_name: string;
     is_verified?: boolean;
+    completed_rides?: number;
+    avg_rating?: string | number;
+    level?: string;
 }
 
 interface AuthState {
@@ -39,7 +42,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (token) {
             try {
                 const { api } = await import("../../services/api");
-                const { data } = await api.get("/users/me/");
+                const { data } = await api.get("users/me/");
                 set({ user: data, isAuthenticated: true });
             } catch (err) {
                 console.error("Failed to load user:", err);
@@ -53,7 +56,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (!get().isAuthenticated) return;
         try {
             const { api } = await import("../../services/api");
-            const { data } = await api.get("/users/me/");
+            const { data } = await api.get("users/me/");
             set({ user: data });
         } catch (err) {
             console.error("Sync user failed:", err);

@@ -25,7 +25,7 @@ export default function DocumentUploadScreen({ navigation }: any) {
 
     const fetchDocuments = async () => {
         try {
-            const { data } = await api.get("/drivers/documents/upload/");
+            const { data } = await api.get("drivers/documents/upload/");
             const mapped: any = {};
             data.forEach((doc: any) => {
                 mapped[doc.document_type] = {
@@ -78,7 +78,7 @@ export default function DocumentUploadScreen({ navigation }: any) {
                 type: mimeType,
             });
 
-            await api.post("/drivers/documents/upload/", formData, {
+            await api.post("drivers/documents/upload/", formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },

@@ -21,7 +21,7 @@ export default function LoginScreen({ navigation }: any) {
             console.log("📞 Phone:", phone);
             console.log("🌐 API URL:", api.defaults.baseURL);
 
-            const { data } = await api.post("/users/driver-login/", {
+            const { data } = await api.post(`users/driver-login/`, {
                 phone,
                 password,
             });
