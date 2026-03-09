@@ -1,4 +1,3 @@
-import time
 from apps.rides.services.eta import calculate_eta
 from apps.rides.services.eta_cache import get_cached_eta, set_cached_eta
 

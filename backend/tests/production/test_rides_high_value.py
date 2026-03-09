@@ -1,16 +1,16 @@
-import pytest
 import uuid
-import time
-from decimal import Decimal
-from unittest.mock import patch, MagicMock
-from django.utils import timezone
+from unittest.mock import patch
+
+import pytest
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import status
 
-from apps.rides.models import Ride
 from apps.drivers.models import Driver
+from apps.rides.models import Ride
+from apps.rides.tasks import auto_resolve_stuck_rides, driver_accept_timeout
 from apps.users.models import User
-from apps.rides.tasks import driver_accept_timeout, auto_resolve_stuck_rides
+
 
 @pytest.mark.django_db(transaction=True)
 class TestRidesHighValue:
@@ -20,29 +20,39 @@ class TestRidesHighValue:
     """
 
     def setup_method(self):
-        self.rider = User.objects.create_user(username=f"rider_{uuid.uuid4().hex[:4]}", role="rider")
-        self.driver_user = User.objects.create_user(username=f"driver_{uuid.uuid4().hex[:4]}", role="driver")
+        self.rider = User.objects.create_user(
+            username=f"rider_{uuid.uuid4().hex[:4]}", role="rider"
+        )
+        self.driver_user = User.objects.create_user(
+            username=f"driver_{uuid.uuid4().hex[:4]}", role="driver"
+        )
         self.driver = self.driver_user.driver
         self.driver.status = Driver.Status.ONLINE
         self.driver.save()
-        
+
     # --- 1. Concurrency & Racing Timers ---
 
     def test_accept_ride_vs_timeout_timer_race(self):
         """
-        WHY: Prevents 'Double State Mutation'. If a driver clicks 'Accept' at the 
+        WHY: Prevents 'Double State Mutation'. If a driver clicks 'Accept' at the
         exact millisecond the Celery timeout task runs, one MUST fail cleanly.
         """
         ride = Ride.objects.create(
-            rider=self.rider, driver=self.driver, status=Ride.Status.OFFERED,
-            pickup_lat=12.9716, pickup_lng=77.5946, drop_lat=12.9716, drop_lng=77.6000
+            rider=self.rider,
+            driver=self.driver,
+            status=Ride.Status.OFFERED,
+            pickup_lat=12.9716,
+            pickup_lng=77.5946,
+            drop_lat=12.9716,
+            drop_lng=77.6000,
         )
-        
+
         # 1. Start Celery task (simulated execution)
         # 2. Concurrently call AcceptRideView.post
         from rest_framework.test import APIRequestFactory, force_authenticate
+
         from apps.rides.views import AcceptRideView
-        
+
         factory = APIRequestFactory()
         request = factory.post(f"/api/v1/rides/{ride.id}/accept/")
         force_authenticate(request, user=self.driver_user)
@@ -51,12 +61,12 @@ class TestRidesHighValue:
         # Simulate race: select_for_update() in task wins the lock
         with transaction.atomic():
             # Task locks the ride
-            locked_ride = Ride.objects.select_for_update().get(id=ride.id)
-            
+            Ride.objects.select_for_update().get(id=ride.id)
+
             # The view should hang/timeout or fail on status check once lock is released
             # Since we are in the same process/thread here, we'll simulate the status change
             driver_accept_timeout(ride.id, self.driver.id)
-            
+
             # Now the view tries to execute (after the task released the lock)
             response = view(request, ride_id=ride.id)
             assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -68,27 +78,36 @@ class TestRidesHighValue:
     @patch("apps.drivers.redis.redis_client.incr")
     def test_otp_brute_force_flags_fraud(self, mock_incr, mock_get):
         """
-        WHY: Security Enforcement. If a driver tries to guess the OTP 5 times, 
+        WHY: Security Enforcement. If a driver tries to guess the OTP 5 times,
         the ride is locked and flagged for review to prevent ride hijacking.
         """
         ride = Ride.objects.create(
-            rider=self.rider, driver=self.driver, status=Ride.Status.ARRIVED,
-            otp_code="1234", pickup_lat=0, pickup_lng=0, drop_lat=0, drop_lng=0
+            rider=self.rider,
+            driver=self.driver,
+            status=Ride.Status.ARRIVED,
+            otp_code="1234",
+            pickup_lat=0,
+            pickup_lng=0,
+            drop_lat=0,
+            drop_lng=0,
         )
-        
+
         # Mock 5 failed attempts reached
         mock_get.return_value = b"5"
-        
+
         from rest_framework.test import APIRequestFactory, force_authenticate
+
         from apps.rides.views import VerifyOtpView
-        
+
         factory = APIRequestFactory()
-        request = factory.post(f"/api/v1/rides/{ride.id}/verify-otp/", {"otp": "0000"}, format="json")
+        request = factory.post(
+            f"/api/v1/rides/{ride.id}/verify-otp/", {"otp": "0000"}, format="json"
+        )
         force_authenticate(request, user=self.driver_user)
         view = VerifyOtpView.as_view()
-        
+
         response = view(request, ride_id=ride.id)
-        
+
         assert response.status_code == 429
         ride.refresh_from_db()
         assert ride.is_fraud_flagged is True
@@ -97,24 +116,28 @@ class TestRidesHighValue:
 
     def test_auto_resolve_maintenance_skips_recent_activity(self):
         """
-        WHY: Data Integrity. The system-level cleanup task must not cancel a 
+        WHY: Data Integrity. The system-level cleanup task must not cancel a
         ride that just started, even if it was SEARCHING for 15 minutes prior.
         """
         # Create a ride that was SEARCHING for 20 mins, but just got ASSIGNED 1 min ago
         now = timezone.now()
         ride = Ride.objects.create(
-            rider=self.rider, status=Ride.Status.ASSIGNED,
-            pickup_lat=0, pickup_lng=0, drop_lat=0, drop_lng=0
+            rider=self.rider,
+            status=Ride.Status.ASSIGNED,
+            pickup_lat=0,
+            pickup_lng=0,
+            drop_lat=0,
+            drop_lng=0,
         )
         # Manually force created_at and updated_at to stale states (bypass auto_now)
         Ride.objects.filter(id=ride.id).update(
             created_at=now - timezone.timedelta(minutes=20),
-            updated_at=now - timezone.timedelta(minutes=1)
+            updated_at=now - timezone.timedelta(minutes=1),
         )
         ride.refresh_from_db()
-        
+
         auto_resolve_stuck_rides()
-        
+
         ride.refresh_from_db()
         assert ride.status == Ride.Status.ASSIGNED  # Must NOT be cancelled
 
@@ -140,16 +163,22 @@ class TestRidesHighValue:
         def smart_cache_get(key, default=None):
             if "idem:api" in key:
                 return "IN_FLIGHT"
-            return 0.0 # Default for adaptive shedder / throttle
+            return 0.0  # Default for adaptive shedder / throttle
 
         # First call — seed the IN_FLIGHT marker
         # We patch the cache specifically in the idempotency module to isolate side-effects
-        with patch("apps.common.idempotency.cache.add", return_value=False), \
-             patch("apps.common.idempotency.cache.get", side_effect=smart_cache_get):
+        with (
+            patch("apps.common.idempotency.cache.add", return_value=False),
+            patch("apps.common.idempotency.cache.get", side_effect=smart_cache_get),
+        ):
             response = client.post(
                 "/api/rides/request/",
-                {"pickup_lat": 12.9716, "pickup_lng": 77.5946,
-                 "drop_lat": 12.9716, "drop_lng": 77.6000},
+                {
+                    "pickup_lat": 12.9716,
+                    "pickup_lng": 77.5946,
+                    "drop_lat": 12.9716,
+                    "drop_lng": 77.6000,
+                },
                 format="json",
                 HTTP_X_IDEMPOTENCY_KEY=idem_key,
             )

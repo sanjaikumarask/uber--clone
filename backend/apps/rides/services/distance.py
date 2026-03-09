@@ -1,12 +1,15 @@
-import math
-import requests
 import logging
+import math
+
+import requests
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+
 class RoutePlanningError(Exception):
     pass
+
 
 def haversine_km(lat1, lng1, lat2, lng2):
     """
@@ -17,10 +20,13 @@ def haversine_km(lat1, lng1, lat2, lng2):
     d_phi = math.radians(lat2 - lat1)
     d_lambda = math.radians(lng2 - lng1)
 
-    a = (math.sin(d_phi / 2) ** 2 +
-         math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2) ** 2)
+    a = (
+        math.sin(d_phi / 2) ** 2
+        + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2) ** 2
+    )
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
+
 
 def get_planned_route(origin, destination):
     """
@@ -30,11 +36,11 @@ def get_planned_route(origin, destination):
     """
     lat1, lng1 = origin
     lat2, lng2 = destination
-    
+
     # -------------------------------
     # 1. TRY GOOGLE DIRECTIONS API
     # -------------------------------
-    api_key = getattr(settings, 'GOOGLE_MAPS_API_KEY', None)
+    api_key = getattr(settings, "GOOGLE_MAPS_API_KEY", None)
 
     if api_key:
         try:
@@ -53,18 +59,19 @@ def get_planned_route(origin, destination):
             if resp.status_code == 200 and data.get("status") == "OK":
                 route = data["routes"][0]
                 leg = route["legs"][0]
-                
+
                 logger.info("✅ Google Maps Route Calculated")
                 return {
                     "polyline": route["overview_polyline"]["points"],
                     "distance_km": leg["distance"]["value"] / 1000,
                     "duration_min": leg["duration"]["value"] / 60,
                 }
-            else:
-                logger.error(f"⚠️ Google Maps Error: {data.get('status')} - {data.get('error_message')}")
+            logger.error(
+                f"⚠️ Google Maps Error: {data.get('status')} - {data.get('error_message')}"
+            )
 
         except Exception as e:
-            logger.error(f"⚠️ Google Maps Request Failed: {str(e)}")
+            logger.error(f"⚠️ Google Maps Request Failed: {e!s}")
 
     # -------------------------------
     # 2. FALLBACK (Haversine Math)
@@ -72,12 +79,13 @@ def get_planned_route(origin, destination):
     # If API key is missing or request fails, we estimate it so the app doesn't crash.
     logger.warning("Using Local Math Fallback for Route")
     dist = haversine_km(lat1, lng1, lat2, lng2)
-    
+
     return {
         "polyline": "",  # No visual path in fallback mode
         "distance_km": round(dist, 2),
-        "duration_min": round((dist / 30) * 60), # Assume 30km/h avg speed
+        "duration_min": round((dist / 30) * 60),  # Assume 30km/h avg speed
     }
+
 
 def get_distance_and_duration(origin, destination):
     """Helper wrapper for fare calculation which expects tuple"""

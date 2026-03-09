@@ -1,13 +1,14 @@
 # apps/supports/urls.py
 
 from django.urls import path
+
 from apps.supports.views import (
     CreateSupportTicketView,
-    ResolveTicketView,
-    TriggerSOSView,
-    SupportTicketListView,
-    SupportTicketDetailView,
     ResolveEmergencyView,
+    ResolveTicketView,
+    SupportTicketDetailView,
+    SupportTicketListView,
+    TriggerSOSView,
 )
 
 urlpatterns = [

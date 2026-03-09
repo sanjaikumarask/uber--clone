@@ -44,6 +44,29 @@ export default function Overview() {
 
   const stats = STAT_CARDS(data);
 
+  const getSystemHealthInfo = () => {
+    if (loading) {
+      return {
+        bg: "rgba(0,0,0,0.05)",
+        border: "var(--border)",
+        dot: "var(--text-3)",
+        text: "var(--text-3)",
+        label: "INITIALIZING..."
+      };
+    }
+    const isOperational = data?.system_health?.is_operational;
+    return {
+      bg: isOperational ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.06)",
+      border: isOperational ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
+      dot: isOperational ? "var(--green)" : "var(--red)",
+      text: isOperational ? "var(--green)" : "var(--red)",
+      label: isOperational ? "SYSTEM OPERATIONAL" : "SYSTEM DEGRADED"
+    };
+  };
+
+  const health = getSystemHealthInfo();
+
+
   return (
     <div className="page" style={{ padding: "36px 48px" }}>
       {/* ── Header ─────────────────────────────────────────────── */}
@@ -55,13 +78,13 @@ export default function Overview() {
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
           <div style={{
             display: "flex", alignItems: "center", gap: 8,
-            background: loading ? "rgba(0,0,0,0.05)" : (data?.system_health?.is_operational ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.06)"),
-            border: `1px solid ${loading ? "var(--border)" : (data?.system_health?.is_operational ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)")}`,
+            background: health.bg,
+            border: `1px solid ${health.border}`,
             borderRadius: 99, padding: "6px 14px"
           }}>
-            <div className="live-dot" style={{ background: loading ? "var(--text-3)" : (data?.system_health?.is_operational ? "var(--green)" : "var(--red)") }} />
-            <span style={{ fontSize: 11, color: loading ? "var(--text-3)" : (data?.system_health?.is_operational ? "var(--green)" : "var(--red)"), fontWeight: 700 }}>
-              {loading ? "INITIALIZING..." : (data?.system_health?.is_operational ? "SYSTEM OPERATIONAL" : "SYSTEM DEGRADED")}
+            <div className="live-dot" style={{ background: health.dot }} />
+            <span style={{ fontSize: 11, color: health.text, fontWeight: 700 }}>
+              {health.label}
             </span>
           </div>
           <span style={{ fontSize: 11, color: "var(--text-3)", fontVariantNumeric: "tabular-nums" }}>

@@ -1,13 +1,14 @@
 """
 Unit and Integration Tests for Driver Functionality
 """
-import pytest
+
 from decimal import Decimal
-from django.utils import timezone
-from django.db import models
-from rest_framework.test import APIClient
-from rest_framework import status
+
+import pytest
 from django.contrib.auth import get_user_model
+from django.db import models
+from rest_framework import status
+from rest_framework.test import APIClient
 
 from apps.drivers.models import Driver
 from apps.rides.models import Ride
@@ -21,10 +22,10 @@ class TestDriverModel:
 
     def setup_method(self):
         self.driver_user = User.objects.create_user(
-            username="driver",
-            phone="1234567890",
-            password="pass123",
-            role="driver"
+            username="driver", phone="1234567890", password="pass123", role="driver"
+        )
+        Driver.objects.get_or_create(
+            user=self.driver_user, defaults={"status": Driver.Status.OFFLINE}
         )
         self.driver = Driver.objects.get(user=self.driver_user)
 
@@ -41,7 +42,7 @@ class TestDriverModel:
         """Test driver going online"""
         self.driver.status = Driver.Status.ONLINE
         self.driver.save()
-        
+
         assert self.driver.status == Driver.Status.ONLINE
 
     def test_driver_location_update(self):
@@ -49,7 +50,7 @@ class TestDriverModel:
         self.driver.last_lat = 13.0827
         self.driver.last_lng = 80.2707
         self.driver.save()
-        
+
         assert self.driver.last_lat == 13.0827
         assert self.driver.last_lng == 80.2707
 
@@ -65,25 +66,23 @@ class TestDriverStatus:
     def setup_method(self):
         self.client = APIClient()
         self.driver_user = User.objects.create_user(
-            username="driver",
-            phone="1234567890",
-            password="pass123",
-            role="driver"
+            username="driver", phone="1234567890", password="pass123", role="driver"
+        )
+        Driver.objects.get_or_create(
+            user=self.driver_user, defaults={"status": Driver.Status.OFFLINE}
         )
         self.driver = Driver.objects.get(user=self.driver_user)
 
     def test_update_status_to_online(self):
         """Test updating driver status to online"""
         self.client.force_authenticate(user=self.driver_user)
-        
+
         response = self.client.post(
-            "/api/drivers/status/",
-            {"status": "ONLINE"},
-            format="json"
+            "/api/drivers/status/", {"status": "ONLINE"}, format="json"
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
-        
+
         self.driver.refresh_from_db()
         assert self.driver.status == Driver.Status.ONLINE
 
@@ -91,47 +90,38 @@ class TestDriverStatus:
         """Test updating driver status to offline"""
         self.driver.status = Driver.Status.ONLINE
         self.driver.save()
-        
+
         self.client.force_authenticate(user=self.driver_user)
-        
+
         response = self.client.post(
-            "/api/drivers/status/",
-            {"status": "OFFLINE"},
-            format="json"
+            "/api/drivers/status/", {"status": "OFFLINE"}, format="json"
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
-        
+
         self.driver.refresh_from_db()
         assert self.driver.status == Driver.Status.OFFLINE
 
     def test_update_status_unauthenticated(self):
         """Test updating status without authentication"""
         response = self.client.post(
-            "/api/drivers/status/",
-            {"status": "ONLINE"},
-            format="json"
+            "/api/drivers/status/", {"status": "ONLINE"}, format="json"
         )
-        
+
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_non_driver_cannot_update_status(self):
         """Test that non-driver cannot update driver status"""
         rider = User.objects.create_user(
-            username="rider",
-            phone="9876543210",
-            password="pass123",
-            role="rider"
+            username="rider", phone="9876543210", password="pass123", role="rider"
         )
-        
+
         self.client.force_authenticate(user=rider)
-        
+
         response = self.client.post(
-            "/api/drivers/status/",
-            {"status": "ONLINE"},
-            format="json"
+            "/api/drivers/status/", {"status": "ONLINE"}, format="json"
         )
-        
+
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
@@ -142,28 +132,25 @@ class TestDriverLocation:
     def setup_method(self):
         self.client = APIClient()
         self.driver_user = User.objects.create_user(
-            username="driver",
-            phone="1234567890",
-            password="pass123",
-            role="driver"
+            username="driver", phone="1234567890", password="pass123", role="driver"
+        )
+        Driver.objects.get_or_create(
+            user=self.driver_user, defaults={"status": Driver.Status.OFFLINE}
         )
         self.driver = Driver.objects.get(user=self.driver_user)
 
     def test_update_location(self):
         """Test updating driver location"""
         self.client.force_authenticate(user=self.driver_user)
-        
+
         response = self.client.post(
             "/api/tracking/update-location/",
-            {
-                "lat": 13.0827,
-                "lng": 80.2707
-            },
-            format="json"
+            {"lat": 13.0827, "lng": 80.2707},
+            format="json",
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
-        
+
         self.driver.refresh_from_db()
         assert self.driver.last_lat == 13.0827
         assert self.driver.last_lng == 80.2707
@@ -171,16 +158,13 @@ class TestDriverLocation:
     def test_update_location_invalid_coordinates(self):
         """Test updating location with invalid coordinates"""
         self.client.force_authenticate(user=self.driver_user)
-        
+
         response = self.client.post(
             "/api/tracking/update-location/",
-            {
-                "lat": 200,  # Invalid
-                "lng": 80.2707
-            },
-            format="json"
+            {"lat": 200, "lng": 80.2707},  # Invalid
+            format="json",
         )
-        
+
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_get_nearby_drivers(self):
@@ -190,15 +174,13 @@ class TestDriverLocation:
         self.driver.last_lng = 80.2707
         self.driver.status = Driver.Status.ONLINE
         self.driver.save()
-        
+
         # This would typically be called internally
         # Testing the query logic
         nearby = Driver.objects.filter(
-            status=Driver.Status.ONLINE,
-            last_lat__isnull=False,
-            last_lng__isnull=False
+            status=Driver.Status.ONLINE, last_lat__isnull=False, last_lng__isnull=False
         )
-        
+
         assert self.driver in nearby
 
 
@@ -209,16 +191,13 @@ class TestDriverRideManagement:
     def setup_method(self):
         self.client = APIClient()
         self.rider = User.objects.create_user(
-            username="rider",
-            phone="9876543210",
-            password="pass123",
-            role="rider"
+            username="rider", phone="9876543210", password="pass123", role="rider"
         )
         self.driver_user = User.objects.create_user(
-            username="driver",
-            phone="1234567890",
-            password="pass123",
-            role="driver"
+            username="driver", phone="1234567890", password="pass123", role="driver"
+        )
+        Driver.objects.get_or_create(
+            user=self.driver_user, defaults={"status": Driver.Status.OFFLINE}
         )
         self.driver = Driver.objects.get(user=self.driver_user)
 
@@ -231,15 +210,15 @@ class TestDriverRideManagement:
             drop_lat=13.0569,
             drop_lng=80.2425,
             status=Ride.Status.OFFERED,
-            driver=self.driver
+            driver=self.driver,
         )
-        
+
         self.client.force_authenticate(user=self.driver_user)
-        
+
         response = self.client.post(f"/api/rides/{ride.id}/accept/")
-        
+
         assert response.status_code == status.HTTP_200_OK
-        
+
         ride.refresh_from_db()
         assert ride.driver == self.driver
         assert ride.status == Ride.Status.ASSIGNED
@@ -253,15 +232,15 @@ class TestDriverRideManagement:
             drop_lat=13.0569,
             drop_lng=80.2425,
             status=Ride.Status.OFFERED,
-            driver=self.driver
+            driver=self.driver,
         )
-        
+
         self.client.force_authenticate(user=self.driver_user)
-        
+
         response = self.client.post(f"/api/rides/{ride.id}/reject/")
-        
+
         assert response.status_code == status.HTTP_200_OK
-        
+
         ride.refresh_from_db()
         assert ride.driver is None
 
@@ -274,13 +253,13 @@ class TestDriverRideManagement:
             pickup_lng=80.2707,
             drop_lat=13.0569,
             drop_lng=80.2425,
-            status=Ride.Status.ONGOING
+            status=Ride.Status.ONGOING,
         )
-        
+
         self.client.force_authenticate(user=self.driver_user)
-        
+
         response = self.client.get("/api/drivers/active-ride/")
-        
+
         assert response.status_code == status.HTTP_200_OK
         assert response.data["id"] == ride.id
 
@@ -296,14 +275,13 @@ class TestDriverRideManagement:
                 drop_lat=13.0569,
                 drop_lng=80.2425,
                 status=Ride.Status.COMPLETED,
-                final_fare=Decimal("100.00")
+                final_fare=Decimal("100.00"),
             )
-        
+
         total_earnings = Ride.objects.filter(
-            driver=self.driver,
-            status=Ride.Status.COMPLETED
-        ).aggregate(total=models.Sum('final_fare'))['total']
-        
+            driver=self.driver, status=Ride.Status.COMPLETED
+        ).aggregate(total=models.Sum("final_fare"))["total"]
+
         assert total_earnings == Decimal("300.00")
 
 
@@ -313,16 +291,13 @@ class TestDriverStatistics:
 
     def setup_method(self):
         self.rider = User.objects.create_user(
-            username="rider",
-            phone="9876543210",
-            password="pass123",
-            role="rider"
+            username="rider", phone="9876543210", password="pass123", role="rider"
         )
         self.driver_user = User.objects.create_user(
-            username="driver",
-            phone="1234567890",
-            password="pass123",
-            role="driver"
+            username="driver", phone="1234567890", password="pass123", role="driver"
+        )
+        Driver.objects.get_or_create(
+            user=self.driver_user, defaults={"status": Driver.Status.OFFLINE}
         )
         self.driver = Driver.objects.get(user=self.driver_user)
 
@@ -337,11 +312,11 @@ class TestDriverStatistics:
                 pickup_lng=80.2707,
                 drop_lat=13.0569,
                 drop_lng=80.2425,
-                status=Ride.Status.COMPLETED
+                status=Ride.Status.COMPLETED,
             )
-        
+
         total_rides = Ride.objects.filter(driver=self.driver).count()
-        
+
         assert total_rides == 5
 
     def test_completed_rides_count(self):
@@ -355,9 +330,9 @@ class TestDriverStatistics:
                 pickup_lng=80.2707,
                 drop_lat=13.0569,
                 drop_lng=80.2425,
-                status=Ride.Status.COMPLETED
+                status=Ride.Status.COMPLETED,
             )
-        
+
         # Create cancelled ride
         Ride.objects.create(
             rider=self.rider,
@@ -366,12 +341,11 @@ class TestDriverStatistics:
             pickup_lng=80.2707,
             drop_lat=13.0569,
             drop_lng=80.2425,
-            status=Ride.Status.CANCELLED
+            status=Ride.Status.CANCELLED,
         )
-        
+
         completed = Ride.objects.filter(
-            driver=self.driver,
-            status=Ride.Status.COMPLETED
+            driver=self.driver, status=Ride.Status.COMPLETED
         ).count()
-        
+
         assert completed == 3

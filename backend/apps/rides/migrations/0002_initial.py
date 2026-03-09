@@ -10,34 +10,51 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('drivers', '0002_initial'),
-        ('rides', '0001_initial'),
+        ("drivers", "0002_initial"),
+        ("rides", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='ride',
-            name='rider',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='rides', to=settings.AUTH_USER_MODEL),
+            model_name="ride",
+            name="rider",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="rides",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='ridefeedback',
-            name='driver',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='feedbacks', to='drivers.driver'),
+            model_name="ridefeedback",
+            name="driver",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="feedbacks",
+                to="drivers.driver",
+            ),
         ),
         migrations.AddField(
-            model_name='ridefeedback',
-            name='ride',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='feedback', to='rides.ride'),
+            model_name="ridefeedback",
+            name="ride",
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="feedback",
+                to="rides.ride",
+            ),
         ),
         migrations.AddField(
-            model_name='ridefeedback',
-            name='rider',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+            model_name="ridefeedback",
+            name="rider",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL
+            ),
         ),
         migrations.AddConstraint(
-            model_name='ridefeedback',
-            constraint=models.CheckConstraint(condition=models.Q(('rating__gte', 1), ('rating__lte', 5)), name='rating_between_1_and_5'),
+            model_name="ridefeedback",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("rating__gte", 1), ("rating__lte", 5)),
+                name="rating_between_1_and_5",
+            ),
         ),
     ]

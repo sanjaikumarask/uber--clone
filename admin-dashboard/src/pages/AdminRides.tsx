@@ -49,6 +49,12 @@ export default function AdminRides() {
 
     if (loading) return <div style={{ padding: 60, color: "var(--text-dim)" }}>Loading trip data...</div>;
 
+    const getFareDisplay = (r: AdminRide) => {
+        if (r.final_fare) return `₹${r.final_fare}`;
+        if (r.base_fare) return `₹${r.base_fare}`;
+        return "—";
+    };
+
     return (
         <div style={{ padding: "40px" }}>
             <h1 style={{ marginBottom: "8px", fontSize: "2rem" }}>Trips</h1>
@@ -95,7 +101,7 @@ export default function AdminRides() {
                                             {r.status}
                                         </span>
                                     </td>
-                                    <td style={{ fontWeight: 500 }}>{r.final_fare ? `₹${r.final_fare}` : r.base_fare ? `₹${r.base_fare}` : "—"}</td>
+                                    <td style={{ fontWeight: 500 }}>{getFareDisplay(r)}</td>
                                     <td style={{ color: "var(--text-dim)", fontSize: '0.85rem' }}>{new Date(r.created_at).toLocaleString()}</td>
                                     <td>
                                         {["SEARCHING", "OFFERED", "ASSIGNED", "ARRIVED", "ONGOING", "COMPLETED"].includes(r.status) && (

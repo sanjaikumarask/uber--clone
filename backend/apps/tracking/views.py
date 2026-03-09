@@ -1,7 +1,9 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from apps.users.permissions import IsDriver
+
 
 class UpdateLocationView(APIView):
     permission_classes = [IsDriver]
@@ -11,14 +13,14 @@ class UpdateLocationView(APIView):
         try:
             lat = float(request.data["lat"])
             lng = float(request.data["lng"])
-            
+
             # Validate coordinates
             if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
                 return Response(
                     {"error": "Invalid coordinates"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            
+
             driver.last_lat = lat
             driver.last_lng = lng
         except (KeyError, ValueError):
@@ -28,11 +30,11 @@ class UpdateLocationView(APIView):
             )
 
         driver.save(update_fields=["last_lat", "last_lng"])
-        
+
         # Broadcast to Admin Live Map
-        from channels.layers import get_channel_layer
         from asgiref.sync import async_to_sync
-        
+        from channels.layers import get_channel_layer
+
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             "admin_live_map",

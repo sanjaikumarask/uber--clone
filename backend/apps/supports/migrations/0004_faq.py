@@ -6,25 +6,56 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('supports', '0003_emergency'),
+        ("supports", "0003_emergency"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='FAQ',
+            name="FAQ",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('question', models.CharField(max_length=255)),
-                ('answer', models.TextField()),
-                ('audience', models.CharField(choices=[('RIDER', 'Rider'), ('DRIVER', 'Driver'), ('BOTH', 'Both')], default='BOTH', max_length=10)),
-                ('category', models.CharField(choices=[('PAYMENT', 'Payment & Billing'), ('RIDE_ISSUE', 'Ride Issues'), ('ACCOUNT', 'Account & Settings'), ('SAFETY', 'Safety')], default='RIDE_ISSUE', max_length=20)),
-                ('is_active', models.BooleanField(default=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("question", models.CharField(max_length=255)),
+                ("answer", models.TextField()),
+                (
+                    "audience",
+                    models.CharField(
+                        choices=[
+                            ("RIDER", "Rider"),
+                            ("DRIVER", "Driver"),
+                            ("BOTH", "Both"),
+                        ],
+                        default="BOTH",
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "category",
+                    models.CharField(
+                        choices=[
+                            ("PAYMENT", "Payment & Billing"),
+                            ("RIDE_ISSUE", "Ride Issues"),
+                            ("ACCOUNT", "Account & Settings"),
+                            ("SAFETY", "Safety"),
+                        ],
+                        default="RIDE_ISSUE",
+                        max_length=20,
+                    ),
+                ),
+                ("is_active", models.BooleanField(default=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'verbose_name': 'FAQ',
-                'verbose_name_plural': 'FAQs',
+                "verbose_name": "FAQ",
+                "verbose_name_plural": "FAQs",
             },
         ),
     ]

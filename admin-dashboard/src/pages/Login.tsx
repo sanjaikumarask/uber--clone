@@ -128,10 +128,11 @@ export default function Login() {
 
                     <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
                         <div>
-                            <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-3)", letterSpacing: 0.8, textTransform: "uppercase", display: "block", marginBottom: 8 }}>
+                            <label htmlFor="identifier" style={{ fontSize: 11, fontWeight: 700, color: "var(--text-3)", letterSpacing: 0.8, textTransform: "uppercase", display: "block", marginBottom: 8 }}>
                                 Email or Username
                             </label>
                             <input
+                                id="identifier"
                                 value={identifier}
                                 onChange={e => setIdentifier(e.target.value)}
                                 placeholder="admin@example.com or admin"
@@ -144,10 +145,11 @@ export default function Login() {
                         </div>
 
                         <div>
-                            <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-3)", letterSpacing: 0.8, textTransform: "uppercase", display: "block", marginBottom: 8 }}>
+                            <label htmlFor="password" style={{ fontSize: 11, fontWeight: 700, color: "var(--text-3)", letterSpacing: 0.8, textTransform: "uppercase", display: "block", marginBottom: 8 }}>
                                 Password
                             </label>
                             <input
+                                id="password"
                                 type="password"
                                 value={password}
                                 onChange={e => setPassword(e.target.value)}

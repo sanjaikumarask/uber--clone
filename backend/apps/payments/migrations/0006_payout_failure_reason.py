@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('payments', '0005_payout_gateway_payout_id'),
+        ("payments", "0005_payout_gateway_payout_id"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='payout',
-            name='failure_reason',
+            model_name="payout",
+            name="failure_reason",
             field=models.TextField(blank=True, null=True),
         ),
     ]

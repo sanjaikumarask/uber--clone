@@ -7,26 +7,48 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('drivers', '0004_driver_vehicle_model_driver_vehicle_number'),
-        ('payments', '0006_payout_failure_reason'),
-        ('rides', '0003_ride_applied_offer_ride_completed_at_and_more'),
+        ("drivers", "0004_driver_vehicle_model_driver_vehicle_number"),
+        ("payments", "0006_payout_failure_reason"),
+        ("rides", "0003_ride_applied_offer_ride_completed_at_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='DriverEarnings',
+            name="DriverEarnings",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('amount', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('commission', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('net_earning', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('driver', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='earnings', to='drivers.driver')),
-                ('ride', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='earning', to='rides.ride')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("amount", models.DecimalField(decimal_places=2, max_digits=10)),
+                ("commission", models.DecimalField(decimal_places=2, max_digits=10)),
+                ("net_earning", models.DecimalField(decimal_places=2, max_digits=10)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "driver",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="earnings",
+                        to="drivers.driver",
+                    ),
+                ),
+                (
+                    "ride",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="earning",
+                        to="rides.ride",
+                    ),
+                ),
             ],
             options={
-                'verbose_name_plural': 'Driver Earnings',
-                'ordering': ['-created_at'],
+                "verbose_name_plural": "Driver Earnings",
+                "ordering": ["-created_at"],
             },
         ),
     ]

@@ -1,11 +1,12 @@
-from django.db import models
-from django.conf import settings
-from django.db.models import Q
 from decimal import Decimal
+
+from django.conf import settings
+from django.db import models
+from django.db.models import Q
 from django_prometheus.models import ExportModelOperationsMixin
 
 
-class Payment(ExportModelOperationsMixin('payment'), models.Model):
+class Payment(ExportModelOperationsMixin("payment"), models.Model):
     class Status(models.TextChoices):
         CREATED = "CREATED"
         AUTHORIZED = "AUTHORIZED"
@@ -57,19 +58,19 @@ class Payment(ExportModelOperationsMixin('payment'), models.Model):
     )
     gateway_signature = models.CharField(
         max_length=256,
-        null=True,
         blank=True,
+        default="",
     )
-    
+
     idempotency_key = models.CharField(
         max_length=128,
         unique=True,
         null=True,
         blank=True,
-        help_text="Network-edge idempotency tracking key"
+        help_text="Network-edge idempotency tracking key",
     )
 
-    failure_reason = models.TextField(null=True, blank=True)
+    failure_reason = models.TextField(blank=True, default="")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -92,7 +93,7 @@ class Payment(ExportModelOperationsMixin('payment'), models.Model):
         return max(self.amount - self.refunded_amount, Decimal("0.00"))
 
 
-class LedgerEntry(ExportModelOperationsMixin('ledger_entry'), models.Model):
+class LedgerEntry(ExportModelOperationsMixin("ledger_entry"), models.Model):
     """
     IMMUTABLE ACCOUNTING LEDGER
     NEVER UPDATE — ONLY INSERT
@@ -155,8 +156,8 @@ class LedgerEntry(ExportModelOperationsMixin('ledger_entry'), models.Model):
     reason = models.CharField(
         max_length=64,
         choices=Reason.choices,
-        null=True,
         blank=True,
+        default="",
     )
 
     created_at = models.DateTimeField(
@@ -198,13 +199,10 @@ class Payout(models.Model):
     )
 
     gateway_payout_id = models.CharField(
-        max_length=128,
-        unique=True,
-        null=True, 
-        blank=True
+        max_length=128, unique=True, null=True, blank=True
     )
 
-    failure_reason = models.TextField(null=True, blank=True)
+    failure_reason = models.TextField(blank=True, default="")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -249,10 +247,7 @@ class WebhookEvent(models.Model):
         help_text="RECEIVED | PROCESSED | IGNORED | FAILED",
     )
 
-    error = models.TextField(
-        null=True,
-        blank=True,
-    )
+    error = models.TextField(blank=True, default="")
 
     class Meta:
         ordering = ["-received_at"]
@@ -275,7 +270,7 @@ class DriverEarnings(models.Model):
     commission = models.DecimalField(max_digits=10, decimal_places=2)
     # What the driver actually gets
     net_earning = models.DecimalField(max_digits=10, decimal_places=2)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

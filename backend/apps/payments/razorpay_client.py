@@ -1,7 +1,8 @@
 # apps/payments/razorpay_client.py
+import logging
+
 import razorpay
 from django.conf import settings
-import logging
 
 logger = logging.getLogger(__name__)
 

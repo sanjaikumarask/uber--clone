@@ -1,0 +1,933 @@
+time="2026-03-07T13:49:02+05:30" level=warning msg="Found orphan containers ([sonarqube sonarqube_db]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container uber_zookeeper Running 
+ Container uber_redis Running 
+ Container uber_kafka Running 
+ Container uber_postgres Running 
+ Container uber_postgres Waiting 
+ Container uber_postgres Healthy 
+ Container uber-backend-backend-run-8c46351f858a Creating 
+ Container uber-backend-backend-run-8c46351f858a Created 
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.0.2, pluggy-1.6.0
+django: version: 5.2.12, settings: config.settings (from env)
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0, django-4.12.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 399 items
+
+tests/unit/admin_dashboard/test_admin_actions_extended.py .............. [  3%]
+......                                                                   [  5%]
+tests/unit/admin_dashboard/test_views_admin.py ..................        [  9%]
+tests/unit/common/test_fraud.py .........                                [ 11%]
+tests/unit/common/test_idempotency.py ..........                         [ 14%]
+tests/unit/driver_incentives/test_incentive_engine.py ........           [ 16%]
+tests/unit/drivers/test_drivers_admin_views_extended.py ..........       [ 18%]
+tests/unit/drivers/test_geo_service.py ...                               [ 19%]
+tests/unit/drivers/test_redis.py ...                                     [ 20%]
+tests/unit/drivers/test_tasks.py .....                                   [ 21%]
+tests/unit/drivers/test_trust.py ....                                    [ 22%]
+tests/unit/notifications/test_internals.py ..                            [ 23%]
+tests/unit/notifications/test_router.py .....                            [ 24%]
+tests/unit/offers/test_eligibility.py .                                  [ 24%]
+tests/unit/offers/test_offer_engine.py .............                     [ 27%]
+tests/unit/offers/test_rider_offer_service.py ..                         [ 28%]
+tests/unit/payments/test_payment_webhook.py ....                         [ 29%]
+tests/unit/payments/test_payments_views_extended.py ...                  [ 30%]
+tests/unit/payments/test_payout_flow.py .                                [ 30%]
+tests/unit/payments/test_payout_webhook.py ....                          [ 31%]
+tests/unit/payments/test_refund_view.py ...                              [ 32%]
+tests/unit/payments/test_tasks_extended.py ...............               [ 35%]
+tests/unit/payments/test_wallet.py ...                                   [ 36%]
+tests/unit/rides/test_cancellation.py .........                          [ 38%]
+tests/unit/rides/test_complete_ride.py ..                                [ 39%]
+tests/unit/rides/test_deviation.py ............                          [ 42%]
+tests/unit/rides/test_distance_logic.py ...                              [ 43%]
+tests/unit/rides/test_eta.py .......                                     [ 44%]
+tests/unit/rides/test_fare_estimation.py ....                            [ 45%]
+tests/unit/rides/test_fares.py ....                                      [ 46%]
+tests/unit/rides/test_final_fare.py ....                                 [ 47%]
+tests/unit/rides/test_lifecycle_service.py ......                        [ 49%]
+tests/unit/rides/test_no_show.py ..                                      [ 49%]
+tests/unit/rides/test_otp.py .........                                   [ 52%]
+tests/unit/rides/test_policies.py ....                                   [ 53%]
+tests/unit/rides/test_realtime.py .                                      [ 53%]
+tests/unit/rides/test_rides_admin_views_extended.py ..........           [ 55%]
+tests/unit/rides/test_rides_edge_cases.py .....                          [ 57%]
+tests/unit/rides/test_rides_lifecycle_views.py ..........                [ 59%]
+tests/unit/rides/test_rides_views_coverage.py ......                     [ 61%]
+tests/unit/rides/test_rides_views_error_paths.py ......                  [ 62%]
+tests/unit/rides/test_rides_views_extended.py ...........                [ 65%]
+tests/unit/rides/test_stale_resolver.py ..                               [ 65%]
+tests/unit/rides/test_surge.py ...                                       [ 66%]
+tests/unit/rides/test_surge_engine.py ......                             [ 68%]
+tests/unit/rides/test_waiting_detector.py ....                           [ 69%]
+tests/unit/supports/test_services.py .........                           [ 71%]
+tests/unit/test_admin_views.py ..                                        [ 71%]
+tests/unit/test_common_utils.py ............................             [ 78%]
+tests/unit/test_coverage_booster.py ..................                   [ 83%]
+tests/unit/test_geo.py ....                                              [ 84%]
+tests/unit/test_logging.py ............                                  [ 87%]
+tests/unit/test_matching_unit.py ...                                     [ 88%]
+tests/unit/test_notifications.py ...                                     [ 88%]
+tests/unit/test_sanity_check.py .                                        [ 89%]
+tests/unit/tracking/test_driver_location_consumer.py .....               [ 90%]
+tests/unit/tracking/test_location_processor.py ..............            [ 93%]
+tests/unit/tracking/test_smoothing.py ..                                 [ 94%]
+tests/unit/rides/test_rides_matching.py .EEE                             [ 95%]
+tests/unit/rides/test_views.py EEEEE.                                    [ 96%]
+tests/unit/test_live_map_consumer.py .E....EE.                           [ 98%]
+tests/unit/tracking/test_driver_location_consumer_v2.py .F               [ 98%]
+tests/unit/tracking/test_tracking_consumers_extended.py .F...E           [100%]
+
+==================================== ERRORS ====================================
+_ ERROR at setup of TestMatchingService.test_find_driver_and_offer_ride_success _
+/usr/local/lib/python3.11/site-packages/django/db/backends/base/base.py:279: in ensure_connection
+    self.connect()
+/usr/local/lib/python3.11/site-packages/sentry_sdk/utils.py:1842: in runner
+    return sentry_patched_function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/sentry_sdk/integrations/django/__init__.py:684: in connect
+    return real_connect(self)
+           ^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/utils/asyncio.py:26: in inner
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/base/base.py:256: in connect
+    self.connection = self.get_new_connection(conn_params)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/utils/asyncio.py:26: in inner
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/postgresql/base.py:332: in get_new_connection
+    connection = self.Database.connect(**conn_params)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/psycopg2/__init__.py:122: in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   psycopg2.OperationalError: connection to server at "postgres" (172.18.0.7), port 5432 failed: FATAL:  database "test_uber" does not exist
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:730: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+tests/conftest.py:37: in driver_user
+    user = django_user_model.objects.create_user(
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/models.py:175: in create_user
+    return self._create_user(username, email, password, **extra_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/models.py:163: in _create_user
+    user.save(using=self._db)
+apps/users/models.py:48: in save
+    super().save(*args, **kwargs)
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/base_user.py:65: in save
+    super().save(*args, **kwargs)
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:902: in save
+    self.save_base(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1008: in save_base
+    updated = self._save_table(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1169: in _save_table
+    results = self._do_insert(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1210: in _do_insert
+    return manager._insert(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:1873: in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/sql/compiler.py:1880: in execute_sql
+    with self.connection.cursor() as cursor:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/utils/asyncio.py:26: in inner
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/base/base.py:320: in cursor
+    return self._cursor()
+           ^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/base/base.py:296: in _cursor
+    self.ensure_connection()
+/usr/local/lib/python3.11/site-packages/django/test/testcases.py:311: in patched_ensure_connection
+    real_ensure_connection(self, *args, **kwargs)
+/usr/local/lib/python3.11/site-packages/django/utils/asyncio.py:26: in inner
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/base/base.py:278: in ensure_connection
+    with self.wrap_database_errors:
+/usr/local/lib/python3.11/site-packages/django/db/utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+/usr/local/lib/python3.11/site-packages/django/db/backends/base/base.py:279: in ensure_connection
+    self.connect()
+/usr/local/lib/python3.11/site-packages/sentry_sdk/utils.py:1842: in runner
+    return sentry_patched_function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/sentry_sdk/integrations/django/__init__.py:684: in connect
+    return real_connect(self)
+           ^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/utils/asyncio.py:26: in inner
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/base/base.py:256: in connect
+    self.connection = self.get_new_connection(conn_params)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/utils/asyncio.py:26: in inner
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/postgresql/base.py:332: in get_new_connection
+    connection = self.Database.connect(**conn_params)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/psycopg2/__init__.py:122: in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.OperationalError: connection to server at "postgres" (172.18.0.7), port 5432 failed: FATAL:  database "test_uber" does not exist
+_____ ERROR at setup of TestMatchingService.test_find_driver_no_candidates _____
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   psycopg2.errors.UndefinedColumn: column "expo_push_token" of relation "users_user" does not exist
+E   LINE 1: ...ff", "is_active", "date_joined", "phone", "role", "expo_push...
+E                                                                ^
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:730: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+tests/conftest.py:37: in driver_user
+    user = django_user_model.objects.create_user(
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/models.py:175: in create_user
+    return self._create_user(username, email, password, **extra_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/models.py:163: in _create_user
+    user.save(using=self._db)
+apps/users/models.py:48: in save
+    super().save(*args, **kwargs)
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/base_user.py:65: in save
+    super().save(*args, **kwargs)
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:902: in save
+    self.save_base(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1008: in save_base
+    updated = self._save_table(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1169: in _save_table
+    results = self._do_insert(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1210: in _do_insert
+    return manager._insert(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:1873: in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/sql/compiler.py:1882: in execute_sql
+    cursor.execute(sql, params)
+/usr/local/lib/python3.11/site-packages/sentry_sdk/utils.py:1842: in runner
+    return sentry_patched_function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/sentry_sdk/integrations/django/__init__.py:645: in execute
+    result = real_execute(self, sql, params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:79: in execute
+    return self._execute_with_wrappers(
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+/usr/local/lib/python3.11/site-packages/django/db/utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.ProgrammingError: column "expo_push_token" of relation "users_user" does not exist
+E   LINE 1: ...ff", "is_active", "date_joined", "phone", "role", "expo_push...
+E                                                                ^
+___ ERROR at teardown of TestMatchingService.test_find_driver_no_candidates ____
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:103: in _execute
+    return self.cursor.execute(sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   psycopg2.errors.FeatureNotSupported: cannot truncate a table referenced in a foreign key constraint
+E   DETAIL:  Table "offers_driverincentiveearning" references "offers_offer".
+E   HINT:  Truncate table "offers_driverincentiveearning" at the same time, or use TRUNCATE ... CASCADE.
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/site-packages/django/core/management/commands/flush.py:74: in handle
+    connection.ops.execute_sql_flush(sql_list)
+/usr/local/lib/python3.11/site-packages/django/db/backends/base/operations.py:473: in execute_sql_flush
+    cursor.execute(sql)
+/usr/local/lib/python3.11/site-packages/sentry_sdk/utils.py:1842: in runner
+    return sentry_patched_function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/sentry_sdk/integrations/django/__init__.py:645: in execute
+    result = real_execute(self, sql, params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:79: in execute
+    return self._execute_with_wrappers(
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+/usr/local/lib/python3.11/site-packages/django/db/utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:103: in _execute
+    return self.cursor.execute(sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.NotSupportedError: cannot truncate a table referenced in a foreign key constraint
+E   DETAIL:  Table "offers_driverincentiveearning" references "offers_offer".
+E   HINT:  Truncate table "offers_driverincentiveearning" at the same time, or use TRUNCATE ... CASCADE.
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/site-packages/pytest_django/fixtures.py:296: in _django_db_helper
+    test_case._post_teardown()
+/usr/local/lib/python3.11/site-packages/django/test/testcases.py:1231: in _post_teardown
+    self._fixture_teardown()
+/usr/local/lib/python3.11/site-packages/django/test/testcases.py:1266: in _fixture_teardown
+    call_command(
+/usr/local/lib/python3.11/site-packages/django/core/management/__init__.py:194: in call_command
+    return command.execute(*args, **defaults)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/core/management/base.py:464: in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/core/management/commands/flush.py:76: in handle
+    raise CommandError(
+E   django.core.management.base.CommandError: Database test_uber couldn't be flushed. Possible reasons:
+E     * The database isn't running or isn't configured correctly.
+E     * At least one of the expected database tables doesn't exist.
+E     * The SQL was invalid.
+E   Hint: Look at the output of 'django-admin sqlflush'. That's the SQL this command wasn't able to run.
+___________ ERROR at setup of TestRideViews.test_estimate_fare_view ____________
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   psycopg2.errors.UndefinedColumn: column "expo_push_token" of relation "users_user" does not exist
+E   LINE 1: ...ff", "is_active", "date_joined", "phone", "role", "expo_push...
+E                                                                ^
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:730: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+tests/conftest.py:10: in user
+    user = django_user_model.objects.create_user(
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/models.py:175: in create_user
+    return self._create_user(username, email, password, **extra_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/models.py:163: in _create_user
+    user.save(using=self._db)
+apps/users/models.py:48: in save
+    super().save(*args, **kwargs)
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/base_user.py:65: in save
+    super().save(*args, **kwargs)
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:902: in save
+    self.save_base(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1008: in save_base
+    updated = self._save_table(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1169: in _save_table
+    results = self._do_insert(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1210: in _do_insert
+    return manager._insert(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:1873: in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/sql/compiler.py:1882: in execute_sql
+    cursor.execute(sql, params)
+/usr/local/lib/python3.11/site-packages/sentry_sdk/utils.py:1842: in runner
+    return sentry_patched_function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/sentry_sdk/integrations/django/__init__.py:645: in execute
+    result = real_execute(self, sql, params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:79: in execute
+    return self._execute_with_wrappers(
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+/usr/local/lib/python3.11/site-packages/django/db/utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.ProgrammingError: column "expo_push_token" of relation "users_user" does not exist
+E   LINE 1: ...ff", "is_active", "date_joined", "phone", "role", "expo_push...
+E                                                                ^
+__________ ERROR at teardown of TestRideViews.test_estimate_fare_view __________
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:103: in _execute
+    return self.cursor.execute(sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   psycopg2.errors.FeatureNotSupported: cannot truncate a table referenced in a foreign key constraint
+E   DETAIL:  Table "payments_payout" references "users_user".
+E   HINT:  Truncate table "payments_payout" at the same time, or use TRUNCATE ... CASCADE.
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/site-packages/django/core/management/commands/flush.py:74: in handle
+    connection.ops.execute_sql_flush(sql_list)
+/usr/local/lib/python3.11/site-packages/django/db/backends/base/operations.py:473: in execute_sql_flush
+    cursor.execute(sql)
+/usr/local/lib/python3.11/site-packages/sentry_sdk/utils.py:1842: in runner
+    return sentry_patched_function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/sentry_sdk/integrations/django/__init__.py:645: in execute
+    result = real_execute(self, sql, params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:79: in execute
+    return self._execute_with_wrappers(
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+/usr/local/lib/python3.11/site-packages/django/db/utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:103: in _execute
+    return self.cursor.execute(sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.NotSupportedError: cannot truncate a table referenced in a foreign key constraint
+E   DETAIL:  Table "payments_payout" references "users_user".
+E   HINT:  Truncate table "payments_payout" at the same time, or use TRUNCATE ... CASCADE.
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/site-packages/pytest_django/fixtures.py:296: in _django_db_helper
+    test_case._post_teardown()
+/usr/local/lib/python3.11/site-packages/django/test/testcases.py:1231: in _post_teardown
+    self._fixture_teardown()
+/usr/local/lib/python3.11/site-packages/django/test/testcases.py:1266: in _fixture_teardown
+    call_command(
+/usr/local/lib/python3.11/site-packages/django/core/management/__init__.py:194: in call_command
+    return command.execute(*args, **defaults)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/core/management/base.py:464: in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/core/management/commands/flush.py:76: in handle
+    raise CommandError(
+E   django.core.management.base.CommandError: Database test_uber couldn't be flushed. Possible reasons:
+E     * The database isn't running or isn't configured correctly.
+E     * At least one of the expected database tables doesn't exist.
+E     * The SQL was invalid.
+E   Hint: Look at the output of 'django-admin sqlflush'. That's the SQL this command wasn't able to run.
+________ ERROR at setup of TestRideViews.test_create_ride_view_success _________
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   psycopg2.errors.UndefinedColumn: column "expo_push_token" of relation "users_user" does not exist
+E   LINE 1: ...ff", "is_active", "date_joined", "phone", "role", "expo_push...
+E                                                                ^
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:730: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+tests/conftest.py:10: in user
+    user = django_user_model.objects.create_user(
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/models.py:175: in create_user
+    return self._create_user(username, email, password, **extra_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/models.py:163: in _create_user
+    user.save(using=self._db)
+apps/users/models.py:48: in save
+    super().save(*args, **kwargs)
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/base_user.py:65: in save
+    super().save(*args, **kwargs)
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:902: in save
+    self.save_base(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1008: in save_base
+    updated = self._save_table(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1169: in _save_table
+    results = self._do_insert(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1210: in _do_insert
+    return manager._insert(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:1873: in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/sql/compiler.py:1882: in execute_sql
+    cursor.execute(sql, params)
+/usr/local/lib/python3.11/site-packages/sentry_sdk/utils.py:1842: in runner
+    return sentry_patched_function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/sentry_sdk/integrations/django/__init__.py:645: in execute
+    result = real_execute(self, sql, params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:79: in execute
+    return self._execute_with_wrappers(
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+/usr/local/lib/python3.11/site-packages/django/db/utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.ProgrammingError: column "expo_push_token" of relation "users_user" does not exist
+E   LINE 1: ...ff", "is_active", "date_joined", "phone", "role", "expo_push...
+E                                                                ^
+____________ ERROR at setup of TestRideViews.test_accept_ride_view _____________
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   psycopg2.errors.UndefinedColumn: column "expo_push_token" of relation "users_user" does not exist
+E   LINE 1: ...ff", "is_active", "date_joined", "phone", "role", "expo_push...
+E                                                                ^
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:730: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+tests/conftest.py:37: in driver_user
+    user = django_user_model.objects.create_user(
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/models.py:175: in create_user
+    return self._create_user(username, email, password, **extra_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/models.py:163: in _create_user
+    user.save(using=self._db)
+apps/users/models.py:48: in save
+    super().save(*args, **kwargs)
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/base_user.py:65: in save
+    super().save(*args, **kwargs)
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:902: in save
+    self.save_base(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1008: in save_base
+    updated = self._save_table(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1169: in _save_table
+    results = self._do_insert(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1210: in _do_insert
+    return manager._insert(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:1873: in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/sql/compiler.py:1882: in execute_sql
+    cursor.execute(sql, params)
+/usr/local/lib/python3.11/site-packages/sentry_sdk/utils.py:1842: in runner
+    return sentry_patched_function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/sentry_sdk/integrations/django/__init__.py:645: in execute
+    result = real_execute(self, sql, params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:79: in execute
+    return self._execute_with_wrappers(
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+/usr/local/lib/python3.11/site-packages/django/db/utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.ProgrammingError: column "expo_push_token" of relation "users_user" does not exist
+E   LINE 1: ...ff", "is_active", "date_joined", "phone", "role", "expo_push...
+E                                                                ^
+___________ ERROR at setup of TestRideViews.test_complete_ride_view ____________
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   psycopg2.errors.UndefinedColumn: column "expo_push_token" of relation "users_user" does not exist
+E   LINE 1: ...ff", "is_active", "date_joined", "phone", "role", "expo_push...
+E                                                                ^
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/site-packages/pytest_asyncio/plugin.py:730: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+tests/conftest.py:37: in driver_user
+    user = django_user_model.objects.create_user(
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/models.py:175: in create_user
+    return self._create_user(username, email, password, **extra_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/models.py:163: in _create_user
+    user.save(using=self._db)
+apps/users/models.py:48: in save
+    super().save(*args, **kwargs)
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/base_user.py:65: in save
+    super().save(*args, **kwargs)
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:902: in save
+    self.save_base(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1008: in save_base
+    updated = self._save_table(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1169: in _save_table
+    results = self._do_insert(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1210: in _do_insert
+    return manager._insert(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:1873: in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/sql/compiler.py:1882: in execute_sql
+    cursor.execute(sql, params)
+/usr/local/lib/python3.11/site-packages/sentry_sdk/utils.py:1842: in runner
+    return sentry_patched_function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/sentry_sdk/integrations/django/__init__.py:645: in execute
+    result = real_execute(self, sql, params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:79: in execute
+    return self._execute_with_wrappers(
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+/usr/local/lib/python3.11/site-packages/django/db/utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.ProgrammingError: column "expo_push_token" of relation "users_user" does not exist
+E   LINE 1: ...ff", "is_active", "date_joined", "phone", "role", "expo_push...
+E                                                                ^
+_ ERROR at teardown of TestAdminLiveMapConsumer.test_connect_unauthenticated_rejected _
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:103: in _execute
+    return self.cursor.execute(sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   psycopg2.errors.DeadlockDetected: deadlock detected
+E   DETAIL:  Process 2779 waits for AccessExclusiveLock on relation 1759320 of database 1759256; blocked by process 2745.
+E   Process 2745 waits for AccessShareLock on relation 1759458 of database 1759256; blocked by process 2779.
+E   HINT:  See server log for query details.
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/site-packages/django/core/management/commands/flush.py:74: in handle
+    connection.ops.execute_sql_flush(sql_list)
+/usr/local/lib/python3.11/site-packages/django/db/backends/base/operations.py:473: in execute_sql_flush
+    cursor.execute(sql)
+/usr/local/lib/python3.11/site-packages/sentry_sdk/utils.py:1842: in runner
+    return sentry_patched_function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/sentry_sdk/integrations/django/__init__.py:645: in execute
+    result = real_execute(self, sql, params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:79: in execute
+    return self._execute_with_wrappers(
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+/usr/local/lib/python3.11/site-packages/django/db/utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:103: in _execute
+    return self.cursor.execute(sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.OperationalError: deadlock detected
+E   DETAIL:  Process 2779 waits for AccessExclusiveLock on relation 1759320 of database 1759256; blocked by process 2745.
+E   Process 2745 waits for AccessShareLock on relation 1759458 of database 1759256; blocked by process 2779.
+E   HINT:  See server log for query details.
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/site-packages/pytest_django/fixtures.py:296: in _django_db_helper
+    test_case._post_teardown()
+/usr/local/lib/python3.11/site-packages/django/test/testcases.py:1231: in _post_teardown
+    self._fixture_teardown()
+/usr/local/lib/python3.11/site-packages/django/test/testcases.py:1266: in _fixture_teardown
+    call_command(
+/usr/local/lib/python3.11/site-packages/django/core/management/__init__.py:194: in call_command
+    return command.execute(*args, **defaults)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/core/management/base.py:464: in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/core/management/commands/flush.py:76: in handle
+    raise CommandError(
+E   django.core.management.base.CommandError: Database test_uber couldn't be flushed. Possible reasons:
+E     * The database isn't running or isn't configured correctly.
+E     * At least one of the expected database tables doesn't exist.
+E     * The SQL was invalid.
+E   Hint: Look at the output of 'django-admin sqlflush'. That's the SQL this command wasn't able to run.
+----------------------------- Captured stderr call -----------------------------
+WARNING 2026-03-07 08:21:44,882 live_map [AdminLiveMap] Rejected: unauthenticated
+_ ERROR at teardown of TestAdminLiveMapConsumer.test_driver_location_update_forwarding _
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:103: in _execute
+    return self.cursor.execute(sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   psycopg2.errors.DeadlockDetected: deadlock detected
+E   DETAIL:  Process 2797 waits for AccessExclusiveLock on relation 1759320 of database 1759256; blocked by process 2745.
+E   Process 2745 waits for AccessShareLock on relation 1759458 of database 1759256; blocked by process 2797.
+E   HINT:  See server log for query details.
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/site-packages/django/core/management/commands/flush.py:74: in handle
+    connection.ops.execute_sql_flush(sql_list)
+/usr/local/lib/python3.11/site-packages/django/db/backends/base/operations.py:473: in execute_sql_flush
+    cursor.execute(sql)
+/usr/local/lib/python3.11/site-packages/sentry_sdk/utils.py:1842: in runner
+    return sentry_patched_function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/sentry_sdk/integrations/django/__init__.py:645: in execute
+    result = real_execute(self, sql, params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:79: in execute
+    return self._execute_with_wrappers(
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+/usr/local/lib/python3.11/site-packages/django/db/utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:103: in _execute
+    return self.cursor.execute(sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.OperationalError: deadlock detected
+E   DETAIL:  Process 2797 waits for AccessExclusiveLock on relation 1759320 of database 1759256; blocked by process 2745.
+E   Process 2745 waits for AccessShareLock on relation 1759458 of database 1759256; blocked by process 2797.
+E   HINT:  See server log for query details.
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/site-packages/pytest_django/fixtures.py:296: in _django_db_helper
+    test_case._post_teardown()
+/usr/local/lib/python3.11/site-packages/django/test/testcases.py:1231: in _post_teardown
+    self._fixture_teardown()
+/usr/local/lib/python3.11/site-packages/django/test/testcases.py:1266: in _fixture_teardown
+    call_command(
+/usr/local/lib/python3.11/site-packages/django/core/management/__init__.py:194: in call_command
+    return command.execute(*args, **defaults)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/core/management/base.py:464: in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/core/management/commands/flush.py:76: in handle
+    raise CommandError(
+E   django.core.management.base.CommandError: Database test_uber couldn't be flushed. Possible reasons:
+E     * The database isn't running or isn't configured correctly.
+E     * At least one of the expected database tables doesn't exist.
+E     * The SQL was invalid.
+E   Hint: Look at the output of 'django-admin sqlflush'. That's the SQL this command wasn't able to run.
+_ ERROR at setup of TestAdminLiveMapConsumer.test_admin_generic_event_forwarding _
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   psycopg2.errors.UniqueViolation: duplicate key value violates unique constraint "users_user_username_key"
+E   DETAIL:  Key (username)=(admin_test) already exists.
+
+The above exception was the direct cause of the following exception:
+tests/unit/test_live_map_consumer.py:23: in admin_user
+    user = await sync_to_async(User.objects.create_superuser)(
+/usr/local/lib/python3.11/site-packages/asgiref/sync.py:506: in __call__
+    ret = await asyncio.shield(exec_coro)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/concurrent/futures/thread.py:58: in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/sentry_sdk/integrations/threading.py:179: in wrapped_fn
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/asgiref/sync.py:561: in thread_handler
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/models.py:195: in create_superuser
+    return self._create_user(username, email, password, **extra_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/models.py:163: in _create_user
+    user.save(using=self._db)
+apps/users/models.py:48: in save
+    super().save(*args, **kwargs)
+/usr/local/lib/python3.11/site-packages/django/contrib/auth/base_user.py:65: in save
+    super().save(*args, **kwargs)
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:902: in save
+    self.save_base(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1008: in save_base
+    updated = self._save_table(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1169: in _save_table
+    results = self._do_insert(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1210: in _do_insert
+    return manager._insert(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:1873: in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/sql/compiler.py:1882: in execute_sql
+    cursor.execute(sql, params)
+/usr/local/lib/python3.11/site-packages/sentry_sdk/utils.py:1842: in runner
+    return sentry_patched_function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/sentry_sdk/integrations/django/__init__.py:645: in execute
+    result = real_execute(self, sql, params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:79: in execute
+    return self._execute_with_wrappers(
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+/usr/local/lib/python3.11/site-packages/django/db/utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.IntegrityError: duplicate key value violates unique constraint "users_user_username_key"
+E   DETAIL:  Key (username)=(admin_test) already exists.
+_ ERROR at teardown of TestTrackingConsumersExtended.test_driver_rides_pending_offer _
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:103: in _execute
+    return self.cursor.execute(sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   psycopg2.errors.DeadlockDetected: deadlock detected
+E   DETAIL:  Process 2880 waits for AccessExclusiveLock on relation 1759458 of database 1759256; blocked by process 2745.
+E   Process 2745 waits for RowShareLock on relation 1759689 of database 1759256; blocked by process 2880.
+E   HINT:  See server log for query details.
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/site-packages/django/core/management/commands/flush.py:74: in handle
+    connection.ops.execute_sql_flush(sql_list)
+/usr/local/lib/python3.11/site-packages/django/db/backends/base/operations.py:473: in execute_sql_flush
+    cursor.execute(sql)
+/usr/local/lib/python3.11/site-packages/sentry_sdk/utils.py:1842: in runner
+    return sentry_patched_function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/sentry_sdk/integrations/django/__init__.py:645: in execute
+    result = real_execute(self, sql, params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:79: in execute
+    return self._execute_with_wrappers(
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+/usr/local/lib/python3.11/site-packages/django/db/utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:103: in _execute
+    return self.cursor.execute(sql)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.OperationalError: deadlock detected
+E   DETAIL:  Process 2880 waits for AccessExclusiveLock on relation 1759458 of database 1759256; blocked by process 2745.
+E   Process 2745 waits for RowShareLock on relation 1759689 of database 1759256; blocked by process 2880.
+E   HINT:  See server log for query details.
+
+The above exception was the direct cause of the following exception:
+/usr/local/lib/python3.11/site-packages/pytest_django/fixtures.py:296: in _django_db_helper
+    test_case._post_teardown()
+/usr/local/lib/python3.11/site-packages/django/test/testcases.py:1231: in _post_teardown
+    self._fixture_teardown()
+/usr/local/lib/python3.11/site-packages/django/test/testcases.py:1266: in _fixture_teardown
+    call_command(
+/usr/local/lib/python3.11/site-packages/django/core/management/__init__.py:194: in call_command
+    return command.execute(*args, **defaults)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/core/management/base.py:464: in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/core/management/commands/flush.py:76: in handle
+    raise CommandError(
+E   django.core.management.base.CommandError: Database test_uber couldn't be flushed. Possible reasons:
+E     * The database isn't running or isn't configured correctly.
+E     * At least one of the expected database tables doesn't exist.
+E     * The SQL was invalid.
+E   Hint: Look at the output of 'django-admin sqlflush'. That's the SQL this command wasn't able to run.
+----------------------------- Captured stderr call -----------------------------
+INFO 2026-03-07 08:22:13,768 driver_rides DriverRidesConsumer connected: driver=25 user=75
+INFO 2026-03-07 08:22:13,803 driver_rides Found pending offer for driver 25: ride 20
+INFO 2026-03-07 08:22:13,834 driver_rides DriverRidesConsumer disconnected: driver=Driver #25 (ONLINE) code=1000
+=================================== FAILURES ===================================
+_________ TestDriverLocationConsumerV2.test_location_with_active_ride __________
+/usr/local/lib/python3.11/site-packages/asgiref/testing.py:110: in receive_output
+    return await self.output_queue.get()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/queues.py:158: in get
+    await getter
+E   asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+tests/unit/tracking/test_driver_location_consumer_v2.py:88: in test_location_with_active_ride
+    response = await communicator.receive_json_from()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/channels/testing/websocket.py:100: in receive_json_from
+    payload = await self.receive_from(timeout)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/channels/testing/websocket.py:79: in receive_from
+    response = await self.receive_output(timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/asgiref/testing.py:121: in receive_output
+    raise e
+/usr/local/lib/python3.11/site-packages/asgiref/testing.py:109: in receive_output
+    async with async_timeout(timeout):
+/usr/local/lib/python3.11/site-packages/asgiref/timeout.py:71: in __aexit__
+    self._do_exit(exc_type)
+/usr/local/lib/python3.11/site-packages/asgiref/timeout.py:108: in _do_exit
+    raise asyncio.TimeoutError
+E   TimeoutError
+----------------------------- Captured stderr call -----------------------------
+INFO 2026-03-07 08:22:00,251 driver_location [LocationSocket] ✅ Connected: Driver 11
+_____ TestTrackingConsumersExtended.test_rider_tracking_consumer_lifecycle _____
+/usr/local/lib/python3.11/site-packages/asgiref/testing.py:110: in receive_output
+    return await self.output_queue.get()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/queues.py:158: in get
+    await getter
+E   asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+tests/unit/tracking/test_tracking_consumers_extended.py:107: in test_rider_tracking_consumer_lifecycle
+    response = await communicator.receive_json_from()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/channels/testing/websocket.py:100: in receive_json_from
+    payload = await self.receive_from(timeout)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/channels/testing/websocket.py:79: in receive_from
+    response = await self.receive_output(timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/asgiref/testing.py:121: in receive_output
+    raise e
+/usr/local/lib/python3.11/site-packages/asgiref/testing.py:109: in receive_output
+    async with async_timeout(timeout):
+/usr/local/lib/python3.11/site-packages/asgiref/timeout.py:71: in __aexit__
+    self._do_exit(exc_type)
+/usr/local/lib/python3.11/site-packages/asgiref/timeout.py:108: in _do_exit
+    raise asyncio.TimeoutError
+E   TimeoutError
+=============================== warnings summary ===============================
+tests/unit/offers/test_eligibility.py::test_is_user_eligible_for_offer
+tests/unit/offers/test_rider_offer_service.py::test_apply_rider_offer
+  /usr/local/lib/python3.11/site-packages/django/db/models/fields/__init__.py:1671: RuntimeWarning: DateTimeField Offer.valid_from received a naive datetime (2020-01-01 00:00:00) while time zone support is active.
+    warnings.warn(
+
+tests/unit/offers/test_eligibility.py::test_is_user_eligible_for_offer
+tests/unit/offers/test_rider_offer_service.py::test_apply_rider_offer
+  /usr/local/lib/python3.11/site-packages/django/db/models/fields/__init__.py:1671: RuntimeWarning: DateTimeField Offer.valid_to received a naive datetime (2099-01-01 00:00:00) while time zone support is active.
+    warnings.warn(
+
+tests/unit/offers/test_rider_offer_service.py::test_apply_rider_offer
+  /usr/local/lib/python3.11/site-packages/django/db/models/fields/__init__.py:1671: RuntimeWarning: DateTimeField Offer.valid_to received a naive datetime (2020-01-02 00:00:00) while time zone support is active.
+    warnings.warn(
+
+tests/unit/test_coverage_booster.py::TestNotificationProvidersExtended::test_send_ws_comprehensive
+  /usr/local/lib/python3.11/site-packages/asgiref/sync.py:608: UserWarning: async_to_sync was passed a non-async-marked callable
+    return AsyncToSync(
+
+tests/unit/tracking/test_tracking_consumers_extended.py::TestTrackingConsumersExtended::test_driver_rides_pending_offer
+  /app:0: PytestWarning: Error when trying to teardown test databases: OperationalError('database "test_uber" is being accessed by other users\nDETAIL:  There is 1 other session using the database.\n')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/unit/tracking/test_driver_location_consumer_v2.py::TestDriverLocationConsumerV2::test_location_with_active_ride
+FAILED tests/unit/tracking/test_tracking_consumers_extended.py::TestTrackingConsumersExtended::test_rider_tracking_consumer_lifecycle
+ERROR tests/unit/rides/test_rides_matching.py::TestMatchingService::test_find_driver_and_offer_ride_success
+ERROR tests/unit/rides/test_rides_matching.py::TestMatchingService::test_find_driver_no_candidates
+ERROR tests/unit/rides/test_rides_matching.py::TestMatchingService::test_find_driver_no_candidates
+ERROR tests/unit/rides/test_views.py::TestRideViews::test_estimate_fare_view
+ERROR tests/unit/rides/test_views.py::TestRideViews::test_estimate_fare_view
+ERROR tests/unit/rides/test_views.py::TestRideViews::test_create_ride_view_success
+ERROR tests/unit/rides/test_views.py::TestRideViews::test_accept_ride_view - ...
+ERROR tests/unit/rides/test_views.py::TestRideViews::test_complete_ride_view
+ERROR tests/unit/test_live_map_consumer.py::TestAdminLiveMapConsumer::test_connect_unauthenticated_rejected
+ERROR tests/unit/test_live_map_consumer.py::TestAdminLiveMapConsumer::test_driver_location_update_forwarding
+ERROR tests/unit/test_live_map_consumer.py::TestAdminLiveMapConsumer::test_admin_generic_event_forwarding
+ERROR tests/unit/tracking/test_tracking_consumers_extended.py::TestTrackingConsumersExtended::test_driver_rides_pending_offer
+======= 2 failed, 390 passed, 7 warnings, 12 errors in 194.68s (0:03:14) =======
+

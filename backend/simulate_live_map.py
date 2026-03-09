@@ -1,31 +1,40 @@
-
-import os
-import django
-import time
-import json
-import random
 import math
-from channels.layers import get_channel_layer
+import os
+import time
+
+import django
 from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 # Setup Django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 
-from apps.drivers.models import Driver
-from apps.rides.models import Ride
 from django.contrib.auth import get_user_model
 
+from apps.drivers.models import Driver
+
 User = get_user_model()
+
 
 def simulate():
     channel_layer = get_channel_layer()
     print("🚀 Starting Live Map Simulation...")
 
     # 1. Setup Dummy Driver
-    u, _ = User.objects.get_or_create(username="sim_driver", defaults={"email": "sim_driver@example.com", "phone": "9999999999", "first_name": "Simulated", "last_name": "Driver"})
-    driver, _ = Driver.objects.get_or_create(id=999, defaults={"user": u, "status": "ONLINE"})
-    
+    u, _ = User.objects.get_or_create(
+        username="sim_driver",
+        defaults={
+            "email": "sim_driver@example.com",
+            "phone": "9999999999",
+            "first_name": "Simulated",
+            "last_name": "Driver",
+        },
+    )
+    driver, _ = Driver.objects.get_or_create(
+        id=999, defaults={"user": u, "status": "ONLINE"}
+    )
+
     driver.status = "ONLINE"
     driver.save()
     print(f"✅ Driver #{driver.id} is ONLINE")
@@ -48,7 +57,7 @@ def simulate():
             # Move Driver
             d_lat += 0.0001 * math.cos(angle)
             d_lng += 0.0001 * math.sin(angle)
-            
+
             # Move Rider
             r_lat += 0.0001 * math.sin(angle)
             r_lng += 0.0001 * math.cos(angle)
@@ -65,9 +74,9 @@ def simulate():
                         "lat": d_lat,
                         "lng": d_lng,
                         "status": "ONLINE",
-                        "ts": timestamp
-                    }
-                }
+                        "ts": timestamp,
+                    },
+                },
             )
 
             # Broadcast Rider Update
@@ -80,17 +89,21 @@ def simulate():
                         "rider_id": rider_id,
                         "lat": r_lat,
                         "lng": r_lng,
-                        "ts": timestamp
-                    }
-                }
+                        "ts": timestamp,
+                    },
+                },
             )
 
             angle += 0.1
             time.sleep(1)  # Update every second
-            print(f"📡 Sent updates: Driver({d_lat:.4f}, {d_lng:.4f}) | Rider({r_lat:.4f}, {r_lng:.4f})", end="\r")
+            print(
+                f"📡 Sent updates: Driver({d_lat:.4f}, {d_lng:.4f}) | Rider({r_lat:.4f}, {r_lng:.4f})",
+                end="\r",
+            )
 
     except KeyboardInterrupt:
         print("\n🛑 Simulation Stopped.")
+
 
 if __name__ == "__main__":
     simulate()

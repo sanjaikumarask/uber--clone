@@ -10,5 +10,8 @@ def apply_driver_incentive(ride):
         IncentiveEngine.process_ride_completion(ride)
     except Exception as e:
         import logging
-        logging.getLogger(__name__).error(f"Incentive processing failed for ride {ride.id}: {e}")
+
+        logging.getLogger(__name__).error(
+            f"Incentive processing failed for ride {ride.id}: {e}"
+        )
     return 0

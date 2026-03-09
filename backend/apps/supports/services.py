@@ -1,10 +1,11 @@
 from decimal import Decimal
-from django.db import transaction
-from django.core.exceptions import ValidationError
 
-from apps.supports.models import SupportTicket
+from django.core.exceptions import ValidationError
+from django.db import transaction
+
 from apps.payments.models import Payment
 from apps.payments.services.refund import refund_payment
+from apps.supports.models import SupportTicket
 
 
 @transaction.atomic
@@ -35,8 +36,7 @@ def resolve_with_refund(
         raise ValidationError("Ticket already handled")
 
     payment = (
-        Payment.objects
-        .filter(
+        Payment.objects.filter(
             ride_id=ticket.ride.id,
             status=Payment.Status.CAPTURED,
         )
@@ -51,7 +51,6 @@ def resolve_with_refund(
         payment=payment,
         amount=refund_amount,
         reason=f"support:{ticket.reason}",
-        initiated_by=admin,
     )
 
     ticket.resolve(admin=admin, note=reason_note)

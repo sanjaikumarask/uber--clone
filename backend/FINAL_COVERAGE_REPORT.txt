@@ -1,0 +1,82 @@
+time="2026-03-07T13:23:55+05:30" level=warning msg="Found orphan containers ([sonarqube sonarqube_db]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container uber_redis Running 
+ Container uber_zookeeper Running 
+ Container uber_kafka Running 
+ Container uber_postgres Running 
+ Container uber_postgres Waiting 
+ Container uber_postgres Healthy 
+ Container uber-backend-backend-run-00e2509f480f Creating 
+ Container uber-backend-backend-run-00e2509f480f Created 
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python3.11
+cachedir: .pytest_cache
+django: version: 5.2.12, settings: config.settings (from env)
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0, django-4.12.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 12 items
+
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_web_checkout_view_success PASSED [  8%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_web_verify_view_success PASSED [ 16%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_push_success PASSED [ 25%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_driver_admin_views PASSED [ 33%]
+tests/unit/test_coverage_booster.py::TestCommonBooster::test_circuit_breaker PASSED [ 41%]
+tests/unit/test_coverage_booster.py::TestCommonBooster::test_fraud_detector_functions PASSED [ 50%]
+tests/unit/test_coverage_booster.py::TestRideViewsBooster::test_nearby_drivers PASSED [ 58%]
+tests/unit/test_coverage_booster.py::TestRideViewsBooster::test_ride_estimate PASSED [ 66%]
+tests/unit/test_coverage_booster.py::TestAdminDashboardBooster::test_admin_overview FAILED [ 75%]
+tests/unit/test_coverage_booster.py::TestAdminDashboardBooster::test_admin_live_rides FAILED [ 83%]
+tests/unit/test_coverage_booster.py::TestAdminDashboardBooster::test_admin_analytics FAILED [ 91%]
+tests/unit/test_coverage_booster.py::TestAdminDashboardBooster::test_admin_payment_status FAILED [100%]
+
+=================================== FAILURES ===================================
+________________ TestAdminDashboardBooster.test_admin_overview _________________
+tests/unit/test_coverage_booster.py:230: in test_admin_overview
+    url = reverse("admin-overview")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/urls/base.py:98: in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/urls/resolvers.py:831: in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+E   django.urls.exceptions.NoReverseMatch: Reverse for 'admin-overview' not found. 'admin-overview' is not a valid view function or pattern name.
+_______________ TestAdminDashboardBooster.test_admin_live_rides ________________
+tests/unit/test_coverage_booster.py:239: in test_admin_live_rides
+    url = reverse("admin-live-rides")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/urls/base.py:98: in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/urls/resolvers.py:831: in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+E   django.urls.exceptions.NoReverseMatch: Reverse for 'admin-live-rides' not found. 'admin-live-rides' is not a valid view function or pattern name.
+________________ TestAdminDashboardBooster.test_admin_analytics ________________
+tests/unit/test_coverage_booster.py:246: in test_admin_analytics
+    url = reverse("admin-analytics")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/urls/base.py:98: in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/urls/resolvers.py:831: in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+E   django.urls.exceptions.NoReverseMatch: Reverse for 'admin-analytics' not found. 'admin-analytics' is not a valid view function or pattern name.
+_____________ TestAdminDashboardBooster.test_admin_payment_status ______________
+tests/unit/test_coverage_booster.py:260: in test_admin_payment_status
+    url = reverse("admin-payment-status")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/urls/base.py:98: in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/urls/resolvers.py:831: in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+E   django.urls.exceptions.NoReverseMatch: Reverse for 'admin-payment-status' not found. 'admin-payment-status' is not a valid view function or pattern name.
+--------------------------- Captured stderr teardown ---------------------------
+Destroying test database for alias 'default'...
+=========================== short test summary info ============================
+FAILED tests/unit/test_coverage_booster.py::TestAdminDashboardBooster::test_admin_overview
+FAILED tests/unit/test_coverage_booster.py::TestAdminDashboardBooster::test_admin_live_rides
+FAILED tests/unit/test_coverage_booster.py::TestAdminDashboardBooster::test_admin_analytics
+FAILED tests/unit/test_coverage_booster.py::TestAdminDashboardBooster::test_admin_payment_status
+========================= 4 failed, 8 passed in 12.64s =========================
+

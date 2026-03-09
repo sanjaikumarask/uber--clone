@@ -22,7 +22,7 @@ SOLUTION (Choose ONE):
 OPTION 1: Remove Referer Restrictions (Quick Fix)
 --------------------------------------------------
 1. Go to: https://console.cloud.google.com/apis/credentials
-2. Find your API key: AIzaSyD5Yq_dZsNz5fbq2DAAzjNfVKDYCn16BC8
+2. Find your API key: AIzaSyD5******************************
 3. Click "Edit"
 4. Under "Application restrictions":
    - Change from "HTTP referers" to "None"
@@ -62,7 +62,7 @@ OPTION 3: Use Two Different Keys (Most Secure)
 3. Update configuration:
 
    # Frontend (.env)
-   VITE_GOOGLE_MAPS_API_KEY=AIzaSyD5Yq_dZsNz5fbq2DAAzjNfVKDYCn16BC8
+   VITE_GOOGLE_MAPS_API_KEY=AIzaSyD5******************************
 
    # Backend (docker-compose.yml)
    GOOGLE_MAPS_API_KEY=YOUR_NEW_SERVER_KEY_HERE

@@ -7,9 +7,10 @@ Values are cached in memory (60s TTL) to avoid repeated DB hits on every fare ca
 """
 
 from decimal import Decimal
-from django.db import models
+
 from django.core.cache import cache
 from django.core.validators import MinValueValidator
+from django.db import models
 
 CACHE_KEY = "fare_config_{vehicle_type}"
 CACHE_TTL = 60  # seconds
@@ -24,8 +25,8 @@ class FareConfig(models.Model):
     class VehicleType(models.TextChoices):
         MOTO = "moto", "Uber Moto 🏍️"
         AUTO = "auto", "Uber Auto 🛺"
-        GO   = "go",   "UberGo 🚗"
-        XL   = "xl",   "UberXL 🚙"
+        GO = "go", "UberGo 🚗"
+        XL = "xl", "UberXL 🚙"
 
     vehicle_type = models.CharField(
         max_length=10,
@@ -36,25 +37,29 @@ class FareConfig(models.Model):
 
     # ── FARE COMPONENTS ─────────────────────────────────────────────────
     base_fare = models.DecimalField(
-        max_digits=8, decimal_places=2,
+        max_digits=8,
+        decimal_places=2,
         default=Decimal("59.00"),
         validators=[MinValueValidator(Decimal("0.00"))],
         help_text="Flat base charge for ANY ride (₹)",
     )
     base_distance_km = models.DecimalField(
-        max_digits=5, decimal_places=2,
+        max_digits=5,
+        decimal_places=2,
         default=Decimal("2.00"),
         validators=[MinValueValidator(Decimal("0.10"))],
         help_text="Distance included in base fare (km). Extra km charged separately.",
     )
     per_km_rate = models.DecimalField(
-        max_digits=8, decimal_places=2,
+        max_digits=8,
+        decimal_places=2,
         default=Decimal("18.00"),
         validators=[MinValueValidator(Decimal("0.00"))],
         help_text="Charge per km BEYOND base_distance_km (₹/km)",
     )
     per_min_rate = models.DecimalField(
-        max_digits=8, decimal_places=2,
+        max_digits=8,
+        decimal_places=2,
         default=Decimal("1.50"),
         validators=[MinValueValidator(Decimal("0.00"))],
         help_text="Charge per minute of ride duration (₹/min) — for fare estimation only",
@@ -66,7 +71,8 @@ class FareConfig(models.Model):
         help_text="First N minutes of waiting are FREE",
     )
     waiting_per_minute = models.DecimalField(
-        max_digits=6, decimal_places=2,
+        max_digits=6,
+        decimal_places=2,
         default=Decimal("2.00"),
         validators=[MinValueValidator(Decimal("0.00"))],
         help_text="Charge per minute AFTER free waiting period (₹/min)",
@@ -74,7 +80,8 @@ class FareConfig(models.Model):
 
     # ── SURGE ────────────────────────────────────────────────────────────
     surge_multiplier = models.DecimalField(
-        max_digits=4, decimal_places=2,
+        max_digits=4,
+        decimal_places=2,
         default=Decimal("1.00"),
         validators=[MinValueValidator(Decimal("1.00"))],
         help_text="Admin-controlled surge. Dynamic surge from Redis OVERRIDES this.",
@@ -82,7 +89,8 @@ class FareConfig(models.Model):
 
     # ── FLOOR ────────────────────────────────────────────────────────────
     minimum_fare = models.DecimalField(
-        max_digits=8, decimal_places=2,
+        max_digits=8,
+        decimal_places=2,
         default=Decimal("60.00"),
         validators=[MinValueValidator(Decimal("0.00"))],
         help_text="Absolute minimum fare charged (₹)",
@@ -90,7 +98,8 @@ class FareConfig(models.Model):
 
     # ── PLATFORM ─────────────────────────────────────────────────────────
     platform_commission_pct = models.DecimalField(
-        max_digits=5, decimal_places=2,
+        max_digits=5,
+        decimal_places=2,
         default=Decimal("20.00"),
         validators=[MinValueValidator(Decimal("0.00"))],
         help_text="Platform cut from each ride as percentage (e.g. 20.00 = 20%)",
@@ -128,7 +137,9 @@ class FareConfig(models.Model):
 
         config = (
             cls.objects.filter(vehicle_type=vehicle_type, is_active=True).first()
-            or cls.objects.filter(vehicle_type=cls.VehicleType.GO, is_active=True).first()
+            or cls.objects.filter(
+                vehicle_type=cls.VehicleType.GO, is_active=True
+            ).first()
         )
 
         if not config:

@@ -6,13 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0003_alter_user_phone'),
+        ("users", "0003_alter_user_phone"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='expo_push_token',
-            field=models.CharField(blank=True, help_text='Expo push token for mobile notifications', max_length=255, null=True),
+            model_name="user",
+            name="expo_push_token",
+            field=models.CharField(
+                blank=True,
+                help_text="Expo push token for mobile notifications",
+                max_length=255,
+                null=True,
+            ),
         ),
     ]

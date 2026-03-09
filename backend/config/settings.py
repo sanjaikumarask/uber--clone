@@ -1,6 +1,6 @@
-from pathlib import Path
-from datetime import timedelta
 import os
+from datetime import timedelta
+from pathlib import Path
 
 # ============================================================
 # BASE
@@ -8,12 +8,9 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv(
-    "SECRET_KEY",
-    "dev-secret-key-change-this-to-at-least-32-characters-long"
-)
+SECRET_KEY = os.getenv("SECRET_KEY")
 
-DEBUG = os.getenv("DEBUG", "1") == "1"
+DEBUG = os.getenv("DEBUG", "0") == "1"
 
 ALLOWED_HOSTS = ["*"] if DEBUG else os.getenv("ALLOWED_HOSTS", "").split(",")
 
@@ -23,10 +20,8 @@ ALLOWED_HOSTS = ["*"] if DEBUG else os.getenv("ALLOWED_HOSTS", "").split(",")
 
 INSTALLED_APPS = [
     "corsheaders",
-
     # ---- Custom apps FIRST (CRITICAL) ----
     "apps.users",
-
     # ---- Django core ----
     "django.contrib.admin",
     "django.contrib.auth",
@@ -34,14 +29,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     # ---- Third-party ----
     "rest_framework",
     "channels",
     "django_celery_results",
     "rest_framework_simplejwt.token_blacklist",
     "django_prometheus",  # 🔥 APM Metrics
-
     # ---- Domain apps ----
     "apps.drivers",
     "apps.rides",
@@ -53,8 +46,6 @@ INSTALLED_APPS = [
     "apps.offers",
     "apps.driver_incentives",
     "apps.common",
-
-
 ]
 
 # ============================================================
@@ -69,7 +60,9 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
         "OPTIONS": {"min_length": 8},
@@ -87,18 +80,16 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
         "rest_framework.authentication.SessionAuthentication",  # ✅ REQUIRED
     ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
-    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle"
+        "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "1000/day",     # Prevent bruteforce from public endpoints
-        "user": "50000/day"     # Higher limit for polling dashboards
+        "anon": "1000/day",  # Prevent bruteforce from public endpoints
+        "user": "50000/day",  # Higher limit for polling dashboards
     },
-    "EXCEPTION_HANDLER": "rest_framework.views.exception_handler"
+    "EXCEPTION_HANDLER": "rest_framework.views.exception_handler",
 }
 
 
@@ -117,18 +108,18 @@ SIMPLE_JWT = {
 # ============================================================
 
 MIDDLEWARE = [
-    "django_prometheus.middleware.PrometheusBeforeMiddleware",  
-    "apps.common.resilience.TracingMiddleware",                # 🔥 1. Trace Entry
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
+    "apps.common.resilience.TracingMiddleware",  # 🔥 1. Trace Entry
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "apps.common.rate_limit.RateLimitMiddleware",              # 🔥 2. Protect Endpoints
+    "apps.common.rate_limit.RateLimitMiddleware",  # 🔥 2. Protect Endpoints
     "django.contrib.messages.middleware.MessageMiddleware",
-    "apps.common.idempotency.IdempotencyMiddleware",           # 🔥 3. Dedup Side-effects
-    "django_prometheus.middleware.PrometheusAfterMiddleware",  
+    "apps.common.idempotency.IdempotencyMiddleware",  # 🔥 3. Dedup Side-effects
+    "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
 
 # ============================================================
@@ -158,17 +149,20 @@ TEMPLATES = [
 # ============================================================
 
 import sys
-IS_TESTING = 'pytest' in sys.modules or 'test' in sys.argv
+
+IS_TESTING = "pytest" in sys.modules or "test" in sys.argv
 
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": os.getenv("POSTGRES_DB", "uber"),
         "USER": os.getenv("POSTGRES_USER", "uber"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "uber"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "uber" if (os.getenv("DEBUG", "0") == "1") else ""),
         "HOST": os.getenv("POSTGRES_HOST", "postgres"),
         "PORT": os.getenv("POSTGRES_PORT", "5432"),
-        "CONN_MAX_AGE": 0 if IS_TESTING else 60,  # 🚀 POOLING: Disable for tests to avoid locking
+        "CONN_MAX_AGE": (
+            0 if IS_TESTING else 60
+        ),  # 🚀 POOLING: Disable for tests to avoid locking
         "OPTIONS": {
             "connect_timeout": 5,
         },
@@ -193,7 +187,7 @@ CACHES = {
             },
             "SOCKET_CONNECT_TIMEOUT": 5,
             "SOCKET_TIMEOUT": 5,
-        }
+        },
     }
 }
 
@@ -222,7 +216,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 # ============================================================
 
 from celery.schedules import crontab
-from kombu import Queue, Exchange
+from kombu import Exchange, Queue
 
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "django-db")
@@ -235,13 +229,13 @@ if IS_TESTING:
     CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_WORKER_SEND_TASK_EVENTS = True  # 🔥 Required for Flower
-CELERY_TASK_SEND_SENT_EVENT = True      # 🔥 Required for Flower
+CELERY_TASK_SEND_SENT_EVENT = True  # 🔥 Required for Flower
 
 # ── Queue Definitions ──
 CELERY_QUEUES = (
-    Queue("high",   Exchange("high"),   routing_key="high"),
+    Queue("high", Exchange("high"), routing_key="high"),
     Queue("medium", Exchange("medium"), routing_key="medium"),
-    Queue("low",    Exchange("low"),    routing_key="low"),
+    Queue("low", Exchange("low"), routing_key="low"),
 )
 
 CELERY_TASK_DEFAULT_QUEUE = "medium"
@@ -253,16 +247,14 @@ CELERY_TASK_ROUTES = {
     # HIGH PRIORITY (Blocking UX)
     "apps.payments.tasks.process_driver_payout": {"queue": "high"},
     "apps.payments.tasks.execute_driver_payout": {"queue": "high"},
-    "apps.rides.tasks.driver_accept_timeout":    {"queue": "high"},
-    
+    "apps.rides.tasks.driver_accept_timeout": {"queue": "high"},
     # MEDIUM PRIORITY (Revenue/Flow)
-    "apps.rides.services.matching.*":   {"queue": "medium"},
+    "apps.rides.services.matching.*": {"queue": "medium"},
     "apps.rides.tasks.retry_matching*": {"queue": "medium"},
-    "apps.payments.tasks.reconcile*":   {"queue": "medium"},
-    
+    "apps.payments.tasks.reconcile*": {"queue": "medium"},
     # LOW PRIORITY (Non-Blocking)
-    "apps.drivers.tasks.*":        {"queue": "low"},
-    "apps.notifications.tasks.*":  {"queue": "low"},
+    "apps.drivers.tasks.*": {"queue": "low"},
+    "apps.notifications.tasks.*": {"queue": "low"},
 }
 
 CELERY_BEAT_SCHEDULE = {
@@ -289,15 +281,15 @@ CELERY_BEAT_SCHEDULE = {
     # ─── 4. PERIODIC RECONCILIATION & CHAOS ──────────────────
     "reconcile_all_rides_daily": {
         "task": "apps.payments.tasks.audit_platform_ledger",
-        "schedule": crontab(hour=3, minute=0), # 3 AM
+        "schedule": crontab(hour=3, minute=0),  # 3 AM
     },
     "chaos_simulation_hourly": {
         "task": "apps.common.tasks.run_chaos_simulation",
-        "schedule": crontab(minute=0), # Every hour
+        "schedule": crontab(minute=0),  # Every hour
     },
     "update_system_health_30s": {
         "task": "apps.common.tasks.update_system_health",
-        "schedule": 30.0, # Every 30 seconds
+        "schedule": 30.0,  # Every 30 seconds
     },
     "retry-failed-payouts": {
         "task": "apps.payments.tasks.retry_failed_payouts",
@@ -307,7 +299,6 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.payments.tasks.audit_platform_ledger",
         "schedule": 86400.0,  # Run daily
     },
-
     # ── Driver Management ───────────────────────────────────────────
     "recalculate-driver-scores": {
         "task": "apps.drivers.tasks.recalculate_all_driver_scores",
@@ -344,7 +335,7 @@ CHANNEL_LAYERS = {
         "CONFIG": {
             "hosts": [("redis", 6379)],
             "capacity": 1500,  # Handle 100+ drivers at once
-            "expiry": 10,      # Drop stale location pings quickly
+            "expiry": 10,  # Drop stale location pings quickly
         },
     },
 }
@@ -365,32 +356,33 @@ KAFKA_BOOTSTRAP_SERVERS = os.getenv(
 RIDE_DRIVER_ACCEPT_TIMEOUT = 30  # seconds
 
 # ============================================================
-# CORS
+# CORS  (all origins use HTTPS — no plaintext http:// references)
 # ============================================================
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://192.169.1.137:8000",
-    "http://192.169.1.137:19000",
-    "http://192.169.1.137:19001",
-    "http://192.169.1.137",
-    "http://10.247.72.202:8000",
-    "http://10.247.72.202:19000",
-    "http://10.247.72.202:19001",
-    "http://10.247.72.202:8081",
-    "http://10.247.72.202",
+HTTPS_PROTOCOL = "https://"
+
+# Localhost origins use HTTPS so that browsers with strict mixed-content
+# policies (and local reverse-proxies / mkcert) work correctly.
+# Override via the CORS_ALLOWED_ORIGINS env-var in any environment.
+DEFAULT_LOCAL_ORIGINS = [
+    f"{HTTPS_PROTOCOL}localhost:5173",
+    f"{HTTPS_PROTOCOL}localhost:5174",
 ]
 
+CORS_ALLOWED_ORIGINS = (
+    os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+    if os.getenv("CORS_ALLOWED_ORIGINS")
+    else DEFAULT_LOCAL_ORIGINS
+)
 
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://192.169.1.137:8000",
-    "http://192.169.1.137",
-    "http://10.247.72.202:8000",
-    "http://10.247.72.202",
-]
+CSRF_TRUSTED_ORIGINS = (
+    os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if os.getenv("CSRF_TRUSTED_ORIGINS")
+    else DEFAULT_LOCAL_ORIGINS
+)
+
+# All origins are already https:// — no runtime replacement needed.
+
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -421,12 +413,13 @@ if os.getenv("EMAIL_HOST_USER"):
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", os.getenv("EMAIL_HOST_USER", "noreply@uberclone.com"))
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DEFAULT_FROM_EMAIL", os.getenv("EMAIL_HOST_USER", "noreply@uberclone.com")
+)
 
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
 TWILIO_FROM_NUMBER = os.environ.get("TWILIO_FROM_NUMBER")
-
 
 
 RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
@@ -434,9 +427,11 @@ RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
 RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
 RAZORPAY_PAYOUT_WEBHOOK_SECRET = os.getenv("RAZORPAY_PAYOUT_WEBHOOK_SECRET", "")
 
-RAZORPAY_ACCOUNT_NUMBER = os.getenv("RAZORPAY_ACCOUNT_NUMBER", "2323230000000000") # Dummy Default
+RAZORPAY_ACCOUNT_NUMBER = os.getenv(
+    "RAZORPAY_ACCOUNT_NUMBER", "2323230000000000"
+)  # Dummy Default
 
-PLATFORM_USER_ID = 1 
+PLATFORM_USER_ID = 1
 
 
 # ============================================================
@@ -503,14 +498,13 @@ LOGGING = {
 SENTRY_DSN = os.getenv("SENTRY_DSN")
 if SENTRY_DSN:
     import sentry_sdk
+    from sentry_sdk.integrations.celery import CeleryIntegration
     from sentry_sdk.integrations.django import DjangoIntegration
     from sentry_sdk.integrations.redis import RedisIntegration
-    from sentry_sdk.integrations.celery import CeleryIntegration
-    
+
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration(), RedisIntegration(), CeleryIntegration()],
         traces_sample_rate=1.0 if DEBUG else 0.1,  # 10% traces in prod
-        send_default_pii=True
+        send_default_pii=True,
     )
-

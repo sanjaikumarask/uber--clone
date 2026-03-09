@@ -1,22 +1,22 @@
 # apps/rides/tasks.py
 
-from celery import shared_task
 from datetime import timedelta
+
+from celery import shared_task
 from django.db import transaction
 from django.utils import timezone
 
-from apps.rides.models import Ride
 from apps.drivers.models import Driver
 from apps.drivers.services.geo import add_driver_to_geo
-from apps.rides.kafka import publish_ride_searching_event
+from apps.drivers.services.metrics import update_driver_metrics
+from apps.rides.models import Ride
 from apps.rides.services.no_show import handle_no_show
 from apps.rides.services.surge_engine import (
     cell_id_from_lat_lng,
-    increment_demand,
     decrement_demand,
+    increment_demand,
     increment_supply,
 )
-from apps.drivers.services.metrics import update_driver_metrics
 
 WAIT_TIME_MINUTES = 5
 
@@ -27,12 +27,17 @@ WAIT_TIME_MINUTES = 5
 @shared_task(bind=True, autoretry_for=(Exception,), retry_kwargs={"max_retries": 3})
 def driver_accept_timeout(self, ride_id: int, driver_id: int):
     from apps.rides.services.matching import find_driver_and_offer_ride
+
     with transaction.atomic():
-        ride = Ride.objects.select_for_update().filter(
-            id=ride_id,
-            driver_id=driver_id,
-            status=Ride.Status.OFFERED,
-        ).first()
+        ride = (
+            Ride.objects.select_for_update()
+            .filter(
+                id=ride_id,
+                driver_id=driver_id,
+                status=Ride.Status.OFFERED,
+            )
+            .first()
+        )
 
         if not ride:
             return
@@ -52,7 +57,9 @@ def driver_accept_timeout(self, ride_id: int, driver_id: int):
         ride.rejected_driver_ids = rejected
 
         # We must save rejected_driver_ids as well
-        ride.save(update_fields=["driver", "status", "rejected_driver_ids", "updated_at"])
+        ride.save(
+            update_fields=["driver", "status", "rejected_driver_ids", "updated_at"]
+        )
 
         increment_demand(cell_id)
         increment_supply(cell_id)
@@ -67,9 +74,7 @@ def driver_accept_timeout(self, ride_id: int, driver_id: int):
                 lng=driver.last_lng,
             )
 
-        transaction.on_commit(
-            lambda: find_driver_and_offer_ride(ride.id)
-        )
+        transaction.on_commit(lambda: find_driver_and_offer_ride(ride.id))
 
 
 # ============================================================
@@ -101,16 +106,19 @@ def check_no_show(self, ride_id: int):
 
         decrement_demand(cell_id)
         increment_supply(cell_id)
+
+
 @shared_task
 def retry_matching_for_searching_rides():
     """
     Periodic task to pick up rides that are stuck in SEARCHING state.
     """
     from apps.rides.services.matching import find_driver_and_offer_ride
-    
+
     searching_rides = Ride.objects.filter(status=Ride.Status.SEARCHING)
     for ride in searching_rides:
         find_driver_and_offer_ride(ride.id)
+
 
 @shared_task
 def auto_resolve_stuck_rides():
@@ -126,19 +134,21 @@ def auto_resolve_stuck_rides():
 
     # 1. Cancel stale SEARCHING rides (> 15 mins since last update)
     stale_threshold = now - timedelta(minutes=15)
-    stale_searching = Ride.objects.filter(status=Ride.Status.SEARCHING, updated_at__lt=stale_threshold)
+    stale_searching = Ride.objects.filter(
+        status=Ride.Status.SEARCHING, updated_at__lt=stale_threshold
+    )
     for ride in stale_searching:
         try:
             cancel_ride(ride=ride, by=Ride.CancelledBy.SYSTEM)
         except Exception:
             pass
 
-    # 2. Complete abandoned ONGOING/ASSIGNED rides (> 24 hours) 
+    # 2. Complete abandoned ONGOING/ASSIGNED rides (> 24 hours)
     # This catches edge-cases where driver/rider force-close app without finishing
     abandoned_threshold = now - timedelta(hours=24)
     abandoned_active = Ride.objects.filter(
         status__in=[Ride.Status.ONGOING, Ride.Status.ARRIVED, Ride.Status.ASSIGNED],
-        updated_at__lt=abandoned_threshold
+        updated_at__lt=abandoned_threshold,
     )
     for ride in abandoned_active:
         try:

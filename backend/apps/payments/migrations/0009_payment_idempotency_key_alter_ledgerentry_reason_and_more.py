@@ -6,28 +6,55 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('payments', '0008_alter_ledgerentry_reason'),
+        ("payments", "0008_alter_ledgerentry_reason"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='payment',
-            name='idempotency_key',
-            field=models.CharField(blank=True, help_text='Network-edge idempotency tracking key', max_length=128, null=True, unique=True),
+            model_name="payment",
+            name="idempotency_key",
+            field=models.CharField(
+                blank=True,
+                help_text="Network-edge idempotency tracking key",
+                max_length=128,
+                null=True,
+                unique=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='ledgerentry',
-            name='reason',
-            field=models.CharField(blank=True, choices=[('PAYMENT', 'Payment'), ('DRIVER_EARNING', 'Driver Earning'), ('PLATFORM_COMMISSION', 'Platform Commission'), ('DRIVER_PAYOUT', 'Driver Payout'), ('WITHDRAWAL_FEE', 'Withdrawal Fee'), ('REFUND', 'Refund'), ('PENALTY', 'Penalty'), ('CORRECTION', 'Correction'), ('OTHER', 'Other')], max_length=64, null=True),
+            model_name="ledgerentry",
+            name="reason",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("PAYMENT", "Payment"),
+                    ("DRIVER_EARNING", "Driver Earning"),
+                    ("PLATFORM_COMMISSION", "Platform Commission"),
+                    ("DRIVER_PAYOUT", "Driver Payout"),
+                    ("WITHDRAWAL_FEE", "Withdrawal Fee"),
+                    ("REFUND", "Refund"),
+                    ("PENALTY", "Penalty"),
+                    ("CORRECTION", "Correction"),
+                    ("OTHER", "Other"),
+                ],
+                max_length=64,
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='ledgerentry',
-            name='reference',
-            field=models.CharField(blank=True, help_text='Idempotency / correlation key', max_length=128, null=True, unique=True),
+            model_name="ledgerentry",
+            name="reference",
+            field=models.CharField(
+                blank=True,
+                help_text="Idempotency / correlation key",
+                max_length=128,
+                null=True,
+                unique=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='payment',
-            name='gateway_payment_id',
+            model_name="payment",
+            name="gateway_payment_id",
             field=models.CharField(blank=True, max_length=128, null=True, unique=True),
         ),
     ]

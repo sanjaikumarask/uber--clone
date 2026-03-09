@@ -1,5 +1,6 @@
 import logging
-from apps.drivers.redis import redis_client, DRIVER_GEO_KEY
+
+from apps.drivers.redis import DRIVER_GEO_KEY, redis_client
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ def remove_driver_from_geo(*, driver_id):
 
 def get_nearby_driver_ids(*, lat, lng, radius_km=5, limit=5):
     logger.info(f"Checking nearby drivers at ({lat}, {lng}) radius={radius_km}km")
-    
+
     # 1. Debug: Check total count in GEO_KEY
     total_count = redis_client.zcard(GEO_KEY)
     logger.info(f"Total drivers in Redis ({GEO_KEY}): {total_count}")
@@ -30,7 +31,7 @@ def get_nearby_driver_ids(*, lat, lng, radius_km=5, limit=5):
         unit="km",
         count=limit,
     )
-    
+
     driver_ids = [int(x) for x in results]
     logger.info(f"Candidates from GEO search: {driver_ids}")
 
@@ -42,7 +43,7 @@ def get_nearby_driver_ids(*, lat, lng, radius_km=5, limit=5):
         else:
             logger.info(f"Driver {d_id} heartbeat expired. Removing from GEO.")
             remove_driver_from_geo(driver_id=d_id)
-    
+
     logger.info(f"Found valid nearby driver IDs (active heartbeats): {valid_ids}")
     return valid_ids
 

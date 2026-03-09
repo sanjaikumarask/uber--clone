@@ -15,24 +15,26 @@ this module handles pattern-level fraud that requires cross-ride analysis:
      marks "arrived", and completes within seconds (ghost ride).
   5. Coordinated Abuse            — same rider+driver pair repeatedly within 24h.
 """
+
 import logging
-from decimal import Decimal
-from django.utils import timezone
 from datetime import timedelta
+
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
 # ─── Thresholds (tune per city/vehicle-type) ─────────────────────────────────
-REPEAT_PAIR_LIMIT       = 3     # Same rider+driver in 24h → suspicious
-MAX_RIDES_PER_HOUR      = 6     # > 6 completed rides/hour is physically impossible
-GHOST_RIDE_SECONDS      = 90    # Trip start→end in < 90s = ghost ride
-MIN_VALID_DURATION_SECS = 60    # Any ride shorter than 1 min is suspicious
-ROUTE_INFLATION_RATIO   = 2.0   # actual_km > 2x planned_km = inflation attempt
-MAX_SPEED_KMH           = 150.0 # Any movement > 150km/h in city is suspicious (Spoofing)
-MIN_PING_INTERVAL       = 5     # Minimum seconds between GPS pings to trust velocity calc
+REPEAT_PAIR_LIMIT = 3  # Same rider+driver in 24h → suspicious
+MAX_RIDES_PER_HOUR = 6  # > 6 completed rides/hour is physically impossible
+GHOST_RIDE_SECONDS = 90  # Trip start→end in < 90s = ghost ride
+MIN_VALID_DURATION_SECS = 60  # Any ride shorter than 1 min is suspicious
+ROUTE_INFLATION_RATIO = 2.0  # actual_km > 2x planned_km = inflation attempt
+MAX_SPEED_KMH = 150.0  # Any movement > 150km/h in city is suspicious (Spoofing)
+MIN_PING_INTERVAL = 5  # Minimum seconds between GPS pings to trust velocity calc
 
 
 # ─── 1. GHOST RIDE DETECTION ─────────────────────────────────────────────────
+
 
 def detect_ghost_ride(ride) -> bool:
     """
@@ -47,13 +49,14 @@ def detect_ghost_ride(ride) -> bool:
         logger.warning(
             f"[Fraud] Ghost ride detected: ride={ride.id} "
             f"duration={duration:.0f}s driver={ride.driver_id}",
-            extra={"ride_id": ride.id, "driver_id": ride.driver_id}
+            extra={"ride_id": ride.id, "driver_id": ride.driver_id},
         )
         return True
     return False
 
 
 # ─── 2. ROUTE INFLATION DETECTION ────────────────────────────────────────────
+
 
 def detect_route_inflation(ride) -> bool:
     """
@@ -64,7 +67,7 @@ def detect_route_inflation(ride) -> bool:
     """
     if not ride.actual_distance_km or not ride.planned_distance_km:
         return False
-    if ride.planned_distance_km < 0.5:   # Skip very short planned routes
+    if ride.planned_distance_km < 0.5:  # Skip very short planned routes
         return False
 
     ratio = ride.actual_distance_km / ride.planned_distance_km
@@ -74,7 +77,7 @@ def detect_route_inflation(ride) -> bool:
             f"actual={ride.actual_distance_km:.2f}km "
             f"planned={ride.planned_distance_km:.2f}km "
             f"ratio={ratio:.2f}x",
-            extra={"ride_id": ride.id, "driver_id": ride.driver_id}
+            extra={"ride_id": ride.id, "driver_id": ride.driver_id},
         )
         return True
     return False
@@ -82,12 +85,14 @@ def detect_route_inflation(ride) -> bool:
 
 # ─── 3. FREQUENCY ANOMALY ────────────────────────────────────────────────────
 
+
 def detect_frequency_anomaly(driver) -> bool:
     """
     Checks if a driver completed an implausible number of rides in the last hour.
     > 6 completed rides/hour is physically impossible (avg ride > 10 min).
     """
     from apps.rides.models import Ride
+
     one_hour_ago = timezone.now() - timedelta(hours=1)
     count = Ride.objects.filter(
         driver=driver,
@@ -99,7 +104,7 @@ def detect_frequency_anomaly(driver) -> bool:
         logger.warning(
             f"[Fraud] Frequency anomaly: driver={driver.id} "
             f"completed {count} rides in last hour",
-            extra={"driver_id": driver.id}
+            extra={"driver_id": driver.id},
         )
         return True
     return False
@@ -107,12 +112,14 @@ def detect_frequency_anomaly(driver) -> bool:
 
 # ─── 4. COORDINATED ABUSE (Same Rider+Driver Pair) ───────────────────────────
 
+
 def detect_coordinated_abuse(driver, ride) -> bool:
     """
     Detects when the same driver-rider pair repeats rides suspiciously
     often (e.g. round-tripping to farm incentives).
     """
     from apps.rides.models import Ride
+
     yesterday = timezone.now() - timedelta(hours=24)
     count = Ride.objects.filter(
         driver=driver,
@@ -125,7 +132,7 @@ def detect_coordinated_abuse(driver, ride) -> bool:
         logger.warning(
             f"[Fraud] Coordinated abuse: driver={driver.id} "
             f"rider={ride.rider_id} rides={count} in 24h",
-            extra={"ride_id": ride.id, "driver_id": driver.id}
+            extra={"ride_id": ride.id, "driver_id": driver.id},
         )
         return True
     return False
@@ -133,21 +140,27 @@ def detect_coordinated_abuse(driver, ride) -> bool:
 
 # ─── 5. GPS VELOCITY GUARD (SPOOFING DETECTION) ─────────────────────────────
 
+
 def validate_gps_velocity(driver_id, new_lat, new_lng):
     """
     Detects GPS Spoofing/Teleportation by calculating speed between pings.
     If speed > 150km/h, it is physically impossible in city traffic.
     """
-    from apps.drivers.redis import redis_client
     import time
+
     from geopy.distance import geodesic
+
+    from apps.drivers.redis import redis_client
 
     meta_key = f"driver:{driver_id}:meta"
     last_data = redis_client.hgetall(meta_key)
-    
+
     if not last_data or "lat" not in last_data or "lng" not in last_data:
         # First ping, just store and return
-        redis_client.hset(meta_key, mapping={"lat": new_lat, "lng": new_lng, "last_seen": int(time.time())})
+        redis_client.hset(
+            meta_key,
+            mapping={"lat": new_lat, "lng": new_lng, "last_seen": int(time.time())},
+        )
         return True
 
     last_lat = float(last_data["lat"])
@@ -159,16 +172,20 @@ def validate_gps_velocity(driver_id, new_lat, new_lng):
     # 🚨 RESILIENCE FIX: If last ping was > 5 mins ago, reset velocity tracking.
     # Prevents false "teleportation" flags when driver re-opens app in a new location.
     if time_diff > 300:
-        logger.info(f"[SPOOF] Resetting velocity tracking for Driver {driver_id} (Stale data: {time_diff}s)")
-        redis_client.hset(meta_key, mapping={"lat": new_lat, "lng": new_lng, "last_seen": now})
+        logger.info(
+            f"[SPOOF] Resetting velocity tracking for Driver {driver_id} (Stale data: {time_diff}s)"
+        )
+        redis_client.hset(
+            meta_key, mapping={"lat": new_lat, "lng": new_lng, "last_seen": now}
+        )
         return True
 
     if time_diff < MIN_PING_INTERVAL:
-        return True # Too frequent pings, skip velocity check to avoid noise
+        return True  # Too frequent pings, skip velocity check to avoid noise
 
     # Calculate distance in km
     dist_km = geodesic((last_lat, last_lng), (new_lat, new_lng)).km
-    
+
     # Calculate speed (km/h)
     speed_kmh = (dist_km / time_diff) * 3600
 
@@ -182,11 +199,14 @@ def validate_gps_velocity(driver_id, new_lat, new_lng):
         return False
 
     # Update last valid position
-    redis_client.hset(meta_key, mapping={"lat": new_lat, "lng": new_lng, "last_seen": now})
+    redis_client.hset(
+        meta_key, mapping={"lat": new_lat, "lng": new_lng, "last_seen": now}
+    )
     return True
 
 
 # ─── 5. COMPOSITE ENTRY POINT ────────────────────────────────────────────────
+
 
 def run_fraud_checks(ride) -> list[str]:
     """
@@ -201,7 +221,7 @@ def run_fraud_checks(ride) -> list[str]:
             ...
     """
     signals = []
-    driver  = ride.driver
+    driver = ride.driver
     if not driver:
         return signals
 
@@ -225,7 +245,6 @@ def apply_fraud_penalties(ride, signals: list[str]):
     Applies trust score penalties and conditionally blocks the driver.
     Called after run_fraud_checks returns non-empty signals.
     """
-    from apps.drivers.models import DriverStats
     from apps.notifications.services.alerts import send_critical_alert
 
     try:
@@ -234,14 +253,14 @@ def apply_fraud_penalties(ride, signals: list[str]):
         return
 
     PENALTY_MAP = {
-        "GHOST_RIDE":          10.0,
-        "ROUTE_INFLATION":     8.0,
-        "FREQUENCY_ANOMALY":   5.0,
-        "COORDINATED_ABUSE":   7.0,
+        "GHOST_RIDE": 10.0,
+        "ROUTE_INFLATION": 8.0,
+        "FREQUENCY_ANOMALY": 5.0,
+        "COORDINATED_ABUSE": 7.0,
     }
 
     total_penalty = sum(PENALTY_MAP.get(s, 5.0) for s in signals)
-    stats.trust_score    = max(0.0, stats.trust_score - total_penalty)
+    stats.trust_score = max(0.0, stats.trust_score - total_penalty)
     stats.fraud_flags_count += 1
     stats.save(update_fields=["trust_score", "fraud_flags_count", "updated_at"])
 
@@ -257,5 +276,5 @@ def apply_fraud_penalties(ride, signals: list[str]):
             f"Trust score: {stats.trust_score:.1f} | "
             f"Total flags: {stats.fraud_flags_count}"
         ),
-        level="CRITICAL" if stats.trust_score < 30.0 else "ERROR"
+        level="CRITICAL" if stats.trust_score < 30.0 else "ERROR",
     )

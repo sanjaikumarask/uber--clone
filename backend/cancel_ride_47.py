@@ -1,7 +1,7 @@
-
 import os
-import django
 import sys
+
+import django
 
 # Add the project root to sys.path if necessary
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -11,6 +11,7 @@ django.setup()
 
 from apps.rides.models import Ride
 from apps.rides.services.cancellation import cancel_ride
+
 
 def main():
     try:
@@ -22,11 +23,11 @@ def main():
             return
 
         print(f"Found Ride #{ride.id} with status: {ride.status}")
-        
+
         if ride.status == Ride.Status.CANCELLED:
             print("Ride is already cancelled.")
             return
-            
+
         if ride.status == Ride.Status.COMPLETED:
             print("Ride is already completed and cannot be cancelled.")
             return
@@ -40,6 +41,7 @@ def main():
 
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
+
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,47 @@
+time="2026-03-07T14:39:56+05:30" level=warning msg="Found orphan containers ([sonarqube sonarqube_db]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container uber_zookeeper Running 
+ Container uber_kafka Running 
+ Container uber_redis Running 
+ Container uber_postgres Running 
+ Container uber_postgres Waiting 
+ Container uber_postgres Healthy 
+ Container uber-backend-backend-run-448d55ccacca Creating 
+ Container uber-backend-backend-run-448d55ccacca Created 
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python3.11
+cachedir: .pytest_cache
+django: version: 5.2.12, settings: config.settings (from env)
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0, django-4.12.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 7 items
+
+tests/unit/test_quality_gate.py::TestAdminDashboardFull::test_admin_views_comprehensive PASSED [ 14%]
+tests/unit/test_quality_gate.py::TestDriversViewsDeep::test_location_and_status_logic FAILED [ 28%]
+tests/unit/test_quality_gate.py::TestIdempotencyLogic::test_idempotent_decorator_branches FAILED [ 42%]
+tests/unit/test_quality_gate.py::TestQualityGateBoosterBase::test_payment_web_verify_failure_paths PASSED [ 57%]
+tests/unit/test_quality_gate.py::TestQualityGateBoosterBase::test_admin_ledger_check_missing_id PASSED [ 71%]
+tests/unit/test_quality_gate.py::TestQualityGateBoosterBase::test_driver_payout_reject_invalid_state PASSED [ 85%]
+tests/unit/test_quality_gate.py::test_alerts_service_levels PASSED       [100%]
+
+=================================== FAILURES ===================================
+_____________ TestDriversViewsDeep.test_location_and_status_logic ______________
+tests/unit/test_quality_gate.py:96: in test_location_and_status_logic
+    with patch("channels.layers.get_channel_layer") as mock_get_layer, \
+/usr/local/lib/python3.11/unittest/mock.py:1446: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/unittest/mock.py:1419: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'apps.drivers.views' from '/app/apps/drivers/views.py'> does not have the attribute 'update_driver_location'
+___________ TestIdempotencyLogic.test_idempotent_decorator_branches ____________
+tests/unit/test_quality_gate.py:147: in test_idempotent_decorator_branches
+    @idempotent_request(expire_after=3600)
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: idempotent_request() got an unexpected keyword argument 'expire_after'
+=========================== short test summary info ============================
+FAILED tests/unit/test_quality_gate.py::TestDriversViewsDeep::test_location_and_status_logic
+FAILED tests/unit/test_quality_gate.py::TestIdempotencyLogic::test_idempotent_decorator_branches
+========================= 2 failed, 5 passed in 8.68s ==========================
+

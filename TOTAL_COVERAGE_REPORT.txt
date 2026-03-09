@@ -1,0 +1,78 @@
+time="2026-03-07T13:35:58+05:30" level=warning msg="Found orphan containers ([sonarqube sonarqube_db]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container uber_redis Running 
+ Container uber_zookeeper Running 
+ Container uber_kafka Running 
+ Container uber_postgres Running 
+ Container uber_postgres Waiting 
+ Container uber_postgres Healthy 
+ Container uber-backend-backend-run-1281145bbe86 Creating 
+ Container uber-backend-backend-run-1281145bbe86 Created 
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python3.11
+cachedir: .pytest_cache
+django: version: 5.2.12, settings: config.settings (from env)
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0, django-4.12.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 18 items
+
+tests/unit/test_coverage_booster.py::TestIdempotencyExtended::test_idempotent_task_decorator PASSED [  5%]
+tests/unit/test_coverage_booster.py::TestIdempotencyExtended::test_idempotent_webhook PASSED [ 11%]
+tests/unit/test_coverage_booster.py::TestFraudExtended::test_route_inflation PASSED [ 16%]
+tests/unit/test_coverage_booster.py::TestFraudExtended::test_frequency_anomaly PASSED [ 22%]
+tests/unit/test_coverage_booster.py::TestFraudExtended::test_coordinated_abuse PASSED [ 27%]
+tests/unit/test_coverage_booster.py::TestFraudExtended::test_validate_gps_velocity PASSED [ 33%]
+tests/unit/test_coverage_booster.py::TestFraudExtended::test_apply_fraud_penalties PASSED [ 38%]
+tests/unit/test_coverage_booster.py::TestBackpressureAdaptive::test_connection_rate_limiter PASSED [ 44%]
+tests/unit/test_coverage_booster.py::TestBackpressureAdaptive::test_endpoint_cooldown PASSED [ 50%]
+tests/unit/test_coverage_booster.py::TestBackpressureAdaptive::test_retry_strategy PASSED [ 55%]
+tests/unit/test_coverage_booster.py::TestBackpressureAdaptive::test_adaptive_shedder_should_shed PASSED [ 61%]
+tests/unit/test_coverage_booster.py::test_json_formatter FAILED          [ 66%]
+tests/unit/test_coverage_booster.py::TestRideViewsExtended::test_accept_ride_view PASSED [ 72%]
+tests/unit/test_coverage_booster.py::TestRideViewsExtended::test_verify_otp_view FAILED [ 77%]
+tests/unit/test_coverage_booster.py::TestRideViewsExtended::test_complete_ride_view PASSED [ 83%]
+tests/unit/test_coverage_booster.py::TestNotificationProvidersExtended::test_send_email_comprehensive PASSED [ 88%]
+tests/unit/test_coverage_booster.py::TestNotificationProvidersExtended::test_send_sms_comprehensive PASSED [ 94%]
+tests/unit/test_coverage_booster.py::TestNotificationProvidersExtended::test_send_ws_comprehensive PASSED [100%]
+
+=================================== FAILURES ===================================
+_____________________________ test_json_formatter ______________________________
+tests/unit/test_coverage_booster.py:243: in test_json_formatter
+    msg_str = formatter.format(record)
+              ^^^^^^^^^^^^^^^^^^^^^^^^
+apps/common/logging.py:64: in format
+    return json.dumps(masked_log_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/__init__.py:231: in dumps
+    return _default_encoder.encode(obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/encoder.py:200: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/encoder.py:258: in iterencode
+    return _iterencode(o, 0)
+           ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/encoder.py:180: in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+E   TypeError: Object of type MagicMock is not JSON serializable
+__________________ TestRideViewsExtended.test_verify_otp_view __________________
+tests/unit/test_coverage_booster.py:273: in test_verify_otp_view
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = <Response status_code=400, "application/json">.status_code
+----------------------------- Captured stderr call -----------------------------
+WARNING 2026-03-07 08:06:11,619 log Bad Request: /api/rides/5/start/
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/rides/5/start/
+=============================== warnings summary ===============================
+tests/unit/test_coverage_booster.py::TestNotificationProvidersExtended::test_send_ws_comprehensive
+  /usr/local/lib/python3.11/site-packages/asgiref/sync.py:608: UserWarning: async_to_sync was passed a non-async-marked callable
+    return AsyncToSync(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/unit/test_coverage_booster.py::test_json_formatter - TypeError: ...
+FAILED tests/unit/test_coverage_booster.py::TestRideViewsExtended::test_verify_otp_view
+=================== 2 failed, 16 passed, 1 warning in 10.02s ===================
+

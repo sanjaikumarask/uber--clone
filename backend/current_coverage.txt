@@ -1,0 +1,352 @@
+time="2026-03-07T13:01:36+05:30" level=warning msg="Found orphan containers ([sonarqube sonarqube_db]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container uber_postgres Running 
+ Container uber_zookeeper Running 
+ Container uber_kafka Running 
+ Container uber_redis Running 
+ Container uber_postgres Waiting 
+ Container uber_postgres Healthy 
+ Container uber-backend-backend-run-e7766a8940ca Creating 
+ Container uber-backend-backend-run-e7766a8940ca Created 
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python3.11
+cachedir: .pytest_cache
+django: version: 5.2.12, settings: config.settings (from env)
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0, django-4.12.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 54 items
+
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_web_checkout_view_success PASSED [  1%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_web_checkout_unauthenticated PASSED [  3%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_web_checkout_view_gateway_missing PASSED [  5%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_web_verify_view_success PASSED [  7%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_web_verify_view_failure PASSED [  9%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_driver_payout_request_view_get PASSED [ 11%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_driver_payout_request_view_get_non_driver PASSED [ 12%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_driver_payout_request_view_post_invalid_amount PASSED [ 14%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_driver_payout_request_view_post_success PASSED [ 16%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_driver_payout_request_view_post_value_error PASSED [ 18%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_email_success PASSED [ 20%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_email_no_email_error PASSED [ 22%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_sms_success PASSED [ 24%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_sms_body_missing PASSED [ 25%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_push_success PASSED [ 27%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_push_no_token PASSED [ 29%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_critical_alert_various_levels PASSED [ 31%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_critical_alert_throttling PASSED [ 33%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_ws_success PASSED [ 35%]
+tests/unit/test_coverage_booster.py::TestOfferViewsBooster::test_validate_offer_view_success PASSED [ 37%]
+tests/unit/test_coverage_booster.py::TestOfferViewsBooster::test_validate_offer_missing_code PASSED [ 38%]
+tests/unit/test_coverage_booster.py::TestOfferViewsBooster::test_apply_offer_view_errors PASSED [ 40%]
+tests/unit/test_coverage_booster.py::TestOfferViewsBooster::test_apply_offer_already_applied PASSED [ 42%]
+tests/unit/test_coverage_booster.py::TestOfferViewsBooster::test_admin_offer_actions PASSED [ 44%]
+tests/unit/test_coverage_booster.py::TestOfferViewsBooster::test_rider_offer_list PASSED [ 46%]
+tests/unit/test_coverage_booster.py::TestOfferViewsBooster::test_offer_analytics_view_success PASSED [ 48%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_driver_profile PASSED [ 50%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_go_online_suspended PASSED [ 51%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_go_online_success PASSED [ 53%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_update_location_with_ride PASSED [ 55%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_update_location_invalid_coords PASSED [ 57%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_go_offline_active_ride_error PASSED [ 59%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_go_offline_success PASSED [ 61%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_driver_status_view PASSED [ 62%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_driver_active_ride_view PASSED [ 64%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_document_upload_view_get PASSED [ 66%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_driver_ride_history PASSED [ 68%]
+tests/unit/test_coverage_booster.py::TestSupportViewsBooster::test_create_support_ticket PASSED [ 70%]
+tests/unit/test_coverage_booster.py::TestSupportViewsBooster::test_support_ticket_list PASSED [ 72%]
+tests/unit/test_coverage_booster.py::TestSupportViewsBooster::test_resolve_ticket_admin PASSED [ 74%]
+tests/unit/test_coverage_booster.py::TestSupportViewsBooster::test_trigger_sos_view_success PASSED [ 75%]
+tests/unit/test_coverage_booster.py::TestSupportViewsBooster::test_trigger_sos_view_no_permission PASSED [ 77%]
+tests/unit/test_coverage_booster.py::TestSupportViewsBooster::test_resolve_emergency_view PASSED [ 79%]
+tests/unit/test_coverage_booster.py::TestIncentiveViewsBooster::test_incentive_viewset_list PASSED [ 81%]
+tests/unit/test_coverage_booster.py::TestIncentiveViewsBooster::test_incentive_actions_admin PASSED [ 83%]
+tests/unit/test_coverage_booster.py::TestIncentiveViewsBooster::test_incentive_analytics PASSED [ 85%]
+tests/unit/test_coverage_booster.py::TestRideTasksBooster::test_driver_accept_timeout PASSED [ 87%]
+tests/unit/test_coverage_booster.py::TestRideTasksBooster::test_check_no_show_task PASSED [ 88%]
+tests/unit/test_coverage_booster.py::TestRideTasksBooster::test_retry_matching PASSED [ 90%]
+tests/unit/test_coverage_booster.py::TestRideTasksBooster::test_buffer_ride_progress PASSED [ 92%]
+tests/unit/test_coverage_booster.py::TestRideTasksBooster::test_persist_ride_history_to_db PASSED [ 94%]
+tests/unit/test_coverage_booster.py::TestRideTasksBooster::test_auto_resolve_stuck_rides PASSED [ 96%]
+tests/unit/test_coverage_booster.py::TestRealtimeServiceBooster::test_broadcast_ride_update PASSED [ 98%]
+tests/unit/test_coverage_booster.py::TestRealtimeServiceBooster::test_get_buffered_ride_history_malformed_path PASSED [100%]
+
+=============================== warnings summary ===============================
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_critical_alert_various_levels
+  /usr/local/lib/python3.11/site-packages/asgiref/sync.py:608: UserWarning: async_to_sync was passed a non-async-marked callable
+    return AsyncToSync(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.11.15-final-0 _______________
+
+Name                                                                                         Stmts   Miss Branch BrPart  Cover   Missing
+----------------------------------------------------------------------------------------------------------------------------------------
+apps/__init__.py                                                                                 0      0      0      0   100%
+apps/admin_dashboard/__init__.py                                                                 0      0      0      0   100%
+apps/admin_dashboard/admin.py                                                                    0      0      0      0   100%
+apps/admin_dashboard/apps.py                                                                     4      0      0      0   100%
+apps/admin_dashboard/migrations/0001_initial.py                                                  5      5      0      0     0%   3-12
+apps/admin_dashboard/migrations/__init__.py                                                      0      0      0      0   100%
+apps/admin_dashboard/models.py                                                                  19      1      0      0    95%   30
+apps/admin_dashboard/routing.py                                                                  3      3      0      0     0%   1-5
+apps/admin_dashboard/serializers.py                                                             31      3      2      0    85%   72-74
+apps/admin_dashboard/tests.py                                                                    0      0      0      0   100%
+apps/admin_dashboard/urls.py                                                                     5      0      0      0   100%
+apps/admin_dashboard/views.py                                                                  138     89     20      0    31%   37-42, 45-50, 60-71, 86-129, 152-183, 203-221, 232-238, 245-255, 266-272, 305-323, 369-385
+apps/admin_dashboard/views_admin.py                                                             78     53     22      0    25%   18-39, 46-63, 70-103, 110-159, 166-181
+apps/common/__init__.py                                                                          0      0      0      0   100%
+apps/common/adaptive.py                                                                         35     35      6      0     0%   2-87
+apps/common/apps.py                                                                              4      0      0      0   100%
+apps/common/backpressure.py                                                                     82     60     10      0    24%   46-76, 93-120, 140-158, 188-196, 200
+apps/common/budget.py                                                                           32     32      2      0     0%   2-52
+apps/common/chaos.py                                                                            20     20      4      0     0%   1-34
+apps/common/circuit_breaker.py                                                                  30     18      4      0    35%   26-69
+apps/common/fraud.py                                                                           102     76     34      1    20%   44-55, 68-83, 94-110, 121-138, 166-205, 223-240, 248-272
+apps/common/http.py                                                                             12     12      4      0     0%   2-31
+apps/common/idempotency.py                                                                     132     94     36      1    24%   34, 63-109, 138-164, 196-229, 237-249, 253-267, 280-304
+apps/common/ledger_recon.py                                                                     22     22      2      0     0%   2-67
+apps/common/logging.py                                                                          46      8     12      3    81%   31, 47, 54, 71-73, 105-107
+apps/common/metrics.py                                                                          10      0      0      0   100%
+apps/common/ordering.py                                                                         20      8      2      0    55%   46-57, 61-62, 66
+apps/common/rate_limit.py                                                                       35     21     10      1    33%   49-67, 76-83
+apps/common/redis.py                                                                             3      0      0      0   100%
+apps/common/resilience.py                                                                       81     46     18      1    36%   30-34, 37-59, 62-66, 69-82, 85-86, 89-91, 104, 136-137, 143-149
+apps/common/tasks.py                                                                            17     17      0      0     0%   2-39
+apps/driver_incentives/__init__.py                                                               0      0      0      0   100%
+apps/driver_incentives/admin.py                                                                 11      0      0      0   100%
+apps/driver_incentives/apps.py                                                                   6      0      0      0   100%
+apps/driver_incentives/consumers.py                                                             10     10      0      0     0%   1-14
+apps/driver_incentives/migrations/0001_initial.py                                                6      6      0      0     0%   3-16
+apps/driver_incentives/migrations/0002_driverincentive_budget_limit_and_more.py                  4      4      0      0     0%   3-12
+apps/driver_incentives/migrations/0003_remove_driverincentive_bonus_amount_and_more.py           6      6      0      0     0%   3-15
+apps/driver_incentives/migrations/0004_alter_driverincentive_reward_amount_and_more.py           4      4      0      0     0%   3-12
+apps/driver_incentives/migrations/0005_alter_driverincentive_city.py                             4      4      0      0     0%   3-12
+apps/driver_incentives/migrations/__init__.py                                                    0      0      0      0   100%
+apps/driver_incentives/models.py                                                                37      3      0      0    92%   29, 32-33
+apps/driver_incentives/routing.py                                                                3      3      0      0     0%   1-5
+apps/driver_incentives/selectors.py                                                              5      5      0      0     0%   1-8
+apps/driver_incentives/serializers.py                                                           28      8      4      1    72%   21-29
+apps/driver_incentives/services/__init__.py                                                      8      8      0      0     0%   1-17
+apps/driver_incentives/services/incentive_engine.py                                             99     99     36      0     0%   1-209
+apps/driver_incentives/signals.py                                                               11      0      0      0   100%
+apps/driver_incentives/urls.py                                                                   7      0      0      0   100%
+apps/driver_incentives/views.py                                                                 52      7      8      1    80%   25, 61-68
+apps/drivers/__init__.py                                                                         0      0      0      0   100%
+apps/drivers/admin.py                                                                           14      2      0      0    86%   12, 32
+apps/drivers/admin_views.py                                                                    158    118     40      0    20%   34-52, 55-65, 68, 99-122, 125-138, 151-214, 233-255, 272-290, 297-306, 313-333, 340-375, 382-397
+apps/drivers/apps.py                                                                             4      0      0      0   100%
+apps/drivers/migrations/0001_initial.py                                                          5      5      0      0     0%   3-12
+apps/drivers/migrations/0002_initial.py                                                          7      7      0      0     0%   3-17
+apps/drivers/migrations/0003_driver_bank_account_number_driver_ifsc_code_and_more.py             4      4      0      0     0%   3-12
+apps/drivers/migrations/0004_driver_vehicle_model_driver_vehicle_number.py                       4      4      0      0     0%   3-12
+apps/drivers/migrations/0005_driver_is_verified_driverdocument.py                                6      6      0      0     0%   3-15
+apps/drivers/migrations/0006_driverdocument_image_alter_driverdocument_file_path.py              4      4      0      0     0%   3-12
+apps/drivers/migrations/0007_driverstats_acceptance_rate_and_more.py                             4      4      0      0     0%   3-12
+apps/drivers/migrations/0008_driver_level_metrics_history.py                                     6      6      0      0     0%   3-15
+apps/drivers/migrations/0009_driverstats_last_active_at_and_more.py                              5      5      0      0     0%   3-13
+apps/drivers/migrations/0010_alter_driver_bank_account_number_and_more.py                        4      4      0      0     0%   3-12
+apps/drivers/migrations/__init__.py                                                              0      0      0      0   100%
+apps/drivers/models.py                                                                         138     44     12      1    63%   64, 67-78, 119-156, 167-180, 255, 259-263, 266-269
+apps/drivers/redis.py                                                                           28     12      4      1    53%   30, 53-58, 62, 72, 79-87
+apps/drivers/redis_rider.py                                                                     26     26      2      0     0%   3-89
+apps/drivers/serializers.py                                                                     25      6      4      0    66%   47-52
+apps/drivers/services/__init__.py                                                                2      0      0      0   100%
+apps/drivers/services/abuse_detector.py                                                         69     69     12      0     0%   17-166
+apps/drivers/services/geo.py                                                                    32     21      4      0    31%   11, 19-48, 59-62, 69-70, 77-78
+apps/drivers/services/level_engine.py                                                           54     28     26     10    45%   22-25, 37-38, 41-42, 45-46, 51-52, 55-61, 65, 69, 78, 89, 101-114, 128-130
+apps/drivers/services/metrics.py                                                                42     19     18      8    52%   22-23, 26-27, 30-31, 34-39, 44-46, 48->53, 54-57, 60-63
+apps/drivers/services/scoring.py                                                                33     11      2      0    63%   64-80
+apps/drivers/services/trust.py                                                                  39     39      6      0     0%   2-100
+apps/drivers/tasks.py                                                                          116    116     20      0     0%   7-248
+apps/drivers/urls.py                                                                             5      0      0      0   100%
+apps/drivers/views.py                                                                          149     32     32      8    75%   160-161, 200->231, 221-226, 254->270, 284, 298, 314, 330-332, 378, 398-435
+apps/notifications/__init__.py                                                                   0      0      0      0   100%
+apps/notifications/admin.py                                                                      7      0      0      0   100%
+apps/notifications/apps.py                                                                       4      0      0      0   100%
+apps/notifications/consumers/__init__.py                                                         0      0      0      0   100%
+apps/notifications/consumers/kafka.py                                                           23     23      6      0     0%   3-37
+apps/notifications/enums.py                                                                      9      0      0      0   100%
+apps/notifications/metrics.py                                                                    0      0      0      0   100%
+apps/notifications/migrations/0001_initial.py                                                    5      5      0      0     0%   3-12
+apps/notifications/migrations/0002_initial.py                                                    7      7      0      0     0%   3-17
+apps/notifications/migrations/0003_notification_is_read.py                                       4      4      0      0     0%   3-12
+apps/notifications/migrations/__init__.py                                                        0      0      0      0   100%
+apps/notifications/models.py                                                                    38      3      2      1    90%   38, 43->exit, 59, 68
+apps/notifications/providers/__init__.py                                                         0      0      0      0   100%
+apps/notifications/providers/email.py                                                           15      0      4      1    95%   27->30
+apps/notifications/providers/push.py                                                            19      3      2      0    86%   36-38
+apps/notifications/providers/sms.py                                                             14      1      4      1    89%   19
+apps/notifications/providers/websocket.py                                                       12      2      0      0    83%   30-31
+apps/notifications/push.py                                                                       0      0      0      0   100%
+apps/notifications/selectors.py                                                                  6      6      0      0     0%   1-10
+apps/notifications/serializers.py                                                               12      2      0      0    83%   25, 29
+apps/notifications/services/__init__.py                                                          0      0      0      0   100%
+apps/notifications/services/alerts.py                                                           46      3     12      2    91%   47->72, 63, 74->exit, 95-98
+apps/notifications/services/dispatcher.py                                                        4      1      0      0    75%   11
+apps/notifications/services/dlq.py                                                               3      1      0      0    67%   5
+apps/notifications/services/factory.py                                                           5      5      0      0     0%   1-23
+apps/notifications/services/payloads.py                                                          6      6      0      0     0%   1-19
+apps/notifications/services/registry.py                                                          3      3      0      0     0%   5-9
+apps/notifications/services/retry.py                                                             7      2      0      0    71%   8, 16
+apps/notifications/services/router.py                                                           23     15      8      0    26%   7-8, 12-13, 17-18, 25-37
+apps/notifications/tasks.py                                                                     27     18      2      0    31%   13-39
+apps/notifications/tests.py                                                                      0      0      0      0   100%
+apps/notifications/urls.py                                                                       5      0      0      0   100%
+apps/notifications/views.py                                                                     17      5      0      0    71%   15, 21-24
+apps/offers/__init__.py                                                                          0      0      0      0   100%
+apps/offers/admin.py                                                                             8      0      0      0   100%
+apps/offers/apps.py                                                                              4      0      0      0   100%
+apps/offers/migrations/0001_initial.py                                                           7      7      0      0     0%   3-18
+apps/offers/migrations/0002_remove_offer_bonus_amount_and_more.py                                4      4      0      0     0%   3-12
+apps/offers/migrations/0003_rename_discount_value_offer_max_discount_and_more.py                 5      5      0      0     0%   3-13
+apps/offers/migrations/0004_alter_offer_code_alter_offer_discount_type_and_more.py               4      4      0      0     0%   3-12
+apps/offers/migrations/0005_alter_offer_city.py                                                  4      4      0      0     0%   3-12
+apps/offers/migrations/__init__.py                                                               0      0      0      0   100%
+apps/offers/models.py                                                                           31      3      0      0    90%   37-38, 41
+apps/offers/selectors.py                                                                         8      0      2      1    90%   14->16
+apps/offers/serializers.py                                                                      23      6      6      0    59%   13-22
+apps/offers/services/__init__.py                                                                 0      0      0      0   100%
+apps/offers/services/eligibility_service.py                                                      9      9      6      0     0%   1-13
+apps/offers/services/offer_engine.py                                                            53     39     20      0    19%   16-52, 59-71, 81-90, 100-119
+apps/offers/services/rider_offer_service.py                                                     32     32     14      0     0%   1-57
+apps/offers/tests.py                                                                             0      0      0      0   100%
+apps/offers/urls.py                                                                              6      0      0      0   100%
+apps/offers/views.py                                                                            75      7      8      1    90%   52-53, 93-103
+apps/payments/__init__.py                                                                        0      0      0      0   100%
+apps/payments/admin.py                                                                          45      9      0      0    80%   40, 43, 75, 78, 81, 113, 120, 127, 132
+apps/payments/admin_views.py                                                                    51     51      6      0     0%   1-119
+apps/payments/apps.py                                                                            4      0      0      0   100%
+apps/payments/migrations/0001_initial.py                                                         6      6      0      0     0%   3-13
+apps/payments/migrations/0002_initial.py                                                         7      7      0      0     0%   3-17
+apps/payments/migrations/0003_payout_and_more.py                                                 6      6      0      0     0%   3-15
+apps/payments/migrations/0004_webhookevent.py                                                    4      4      0      0     0%   3-12
+apps/payments/migrations/0005_payout_gateway_payout_id.py                                        4      4      0      0     0%   3-12
+apps/payments/migrations/0006_payout_failure_reason.py                                           4      4      0      0     0%   3-12
+apps/payments/migrations/0007_driverearnings.py                                                  5      5      0      0     0%   3-15
+apps/payments/migrations/0008_alter_ledgerentry_reason.py                                        4      4      0      0     0%   3-12
+apps/payments/migrations/0009_payment_idempotency_key_alter_ledgerentry_reason_and_more.py       4      4      0      0     0%   3-12
+apps/payments/migrations/0010_alter_ledgerentry_reason.py                                        4      4      0      0     0%   3-12
+apps/payments/migrations/0011_payout_updated_at.py                                               4      4      0      0     0%   3-12
+apps/payments/migrations/0012_alter_ledgerentry_reason_and_more.py                               4      4      0      0     0%   3-12
+apps/payments/migrations/__init__.py                                                             0      0      0      0   100%
+apps/payments/models.py                                                                         97      0      0      0   100%
+apps/payments/razorpay_client.py                                                                10      1      2      1    83%   17
+apps/payments/services/invariants.py                                                            25     16     12      0    24%   25-35, 45-52, 62-70
+apps/payments/services/ledger.py                                                                25     13      2      0    44%   11-13, 29, 39, 49, 65-82
+apps/payments/services/payout.py                                                                83     51     20      2    33%   37-110, 119-153, 162-176, 187, 194, 225-227
+apps/payments/services/payout_gateway.py                                                        18     10      4      0    36%   18-22, 57-66
+apps/payments/services/razorpay.py                                                              15      9      4      0    32%   16-32
+apps/payments/services/refund.py                                                                44      9     14      7    72%   26, 29, 32, 42-55, 78->113, 86->113, 116
+apps/payments/services/wallet.py                                                                18      2      0      0    89%   77, 89
+apps/payments/services/webhooks.py                                                              11      8      0      0    27%   18-33
+apps/payments/tasks.py                                                                         199    166     38      0    14%   27-52, 61-147, 158-190, 205-230, 240-290, 301-365, 375-461
+apps/payments/urls.py                                                                            9      0      0      0   100%
+apps/payments/views.py                                                                         111     87     30      0    17%   29-116, 130-224, 240-338
+apps/payments/views_payout.py                                                                   43      3      8      1    92%   57, 106-107
+apps/payments/views_refund.py                                                                   23     12      0      0    48%   17-41
+apps/payments/views_wallet.py                                                                   21     11      2      0    43%   17-23, 37-57
+apps/payments/views_web.py                                                                      50      2     12      5    89%   27, 51->59, 60->73, 98, 132->149
+apps/payments/webhooks.py                                                                       94     71     26      0    19%   27-39, 52-135, 148-191
+apps/rides/__init__.py                                                                           0      0      0      0   100%
+apps/rides/admin.py                                                                             15      0      0      0   100%
+apps/rides/admin_views.py                                                                      183    152     60      0    13%   15-38, 54-81, 84-92, 95-105, 108-118, 121-135, 138-153, 156-165, 172-192, 195-203, 211-232, 238-246, 256-268, 280-308, 311-331
+apps/rides/apps.py                                                                               6      0      0      0   100%
+apps/rides/consumer.py                                                                          34     34     10      0     0%   1-79
+apps/rides/consumers.py                                                                         81     81     16      0     0%   1-235
+apps/rides/fare_config.py                                                                        6      6      0      0     0%   2-19
+apps/rides/fare_models.py                                                                       58     24      4      0    55%   117, 121-122, 133-150, 155-166
+apps/rides/kafka.py                                                                             35     35      8      0     0%   3-75
+apps/rides/middleware.py                                                                        50     50     16      0     0%   1-63
+apps/rides/migrations/0001_initial.py                                                            7      7      0      0     0%   3-16
+apps/rides/migrations/0002_initial.py                                                            7      7      0      0     0%   3-18
+apps/rides/migrations/0003_ride_applied_offer_ride_completed_at_and_more.py                      6      6      0      0     0%   3-15
+apps/rides/migrations/0004_ride_drop_address_ride_pickup_address.py                              4      4      0      0     0%   3-12
+apps/rides/migrations/0005_alter_ride_cancelled_by.py                                            4      4      0      0     0%   3-12
+apps/rides/migrations/0006_chatmessage.py                                                        6      6      0      0     0%   3-15
+apps/rides/migrations/0007_ridefeedback_giver_role_alter_ridefeedback_driver_and_more.py         6      6      0      0     0%   3-16
+apps/rides/migrations/0008_ride_actual_route_polyline.py                                         4      4      0      0     0%   3-12
+apps/rides/migrations/0009_ride_vehicle_type.py                                                  4      4      0      0     0%   3-12
+apps/rides/migrations/0010_ride_end_time_ride_start_lat_ride_start_lng_and_more.py               4      4      0      0     0%   3-12
+apps/rides/migrations/0011_add_fareconfig_tip_waiting.py                                         6      6      0      0     0%   3-14
+apps/rides/migrations/0012_ride_fare_breakdown_ride_is_fraud_flagged.py                          4      4      0      0     0%   3-12
+apps/rides/migrations/0013_ride_city.py                                                          4      4      0      0     0%   3-12
+apps/rides/migrations/0014_alter_ride_actual_route_polyline_and_more.py                          4      4      0      0     0%   3-12
+apps/rides/migrations/0015_alter_ride_cancelled_by.py                                            4      4      0      0     0%   3-12
+apps/rides/migrations/__init__.py                                                                0      0      0      0   100%
+apps/rides/models.py                                                                           116     13      8      3    85%   207, 218, 224, 233-234, 239-244, 255, 314
+apps/rides/routing.py                                                                            3      3      0      0     0%   1-5
+apps/rides/serializers.py                                                                       17      0      2      0   100%
+apps/rides/services/__init__.py                                                                  0      0      0      0   100%
+apps/rides/services/cancellation.py                                                             34     25     16      0    18%   15-80
+apps/rides/services/complete_ride.py                                                            58     52      8      0     9%   29-129
+apps/rides/services/deviation.py                                                                53     53     18      0     0%   1-104
+apps/rides/services/distance.py                                                                 39     29      4      0    23%   18-28, 37-83, 92-93
+apps/rides/services/eta.py                                                                      17     17      0      0     0%   1-31
+apps/rides/services/eta_cache.py                                                                 8      8      0      0     0%   3-22
+apps/rides/services/eta_updater.py                                                              10     10      2      0     0%   1-21
+apps/rides/services/fare.py                                                                     23     16      0      0    30%   26-53
+apps/rides/services/final_fare.py                                                               56     56      4      0     0%   16-143
+apps/rides/services/lifecycle.py                                                               133    108     28      0    16%   20-22, 27-29, 34-43, 48-90, 95-99, 109-147, 155-234, 247-262, 278-295, 315-327, 331-354, 364-365, 376-391, 402-407, 411-417
+apps/rides/services/matching.py                                                                 76     54      8      0    26%   26-69, 78-90, 94, 126, 150, 187, 205-210, 218-266
+apps/rides/services/no_show.py                                                                  17      1      2      1    89%   16
+apps/rides/services/otp.py                                                                      30     22     12      0    19%   14, 18-35, 39-55
+apps/rides/services/realtime.py                                                                 42      0      4      1    98%   38->42
+apps/rides/services/stale_resolver.py                                                           28     28      6      0     0%   1-61
+apps/rides/services/surge.py                                                                     9      4      0      0    56%   11-12, 16-17
+apps/rides/services/surge_engine.py                                                             29      4      2      0    87%   47-48, 62-63
+apps/rides/services/waiting_detector.py                                                         77     77     22      0     0%   19-176
+apps/rides/signals.py                                                                           11      0      0      0   100%
+apps/rides/tasks.py                                                                             76     10     20      7    82%   43, 71, 89, 92, 95, 104->107, 143-144, 158-160
+apps/rides/urls.py                                                                               4      0      0      0   100%
+apps/rides/views.py                                                                            431    338    110      0    17%   35-88, 96-139, 142-145, 148, 160-169, 177, 183, 201-206, 209-221, 233-297, 306-345, 358-366, 380-463, 484-508, 523-540, 552-577, 585, 592-607, 614-624, 633-644, 655-677, 680-693, 696-710, 723-758, 776-791, 795, 810-841, 856-876, 899-1020
+apps/supports/__init__.py                                                                        0      0      0      0   100%
+apps/supports/admin.py                                                                          12      0      0      0   100%
+apps/supports/apps.py                                                                            4      0      0      0   100%
+apps/supports/migrations/0001_initial.py                                                         5      5      0      0     0%   3-12
+apps/supports/migrations/0002_initial.py                                                         7      7      0      0     0%   3-18
+apps/supports/migrations/0003_emergency.py                                                       6      6      0      0     0%   3-16
+apps/supports/migrations/0004_faq.py                                                             4      4      0      0     0%   3-12
+apps/supports/migrations/0005_alter_emergency_resolution_note_and_more.py                        4      4      0      0     0%   3-12
+apps/supports/migrations/__init__.py                                                             0      0      0      0   100%
+apps/supports/models.py                                                                         87      9      4      1    87%   68, 85-93, 183
+apps/supports/serializers.py                                                                    14      1      0      0    93%   25
+apps/supports/services.py                                                                       29      8     10      4    64%   14, 33, 36, 48, 62-66
+apps/supports/urls.py                                                                            3      0      0      0   100%
+apps/supports/views.py                                                                          80      9     10      4    86%   38-39, 65, 75, 90-93, 116, 168
+apps/tracking/__init__.py                                                                        0      0      0      0   100%
+apps/tracking/admin.py                                                                           0      0      0      0   100%
+apps/tracking/apps.py                                                                            4      0      0      0   100%
+apps/tracking/auth.py                                                                           23     23      2      0     0%   1-32
+apps/tracking/geo.py                                                                            69     69     18      0     0%   1-127
+apps/tracking/routing.py                                                                         5      5      0      0     0%   3-9
+apps/tracking/services.py                                                                       39     39     10      0     0%   1-63
+apps/tracking/smoothing.py                                                                       5      5      2      0     0%   1-8
+apps/tracking/tests.py                                                                          33     33      0      0     0%   1-61
+apps/tracking/urls.py                                                                            3      0      0      0   100%
+apps/tracking/views.py                                                                          23     16      2      0    28%   12-53
+apps/users/__init__.py                                                                           1      0      0      0   100%
+apps/users/admin.py                                                                              6      0      0      0   100%
+apps/users/apps.py                                                                               5      0      0      0   100%
+apps/users/backends.py                                                                          23     23      4      0     0%   1-31
+apps/users/migrations/0001_initial.py                                                            8      8      0      0     0%   3-17
+apps/users/migrations/0002_alter_user_id.py                                                      4      4      0      0     0%   3-12
+apps/users/migrations/0003_alter_user_phone.py                                                   4      4      0      0     0%   3-12
+apps/users/migrations/0004_user_expo_push_token.py                                               4      4      0      0     0%   3-12
+apps/users/migrations/0005_riderstats.py                                                         6      6      0      0     0%   3-14
+apps/users/migrations/0006_alter_user_role.py                                                    4      4      0      0     0%   3-12
+apps/users/migrations/0007_alter_user_expo_push_token.py                                         4      4      0      0     0%   3-12
+apps/users/migrations/__init__.py                                                                0      0      0      0   100%
+apps/users/models.py                                                                            41      7      2      0    84%   52, 56, 80, 83-86
+apps/users/permissions.py                                                                       16      0      0      0   100%
+apps/users/serializers.py                                                                       99     62     24      0    30%   22-32, 40-52, 60-72, 81-103, 128-134, 137-142, 145-150, 153-155
+apps/users/signals.py                                                                           10      0      4      0   100%
+apps/users/tasks.py                                                                              0      0      0      0   100%
+apps/users/urls.py                                                                               4      0      0      0   100%
+apps/users/views.py                                                                             74     46      6      0    35%   16-17, 28-51, 59-73, 81-86, 94-99, 106-112, 119-125
+----------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                                                                                         6607   4003   1182     81    35%
+Coverage HTML written to dir htmlcov
+Coverage XML written to file coverage.xml
+======================== 54 passed, 1 warning in 31.34s ========================

@@ -6,28 +6,38 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rides', '0009_ride_vehicle_type'),
+        ("rides", "0009_ride_vehicle_type"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='ride',
-            name='end_time',
-            field=models.DateTimeField(blank=True, help_text='Locked when ride is COMPLETED', null=True),
+            model_name="ride",
+            name="end_time",
+            field=models.DateTimeField(
+                blank=True, help_text="Locked when ride is COMPLETED", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='ride',
-            name='start_lat',
-            field=models.FloatField(blank=True, help_text='Driver GPS latitude at ride start', null=True),
+            model_name="ride",
+            name="start_lat",
+            field=models.FloatField(
+                blank=True, help_text="Driver GPS latitude at ride start", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='ride',
-            name='start_lng',
-            field=models.FloatField(blank=True, help_text='Driver GPS longitude at ride start', null=True),
+            model_name="ride",
+            name="start_lng",
+            field=models.FloatField(
+                blank=True, help_text="Driver GPS longitude at ride start", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='ride',
-            name='start_time',
-            field=models.DateTimeField(blank=True, help_text='Locked when ONGOING begins (OTP verified)', null=True),
+            model_name="ride",
+            name="start_time",
+            field=models.DateTimeField(
+                blank=True,
+                help_text="Locked when ONGOING begins (OTP verified)",
+                null=True,
+            ),
         ),
     ]

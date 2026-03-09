@@ -7,20 +7,51 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='SupportTicket',
+            name="SupportTicket",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('reason', models.CharField(choices=[('OVERCHARGED', 'Overcharged'), ('DRIVER_MISCONDUCT', 'Driver Misconduct'), ('NO_SHOW_DISPUTE', 'No Show Dispute'), ('ROUTE_DEVIATION', 'Route Deviation'), ('OTHER', 'Other')], max_length=32)),
-                ('description', models.TextField(blank=True)),
-                ('status', models.CharField(choices=[('OPEN', 'Open'), ('RESOLVED', 'Resolved'), ('REJECTED', 'Rejected')], db_index=True, default='OPEN', max_length=16)),
-                ('resolution_note', models.TextField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('resolved_at', models.DateTimeField(blank=True, null=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "reason",
+                    models.CharField(
+                        choices=[
+                            ("OVERCHARGED", "Overcharged"),
+                            ("DRIVER_MISCONDUCT", "Driver Misconduct"),
+                            ("NO_SHOW_DISPUTE", "No Show Dispute"),
+                            ("ROUTE_DEVIATION", "Route Deviation"),
+                            ("OTHER", "Other"),
+                        ],
+                        max_length=32,
+                    ),
+                ),
+                ("description", models.TextField(blank=True)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("OPEN", "Open"),
+                            ("RESOLVED", "Resolved"),
+                            ("REJECTED", "Rejected"),
+                        ],
+                        db_index=True,
+                        default="OPEN",
+                        max_length=16,
+                    ),
+                ),
+                ("resolution_note", models.TextField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("resolved_at", models.DateTimeField(blank=True, null=True)),
             ],
         ),
     ]

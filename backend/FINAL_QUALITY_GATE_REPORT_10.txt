@@ -1,0 +1,55 @@
+time="2026-03-07T14:48:57+05:30" level=warning msg="Found orphan containers ([sonarqube sonarqube_db]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container uber_zookeeper Running 
+ Container uber_kafka Running 
+ Container uber_postgres Running 
+ Container uber_redis Running 
+ Container uber_postgres Waiting 
+ Container uber_postgres Healthy 
+ Container uber-backend-backend-run-2ddb5f5e680e Creating 
+ Container uber-backend-backend-run-2ddb5f5e680e Created 
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python3.11
+cachedir: .pytest_cache
+django: version: 5.2.12, settings: config.settings (from env)
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0, django-4.12.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 13 items
+
+tests/unit/test_quality_gate.py::TestAdminDashboardFull::test_admin_views_comprehensive PASSED [  7%]
+tests/unit/test_quality_gate.py::TestPaymentsWalletExtended::test_wallet_views PASSED [ 15%]
+tests/unit/test_quality_gate.py::TestPaymentsWalletExtended::test_web_checkout_and_verify PASSED [ 23%]
+tests/unit/test_quality_gate.py::TestPaymentsWalletExtended::test_web_verify_failure_paths PASSED [ 30%]
+tests/unit/test_quality_gate.py::TestSupportsExtended::test_emergency_flow PASSED [ 38%]
+tests/unit/test_quality_gate.py::TestSupportsExtended::test_ticket_resolve_refund PASSED [ 46%]
+tests/unit/test_quality_gate.py::TestDriversViewsExtended::test_onboarding_and_upload PASSED [ 53%]
+tests/unit/test_quality_gate.py::TestDriversViewsExtended::test_location_and_status_logic PASSED [ 61%]
+tests/unit/test_quality_gate.py::TestUtilitiesExtended::test_idempotent_decorator PASSED [ 69%]
+tests/unit/test_quality_gate.py::TestUtilitiesExtended::test_alerts_service_levels PASSED [ 76%]
+tests/unit/test_quality_gate.py::TestAdminViewsExtended::test_ride_admin_views PASSED [ 84%]
+tests/unit/test_quality_gate.py::TestAdminViewsExtended::test_driver_admin_views FAILED [ 92%]
+tests/unit/test_quality_gate.py::TestPaymentsAdminExtra::test_admin_ledger_check_validation PASSED [100%]
+
+=================================== FAILURES ===================================
+________________ TestAdminViewsExtended.test_driver_admin_views ________________
+tests/unit/test_quality_gate.py:253: in test_driver_admin_views
+    assert api_client.post(f"/api/drivers/admin/documents/{doc.id}/approve/").status_code == 200
+E   assert 400 == 200
+E    +  where 400 = <Response status_code=400, "application/json">.status_code
+E    +    where <Response status_code=400, "application/json"> = post('/api/drivers/admin/documents/2/approve/')
+E    +      where post = <rest_framework.test.APIClient object at 0x7705f814fa90>.post
+----------------------------- Captured stderr call -----------------------------
+WARNING 2026-03-07 09:19:10,520 log Bad Request: /api/drivers/admin/documents/2/approve/
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/drivers/admin/documents/2/approve/
+=============================== warnings summary ===============================
+tests/unit/test_quality_gate.py::TestUtilitiesExtended::test_alerts_service_levels
+  /usr/local/lib/python3.11/site-packages/asgiref/sync.py:608: UserWarning: async_to_sync was passed a non-async-marked callable
+    return AsyncToSync(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/unit/test_quality_gate.py::TestAdminViewsExtended::test_driver_admin_views
+=================== 1 failed, 12 passed, 1 warning in 11.40s ===================
+

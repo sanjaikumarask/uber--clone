@@ -6,23 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('driver_incentives', '0003_remove_driverincentive_bonus_amount_and_more'),
+        ("driver_incentives", "0003_remove_driverincentive_bonus_amount_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='driverincentive',
-            name='reward_amount',
+            model_name="driverincentive",
+            name="reward_amount",
             field=models.DecimalField(decimal_places=2, max_digits=10),
         ),
         migrations.AlterField(
-            model_name='driverincentive',
-            name='valid_from',
+            model_name="driverincentive",
+            name="valid_from",
             field=models.DateTimeField(),
         ),
         migrations.AlterField(
-            model_name='driverincentive',
-            name='valid_to',
+            model_name="driverincentive",
+            name="valid_to",
             field=models.DateTimeField(),
         ),
     ]

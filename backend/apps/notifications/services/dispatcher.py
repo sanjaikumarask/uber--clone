@@ -1,5 +1,6 @@
-from .router import route_notification
 from ..models import Notification
+from .router import route_notification
+
 
 def dispatch(notification: Notification) -> None:
     """

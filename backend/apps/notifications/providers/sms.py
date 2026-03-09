@@ -1,6 +1,7 @@
-from twilio.rest import Client
 from django.conf import settings
 from django.utils import timezone
+from twilio.rest import Client
+
 
 def send_sms(notification):
     """

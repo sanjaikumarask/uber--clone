@@ -7,23 +7,45 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='SystemLog',
+            name="SystemLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('type', models.CharField(choices=[('ERROR', 'Error'), ('WARNING', 'Warning'), ('INFO', 'Info'), ('PAYMENT_FAILURE', 'Payment Failure'), ('RIDE_STUCK', 'Ride Stuck'), ('WS_DISCONNECT', 'WebSocket Disconnect')], db_index=True, default='INFO', max_length=20)),
-                ('message', models.TextField()),
-                ('metadata', models.JSONField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True, db_index=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "type",
+                    models.CharField(
+                        choices=[
+                            ("ERROR", "Error"),
+                            ("WARNING", "Warning"),
+                            ("INFO", "Info"),
+                            ("PAYMENT_FAILURE", "Payment Failure"),
+                            ("RIDE_STUCK", "Ride Stuck"),
+                            ("WS_DISCONNECT", "WebSocket Disconnect"),
+                        ],
+                        db_index=True,
+                        default="INFO",
+                        max_length=20,
+                    ),
+                ),
+                ("message", models.TextField()),
+                ("metadata", models.JSONField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True, db_index=True)),
             ],
             options={
-                'verbose_name': 'System Alert',
-                'verbose_name_plural': 'System Alerts',
-                'ordering': ['-created_at'],
+                "verbose_name": "System Alert",
+                "verbose_name_plural": "System Alerts",
+                "ordering": ["-created_at"],
             },
         ),
     ]

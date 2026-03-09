@@ -1,10 +1,11 @@
 # apps/drivers/redis_rider.py
 
 import time
+
 import redis
 from django.conf import settings
 
-# Initialize Redis client separately for rider functions if needed, 
+# Initialize Redis client separately for rider functions if needed,
 # or reuse existing connection handling pattern
 redis_client = redis.Redis.from_url(
     settings.REDIS_URL,
@@ -41,7 +42,7 @@ def update_rider_location(rider_id: int, lat: float, lng: float):
             "last_seen": now,
         },
     )
-    
+
     # Set TTL on meta
     redis_client.expire(f"rider:{rider_id}:meta", RIDER_TTL)
 
@@ -78,7 +79,7 @@ def clear_rider_last_point(rider_id):
 # CLEANUP
 # ───────────────────────────────────────────────
 def remove_rider_from_geo(rider_id: int):
-    val = redis_client.execute_command(
+    redis_client.execute_command(
         "ZREM",
         RIDER_GEO_KEY,
         str(rider_id),

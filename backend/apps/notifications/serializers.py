@@ -1,5 +1,7 @@
 from rest_framework import serializers
+
 from .models import Notification
+
 
 class NotificationSerializer(serializers.ModelSerializer):
     title = serializers.SerializerMethodField()
@@ -7,7 +9,17 @@ class NotificationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Notification
-        fields = ["id", "type", "channel", "status", "is_read", "created_at", "title", "message", "payload"]
+        fields = [
+            "id",
+            "type",
+            "channel",
+            "status",
+            "is_read",
+            "created_at",
+            "title",
+            "message",
+            "payload",
+        ]
 
     def get_title(self, obj):
         return obj.payload.get("title", obj.type)

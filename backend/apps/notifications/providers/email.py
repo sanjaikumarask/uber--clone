@@ -1,6 +1,7 @@
-from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
 from django.utils import timezone
+
 
 def send_email(notification):
     """

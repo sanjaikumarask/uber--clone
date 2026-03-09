@@ -7,23 +7,25 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('drivers', '0008_driver_level_metrics_history'),
+        ("drivers", "0008_driver_level_metrics_history"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='driverstats',
-            name='last_active_at',
+            model_name="driverstats",
+            name="last_active_at",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
         migrations.AddField(
-            model_name='driverstats',
-            name='level_override_until',
-            field=models.DateTimeField(blank=True, help_text='Manual level override expiry', null=True),
+            model_name="driverstats",
+            name="level_override_until",
+            field=models.DateTimeField(
+                blank=True, help_text="Manual level override expiry", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='driverstats',
-            name='override_reason',
+            model_name="driverstats",
+            name="override_reason",
             field=models.TextField(blank=True, null=True),
         ),
     ]

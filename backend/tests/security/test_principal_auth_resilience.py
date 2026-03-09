@@ -1,17 +1,19 @@
-import pytest
 import asyncio
-import time
+from datetime import UTC, datetime, timedelta
+from unittest.mock import MagicMock, patch
+
 import jwt
-from datetime import datetime, timedelta, timezone
-from django.conf import settings
-from django.contrib.auth import get_user_model, authenticate
-from django.contrib.auth.models import AnonymousUser
+import pytest
 from asgiref.sync import sync_to_async
-from unittest.mock import patch, MagicMock
+from django.conf import settings
+from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.models import AnonymousUser
 from rest_framework_simplejwt.tokens import AccessToken
+
 from apps.tracking.auth import JWTAuthMiddleware
 
 User = get_user_model()
+
 
 @pytest.mark.django_db(transaction=True)
 class TestPrincipalSecurityResilience:
@@ -24,12 +26,13 @@ class TestPrincipalSecurityResilience:
     @pytest.fixture(autouse=True)
     def setup_resilience(self, db):
         import uuid
+
         self.uid = uuid.uuid4().hex[:6]
         self.passw = "secure_pass_99"
         self.user = User.objects.create_user(
             username=f"sec_user_{self.uid}",
             phone=f"+91777{self.uid}",
-            password=self.passw
+            password=self.passw,
         )
 
     # ============================================================
@@ -38,12 +41,12 @@ class TestPrincipalSecurityResilience:
 
     def test_auth_indistinguishability_user_enumeration(self):
         """
-        WHY: Validates that failing due to 'Wrong Password' vs 'Disabled User' 
+        WHY: Validates that failing due to 'Wrong Password' vs 'Disabled User'
         returns consistent results without revealing status to an attacker.
         """
         # Case 1: Existing User + Wrong Password
         res1 = authenticate(username=self.user.phone, password="wrong_password")
-        
+
         # Case 2: Disabled User + Correct Password
         self.user.is_active = False
         self.user.save()
@@ -62,10 +65,10 @@ class TestPrincipalSecurityResilience:
             mock_model = MagicMock()
             mock_model.DoesNotExist = RealUser.DoesNotExist
             mock_get_model.return_value = mock_model
-            
+
             # Simulate a real DB timeout
             mock_model.objects.get.side_effect = Exception("LATENCY_THRESHOLD_EXCEEDED")
-            
+
             res = authenticate(username=self.user.phone, password=self.passw)
             assert res is None
 
@@ -78,12 +81,21 @@ class TestPrincipalSecurityResilience:
         """
         WHY: Validates that a token signed with an external key is rejected by the tracking layer.
         """
-        payload = {"user_id": self.user.id, "exp": int((datetime.now(timezone.utc) + timedelta(hours=1)).timestamp())}
+        payload = {
+            "user_id": self.user.id,
+            "exp": int((datetime.now(UTC) + timedelta(hours=1)).timestamp()),
+        }
         wrong_token = jwt.encode(payload, "ATTACKER_CONTROLLED_KEY", algorithm="HS256")
 
-        async def inner_app(s, r, se): pass
+        async def inner_app(s, r, se):
+            pass
+
         middleware = JWTAuthMiddleware(inner_app)
-        scope = {"type": "websocket", "query_string": f"token={wrong_token}".encode(), "user": AnonymousUser()}
+        scope = {
+            "type": "websocket",
+            "query_string": f"token={wrong_token}".encode(),
+            "user": AnonymousUser(),
+        }
 
         await middleware(scope, None, None)
         assert isinstance(scope["user"], AnonymousUser)
@@ -97,9 +109,15 @@ class TestPrincipalSecurityResilience:
         # Force HS512 when system defaults likely HS256
         strange_token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS512")
 
-        async def inner_app(s, r, se): pass
+        async def inner_app(s, r, se):
+            pass
+
         middleware = JWTAuthMiddleware(inner_app)
-        scope = {"type": "websocket", "query_string": f"token={strange_token}".encode(), "user": AnonymousUser()}
+        scope = {
+            "type": "websocket",
+            "query_string": f"token={strange_token}".encode(),
+            "user": AnonymousUser(),
+        }
 
         await middleware(scope, None, None)
         assert isinstance(scope["user"], AnonymousUser)
@@ -113,7 +131,10 @@ class TestPrincipalSecurityResilience:
         """
         WHY: Validates that concurrent handshakes do not bleed state (scope isolation).
         """
-        async def inner_app(s, r, se): pass
+
+        async def inner_app(s, r, se):
+            pass
+
         middleware = JWTAuthMiddleware(inner_app)
 
         def make_token(user):
@@ -131,7 +152,7 @@ class TestPrincipalSecurityResilience:
                 "type": "websocket",
                 "query_string": f"token={token}".encode(),
                 "user": AnonymousUser(),
-                "id": i
+                "id": i,
             }
             scopes.append(scope)
             tasks.append(middleware(scope, None, None))
@@ -151,14 +172,17 @@ class TestPrincipalSecurityResilience:
         """
         WHY: Critical fix verification. Ensures the middleware doesn't crash on non-UTF8 input.
         """
-        async def inner_app(s, r, se): pass
+
+        async def inner_app(s, r, se):
+            pass
+
         middleware = JWTAuthMiddleware(inner_app)
-        
+
         # Bizarre/Invalid binary query string
         scope = {
-            "type": "websocket", 
-            "query_string": b"token=\xff\xfe\xfd\x00\x01\x02", 
-            "user": AnonymousUser()
+            "type": "websocket",
+            "query_string": b"token=\xff\xfe\xfd\x00\x01\x02",
+            "user": AnonymousUser(),
         }
         await middleware(scope, None, None)
         assert isinstance(scope["user"], AnonymousUser)
@@ -168,10 +192,20 @@ class TestPrincipalSecurityResilience:
         """
         WHY: Verifies that the try/except block in the middleware swallows internal panics.
         """
-        async def inner_app(s, r, se): pass
-        middleware = JWTAuthMiddleware(inner_app)
-        scope = {"type": "websocket", "query_string": b"token=simulated_panic", "user": AnonymousUser()}
 
-        with patch("apps.tracking.auth.authenticate_token", side_effect=SystemError("Internal Panic")):
+        async def inner_app(s, r, se):
+            pass
+
+        middleware = JWTAuthMiddleware(inner_app)
+        scope = {
+            "type": "websocket",
+            "query_string": b"token=simulated_panic",
+            "user": AnonymousUser(),
+        }
+
+        with patch(
+            "apps.tracking.auth.authenticate_token",
+            side_effect=SystemError("Internal Panic"),
+        ):
             await middleware(scope, None, None)
             assert isinstance(scope["user"], AnonymousUser)

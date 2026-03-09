@@ -3,6 +3,7 @@ class NotificationStatus:
     SENT = "SENT"
     FAILED = "FAILED"
 
+
 class NotificationChannel:
     WEBSOCKET = "ws"
     EMAIL = "email"

@@ -83,12 +83,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "5.Notifications/5.Workflows/Notification_Flow.md",
+                "file": "1.Users_Authentication/5.Workflows/Signup.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Notification_Flow"
+              "title": "Signup"
             }
           }
         ],
@@ -256,6 +256,9 @@
   },
   "active": "f2b631dcde17022f",
   "lastOpenFiles": [
+    "1.Users_Authentication/5.Workflows/Login.md",
+    "0.System_Design/2.Tech_Stack.md",
+    "5.Notifications/5.Workflows/Notification_Flow.md",
     "5.Notifications/4.Core_Logic/Retry.md",
     "5.Notifications/4.Core_Logic/Providers.md",
     "5.Notifications/4.Core_Logic/DLQ.md",
@@ -263,7 +266,6 @@
     "1.Users_Authentication/5.Workflows/Signup.md",
     "0.System_Design/4.Setup_and_Dependencies.md",
     "9.Support/5.Workflows/Support_Flow.md",
-    "5.Notifications/5.Workflows/Notification_Flow.md",
     "4.Payments/5.Workflows/Refund_Flow.md",
     "4.Payments/5.Workflows/Payout_Flow.md",
     "4.Payments/5.Workflows/Payment_Flow.md",
@@ -279,9 +281,7 @@
     "4.Payments/4.Core_Logic/Ledger_System.md",
     "3.Rides/6.Edge_Cases/Fraud.md",
     "1.Users_Authentication/5.Workflows/Token_Refresh.md",
-    "1.Users_Authentication/5.Workflows/Login.md",
     "0.System_Design/1.Architecture.md",
-    "0.Workflow_Master.md",
     "0.System_Design/Tech stack.png",
     "Sytstem Data flow.png.png",
     "Data flow.png.png",

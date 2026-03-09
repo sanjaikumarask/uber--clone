@@ -7,38 +7,65 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Driver',
+            name="Driver",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('status', models.CharField(choices=[('OFFLINE', 'Offline'), ('ONLINE', 'Online'), ('BUSY', 'Busy')], db_index=True, default='OFFLINE', max_length=16)),
-                ('last_lat', models.FloatField(blank=True, null=True)),
-                ('last_lng', models.FloatField(blank=True, null=True)),
-                ('total_rides', models.PositiveIntegerField(default=0)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("OFFLINE", "Offline"),
+                            ("ONLINE", "Online"),
+                            ("BUSY", "Busy"),
+                        ],
+                        db_index=True,
+                        default="OFFLINE",
+                        max_length=16,
+                    ),
+                ),
+                ("last_lat", models.FloatField(blank=True, null=True)),
+                ("last_lng", models.FloatField(blank=True, null=True)),
+                ("total_rides", models.PositiveIntegerField(default=0)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
         ),
         migrations.CreateModel(
-            name='DriverStats',
+            name="DriverStats",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('total_rides', models.PositiveIntegerField(default=0)),
-                ('completed_rides', models.PositiveIntegerField(default=0)),
-                ('cancelled_rides', models.PositiveIntegerField(default=0)),
-                ('no_shows', models.PositiveIntegerField(default=0)),
-                ('rejection_count_today', models.PositiveIntegerField(default=0)),
-                ('last_rejection_date', models.DateField(blank=True, null=True)),
-                ('rating_sum', models.PositiveIntegerField(default=0)),
-                ('rating_count', models.PositiveIntegerField(default=0)),
-                ('avg_rating', models.FloatField(default=5.0)),
-                ('is_suspended', models.BooleanField(default=False)),
-                ('suspended_until', models.DateTimeField(blank=True, null=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("total_rides", models.PositiveIntegerField(default=0)),
+                ("completed_rides", models.PositiveIntegerField(default=0)),
+                ("cancelled_rides", models.PositiveIntegerField(default=0)),
+                ("no_shows", models.PositiveIntegerField(default=0)),
+                ("rejection_count_today", models.PositiveIntegerField(default=0)),
+                ("last_rejection_date", models.DateField(blank=True, null=True)),
+                ("rating_sum", models.PositiveIntegerField(default=0)),
+                ("rating_count", models.PositiveIntegerField(default=0)),
+                ("avg_rating", models.FloatField(default=5.0)),
+                ("is_suspended", models.BooleanField(default=False)),
+                ("suspended_until", models.DateTimeField(blank=True, null=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
         ),
     ]

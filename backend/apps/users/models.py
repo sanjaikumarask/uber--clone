@@ -30,9 +30,9 @@ class User(AbstractUser):
 
     expo_push_token = models.CharField(
         max_length=255,
-        null=True,
         blank=True,
-        help_text="Expo push token for mobile notifications"
+        default="",
+        help_text="Expo push token for mobile notifications",
     )
 
     def save(self, *args, **kwargs):
@@ -44,7 +44,7 @@ class User(AbstractUser):
             # Prevent non-admins from accessing Django backend
             self.is_staff = False
             self.is_superuser = False
-            
+
         super().save(*args, **kwargs)
 
     @property
@@ -62,6 +62,7 @@ class User(AbstractUser):
         # ROLE_ADMIN is for the Django Backend.
         return self.role == self.ROLE_OPERATOR or self.is_superuser
 
+
 class RiderStats(models.Model):
     user = models.OneToOneField(
         User,
@@ -75,11 +76,13 @@ class RiderStats(models.Model):
 
     updated_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return f"RiderStats for {self.user.phone} ({self.avg_rating})"
+
     def update_rating(self, rating: int):
         self.rating_sum += int(rating)
         self.rating_count += 1
         self.avg_rating = round(self.rating_sum / self.rating_count, 2)
-        self.save(update_fields=["rating_sum", "rating_count", "avg_rating", "updated_at"])
-
-    def __str__(self):
-        return f"RiderStats for {self.user.phone} ({self.avg_rating})"
+        self.save(
+            update_fields=["rating_sum", "rating_count", "avg_rating", "updated_at"]
+        )

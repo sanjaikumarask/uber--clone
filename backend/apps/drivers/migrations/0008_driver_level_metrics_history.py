@@ -8,54 +8,109 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('drivers', '0007_driverstats_acceptance_rate_and_more'),
+        ("drivers", "0007_driverstats_acceptance_rate_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='driver',
-            name='level',
-            field=models.CharField(choices=[('NORMAL', 'Normal'), ('ACTIVE', 'Active'), ('CONSISTENT', 'Consistent'), ('PRO', 'Pro')], db_index=True, default='NORMAL', max_length=16),
+            model_name="driver",
+            name="level",
+            field=models.CharField(
+                choices=[
+                    ("NORMAL", "Normal"),
+                    ("ACTIVE", "Active"),
+                    ("CONSISTENT", "Consistent"),
+                    ("PRO", "Pro"),
+                ],
+                db_index=True,
+                default="NORMAL",
+                max_length=16,
+            ),
         ),
         migrations.AddField(
-            model_name='driverstats',
-            name='accepted_rides',
+            model_name="driverstats",
+            name="accepted_rides",
             field=models.PositiveIntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='driverstats',
-            name='offered_rides',
+            model_name="driverstats",
+            name="offered_rides",
             field=models.PositiveIntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='driverstats',
-            name='peak_hour_rides',
+            model_name="driverstats",
+            name="peak_hour_rides",
             field=models.PositiveIntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='driverstats',
-            name='score',
+            model_name="driverstats",
+            name="score",
             field=models.FloatField(default=0.0),
         ),
         migrations.AddField(
-            model_name='driverstats',
-            name='weekly_rides',
+            model_name="driverstats",
+            name="weekly_rides",
             field=models.PositiveIntegerField(default=0),
         ),
         migrations.CreateModel(
-            name='DriverLevelHistory',
+            name="DriverLevelHistory",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('old_level', models.CharField(choices=[('NORMAL', 'Normal'), ('ACTIVE', 'Active'), ('CONSISTENT', 'Consistent'), ('PRO', 'Pro')], max_length=16)),
-                ('new_level', models.CharField(choices=[('NORMAL', 'Normal'), ('ACTIVE', 'Active'), ('CONSISTENT', 'Consistent'), ('PRO', 'Pro')], max_length=16)),
-                ('reason', models.TextField(blank=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('changed_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
-                ('driver', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='level_history', to='drivers.driver')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "old_level",
+                    models.CharField(
+                        choices=[
+                            ("NORMAL", "Normal"),
+                            ("ACTIVE", "Active"),
+                            ("CONSISTENT", "Consistent"),
+                            ("PRO", "Pro"),
+                        ],
+                        max_length=16,
+                    ),
+                ),
+                (
+                    "new_level",
+                    models.CharField(
+                        choices=[
+                            ("NORMAL", "Normal"),
+                            ("ACTIVE", "Active"),
+                            ("CONSISTENT", "Consistent"),
+                            ("PRO", "Pro"),
+                        ],
+                        max_length=16,
+                    ),
+                ),
+                ("reason", models.TextField(blank=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "changed_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "driver",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="level_history",
+                        to="drivers.driver",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-created_at'],
+                "ordering": ["-created_at"],
             },
         ),
     ]

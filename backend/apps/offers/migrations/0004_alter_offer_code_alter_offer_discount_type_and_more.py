@@ -6,34 +6,39 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('offers', '0003_rename_discount_value_offer_max_discount_and_more'),
+        ("offers", "0003_rename_discount_value_offer_max_discount_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='offer',
-            name='code',
-            field=models.CharField(db_index=True, default='TEMP_DEFAULT', max_length=20, unique=True),
+            model_name="offer",
+            name="code",
+            field=models.CharField(
+                db_index=True, default="TEMP_DEFAULT", max_length=20, unique=True
+            ),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='offer',
-            name='discount_type',
-            field=models.CharField(choices=[('FLAT', 'Flat Amount'), ('PERCENTAGE', 'Percentage')], max_length=20),
+            model_name="offer",
+            name="discount_type",
+            field=models.CharField(
+                choices=[("FLAT", "Flat Amount"), ("PERCENTAGE", "Percentage")],
+                max_length=20,
+            ),
         ),
         migrations.AlterField(
-            model_name='offer',
-            name='valid_from',
+            model_name="offer",
+            name="valid_from",
             field=models.DateTimeField(),
         ),
         migrations.AlterField(
-            model_name='offer',
-            name='valid_to',
+            model_name="offer",
+            name="valid_to",
             field=models.DateTimeField(),
         ),
         migrations.AlterField(
-            model_name='offer',
-            name='value',
+            model_name="offer",
+            name="value",
             field=models.DecimalField(decimal_places=2, max_digits=10),
         ),
     ]

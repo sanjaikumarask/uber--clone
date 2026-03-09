@@ -1,14 +1,15 @@
 import os
-import django
-from django.urls import resolve, Resolver404
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+import django
+from django.urls import Resolver404, resolve
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 
 paths = [
-    '/api/drivers/ride-history/',
-    '/api/payments/transactions/',
-    '/api/drivers/me/',
+    "/api/drivers/ride-history/",
+    "/api/payments/transactions/",
+    "/api/drivers/me/",
 ]
 
 for p in paths:

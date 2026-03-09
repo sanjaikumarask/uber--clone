@@ -94,8 +94,7 @@ export default function Observability() {
                         </span>
                     </div>
                     <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#94a3b8", fontSize: 13, cursor: "pointer" }}>
-                        <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} />
-                        Auto-scroll
+                        <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} /> {" "} Auto-scroll
                     </label>
                 </div>
 

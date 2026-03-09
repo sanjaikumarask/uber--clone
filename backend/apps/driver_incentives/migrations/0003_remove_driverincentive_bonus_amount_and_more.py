@@ -8,86 +8,115 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('driver_incentives', '0002_driverincentive_budget_limit_and_more'),
-        ('drivers', '0009_driverstats_last_active_at_and_more'),
+        ("driver_incentives", "0002_driverincentive_budget_limit_and_more"),
+        ("drivers", "0009_driverstats_last_active_at_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='driverincentive',
-            name='bonus_amount',
+            model_name="driverincentive",
+            name="bonus_amount",
         ),
         migrations.RemoveField(
-            model_name='driverincentive',
-            name='budget_limit',
+            model_name="driverincentive",
+            name="budget_limit",
         ),
         migrations.RemoveField(
-            model_name='driverincentive',
-            name='budget_spent',
+            model_name="driverincentive",
+            name="budget_spent",
         ),
         migrations.RemoveField(
-            model_name='driverincentive',
-            name='end_time',
+            model_name="driverincentive",
+            name="end_time",
         ),
         migrations.RemoveField(
-            model_name='driverincentive',
-            name='max_distance',
+            model_name="driverincentive",
+            name="max_distance",
         ),
         migrations.RemoveField(
-            model_name='driverincentive',
-            name='min_distance',
+            model_name="driverincentive",
+            name="min_distance",
         ),
         migrations.RemoveField(
-            model_name='driverincentive',
-            name='start_time',
+            model_name="driverincentive",
+            name="start_time",
         ),
         migrations.AddField(
-            model_name='driverincentive',
-            name='condition',
-            field=models.JSONField(default=dict, help_text='Config for incentive rules'),
+            model_name="driverincentive",
+            name="condition",
+            field=models.JSONField(
+                default=dict, help_text="Config for incentive rules"
+            ),
         ),
         migrations.AddField(
-            model_name='driverincentive',
-            name='max_per_day',
+            model_name="driverincentive",
+            name="max_per_day",
             field=models.PositiveIntegerField(default=1),
         ),
         migrations.AddField(
-            model_name='driverincentive',
-            name='reward_amount',
+            model_name="driverincentive",
+            name="reward_amount",
             field=models.DecimalField(decimal_places=2, default=0, max_digits=10),
         ),
         migrations.AddField(
-            model_name='driverincentive',
-            name='type',
-            field=models.CharField(choices=[('STREAK', 'Ride Streak (N rides)'), ('PEAK', 'Peak Hour Bonus'), ('ZONE', 'Geo-Zone Bonus')], default='PEAK', max_length=20),
+            model_name="driverincentive",
+            name="type",
+            field=models.CharField(
+                choices=[
+                    ("STREAK", "Ride Streak (N rides)"),
+                    ("PEAK", "Peak Hour Bonus"),
+                    ("ZONE", "Geo-Zone Bonus"),
+                ],
+                default="PEAK",
+                max_length=20,
+            ),
         ),
         migrations.AddField(
-            model_name='driverincentive',
-            name='valid_from',
+            model_name="driverincentive",
+            name="valid_from",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
         migrations.AddField(
-            model_name='driverincentive',
-            name='valid_to',
+            model_name="driverincentive",
+            name="valid_to",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
         migrations.AlterField(
-            model_name='driverincentive',
-            name='city',
+            model_name="driverincentive",
+            name="city",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
         migrations.CreateModel(
-            name='DriverIncentiveProgress',
+            name="DriverIncentiveProgress",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('current_count', models.PositiveIntegerField(default=0)),
-                ('completed_at', models.DateTimeField(blank=True, null=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('driver', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='drivers.driver')),
-                ('incentive', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='driver_incentives.driverincentive')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("current_count", models.PositiveIntegerField(default=0)),
+                ("completed_at", models.DateTimeField(blank=True, null=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "driver",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="drivers.driver"
+                    ),
+                ),
+                (
+                    "incentive",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="driver_incentives.driverincentive",
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('driver', 'incentive')},
+                "unique_together": {("driver", "incentive")},
             },
         ),
     ]

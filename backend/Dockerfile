@@ -4,7 +4,7 @@ FROM python:3.11
 WORKDIR /app
 
 # System deps (IMPORTANT)
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
     postgresql-client \
@@ -23,5 +23,6 @@ RUN groupadd -g 1000 appuser && \
 # Switch to non-root user
 USER appuser
 
+# [SECURITY AUDIT] We rely on .dockerignore to prevent copying sensitive files like .env or .git
 COPY . .
 

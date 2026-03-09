@@ -625,42 +625,41 @@ export default function AdminLiveMap() {
       }
       ping.speed_kmh = smoothedSpeed;
 
-      let rot = ping.heading;
-      if (rot == null && (from.lat !== to.lat || from.lng !== to.lng))
-        rot = getBearing(from.lat, from.lng, to.lat, to.lng);
+      const rot = ping.heading != null ? ping.heading : (from.lat !== to.lat || from.lng !== to.lng ? getBearing(from.lat, from.lng, to.lat, to.lng) : null);
 
-      const el = existing.marker.content as HTMLElement;
-      const dot = el.querySelector(".s-dot") as HTMLElement | null;
-      const img = el.querySelector("img") as HTMLImageElement | null;
-      const lbl = el.querySelector(".d-lbl") as HTMLElement | null;
-      const spd = el.querySelector(".d-spd") as HTMLElement | null;
-      const c = STATUS_COLOR[ping.status] ?? STATUS_COLOR.ONLINE;
-      const rs = ping.ride?.status;
-      const name = ping.name || existing.name || `D#${ping.driver_id}`;
-      const brd = rs === "ARRIVED" ? "#8b5cf6" : rs === "ONGOING" ? "#ef4444" : rs === "ASSIGNED" ? "#3b82f6" : c;
+      const updateDriverDOM = (existingState: DriverState, newPing: DriverPing, rotation: number | null) => {
+        const el = existingState.marker.content as HTMLElement;
+        const dot = el.querySelector(".s-dot") as HTMLElement | null;
+        const img = el.querySelector("img") as HTMLImageElement | null;
+        const lbl = el.querySelector(".d-lbl") as HTMLElement | null;
+        const spd = el.querySelector(".d-spd") as HTMLElement | null;
+        const c = STATUS_COLOR[newPing.status] ?? STATUS_COLOR.ONLINE;
+        const rs = newPing.ride?.status;
+        const name = newPing.name || existingState.name || `D#${newPing.driver_id}`;
+        const brd = rs === "ARRIVED" ? "#8b5cf6" : rs === "ONGOING" ? "#ef4444" : rs === "ASSIGNED" ? "#3b82f6" : c;
 
-      const vType = ping.ride?.vehicle_type || "go";
-      const iconUrl = VEHICLE_ICONS[vType] || VEHICLE_ICONS.go;
+        const vType = newPing.ride?.vehicle_type || "go";
+        const iconUrl = VEHICLE_ICONS[vType] || VEHICLE_ICONS.go;
 
-      if (dot) dot.style.background = c;
-      if (img) {
-        img.style.borderColor = brd;
-        // Check if icon needs to change (comparing relative paths)
-        if (!img.src.includes(iconUrl)) {
-          img.src = iconUrl;
+        if (dot) dot.style.background = c;
+        if (img) {
+          img.style.borderColor = brd;
+          if (!img.src.includes(iconUrl)) img.src = iconUrl;
+          if (rotation != null) img.style.transform = `rotate(${rotation}deg)`;
         }
-        if (rot != null) img.style.transform = `rotate(${rot}deg)`;
-      }
-      if (lbl) lbl.textContent = `${name}${rs ? ` · ${rs}` : ""}`;
-      // Update speed badge with smoothed value
-      if (spd) {
-        if (ping.speed_kmh != null) {
-          spd.textContent = `${ping.speed_kmh.toFixed(0)} km/h`;
-          spd.style.display = "block";
-        } else {
-          spd.style.display = "none";
+        if (lbl) lbl.textContent = `${name}${rs ? ` · ${rs}` : ""}`;
+        if (spd) {
+          if (newPing.speed_kmh != null) {
+            spd.textContent = `${newPing.speed_kmh.toFixed(0)} km/h`;
+            spd.style.display = "block";
+          } else {
+            spd.style.display = "none";
+          }
         }
-      }
+      };
+
+      updateDriverDOM(existing, ping, rot);
+
 
       const routePath = rideGraphics?.routePolyline?.getPath()?.getArray() || [];
       animateMarker(existing.marker, from, to, ping.driver_id, duration, false, routePath);
@@ -900,7 +899,7 @@ export default function AdminLiveMap() {
     // Push to global incident log
     setIncidents((prev: any[]) => [
       {
-        id: Math.random().toString(36).substr(2, 9),
+        id: window.crypto.randomUUID(),
         type: "DEVIATION",
         driver_id: data.driver_id,
         driver_name: data.driver_name || `Driver #${data.driver_id}`,
@@ -1582,6 +1581,50 @@ export default function AdminLiveMap() {
 
   const filteredDrivers = driverList.filter(d => statusFilter === "ALL" || d.status === statusFilter || d.ride?.status === statusFilter);
 
+  const DriverListItem = ({ d }: { d: any }) => {
+    const isSelected = selectedDriver?.driver_id === d.driver_id;
+    const hasAlert = deviationAlerts.has(d.driver_id);
+    const sc = STATUS_COLOR[d.ride?.status || d.status] ?? "#4b5563";
+    return (
+      <button
+        onClick={() => onDriverClick(d)}
+        style={{
+          display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+          borderBottom: "1px solid #111", cursor: "pointer",
+          background: isSelected ? "#0f1829" : "transparent",
+          borderLeft: isSelected ? "3px solid #3b82f6" : "3px solid transparent",
+          borderTop: "none", borderRight: "none",
+          width: "100%", textAlign: "left",
+          transition: "background 0.15s", color: "inherit",
+          fontFamily: "inherit"
+        }}
+        onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "#111"; }}
+        onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}>
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#141414", border: `2px solid ${sc}`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+            <img src={VEHICLE_ICONS[d.ride?.vehicle_type || "go"]} style={{ width: 24, height: 24, objectFit: "contain" }} alt={d.ride?.vehicle_type || "vehicle"} />
+          </div>
+          {hasAlert && <div style={{ position: "absolute", top: -2, right: -2, width: 10, height: 10, borderRadius: "50%", background: "#ef4444", border: "2px solid #0d0d0d" }} />}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: isSelected ? "#fff" : "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name || `Driver #${d.driver_id}`}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0, marginLeft: 6 }}>
+              <Dot color={sc} pulse={!!d.ride} />
+              <span style={{ fontSize: 9, fontWeight: 700, color: sc }}>{d.ride?.status || d.status}</span>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {d.speed_kmh != null && <span style={{ fontSize: 10, color: "#555" }}>🚗 {d.speed_kmh.toFixed(0)} km/h</span>}
+            {d.eta != null && <span style={{ fontSize: 10, color: "#555" }}>⏱ {d.eta}min ETA</span>}
+            {d.ride && <span style={{ fontSize: 10, color: "#3b82f630" }}>#{d.ride.id}</span>}
+          </div>
+        </div>
+      </button>
+    );
+  };
+
+
   const S: Record<string, React.CSSProperties> = {
     root: { display: "flex", flexDirection: "column", height: "100vh", background: "#080808", fontFamily: "'Inter', 'SF Pro Display', sans-serif", color: "#e1e1e1", overflow: "hidden" },
     topbar: { display: "flex", alignItems: "center", justifyContent: "space-between", height: 52, padding: "0 20px", background: "#0d0d0d", borderBottom: "1px solid #1e1e1e", flexShrink: 0, zIndex: 20 },
@@ -1817,38 +1860,9 @@ export default function AdminLiveMap() {
                 <div style={{ flex: 1, overflowY: "auto" }}>
                   {filteredDrivers.length === 0 ? (
                     <div style={{ color: "#2a2a2a", fontSize: 11, textAlign: "center", marginTop: 48, fontWeight: 600 }}>No drivers online</div>
-                  ) : filteredDrivers.sort((a, b) => (b.ride ? 1 : 0) - (a.ride ? 1 : 0)).map(d => {
-                    const isSelected = selectedDriver?.driver_id === d.driver_id;
-                    const hasAlert = deviationAlerts.has(d.driver_id);
-                    const sc = STATUS_COLOR[d.ride?.status || d.status] ?? "#4b5563";
-                    return (
-                      <div key={d.driver_id} onClick={() => onDriverClick(d)}
-                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderBottom: "1px solid #111", cursor: "pointer", background: isSelected ? "#0f1829" : "transparent", borderLeft: isSelected ? "3px solid #3b82f6" : "3px solid transparent", transition: "background 0.15s" }}
-                        onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "#111"; }}
-                        onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}>
-                        <div style={{ position: "relative", flexShrink: 0 }}>
-                          <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#141414", border: `2px solid ${sc}`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                            <img src={VEHICLE_ICONS[d.ride?.vehicle_type || "go"]} style={{ width: 24, height: 24, objectFit: "contain" }} />
-                          </div>
-                          {hasAlert && <div style={{ position: "absolute", top: -2, right: -2, width: 10, height: 10, borderRadius: "50%", background: "#ef4444", border: "2px solid #0d0d0d" }} />}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: isSelected ? "#fff" : "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name || `Driver #${d.driver_id}`}</span>
-                            <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0, marginLeft: 6 }}>
-                              <Dot color={sc} pulse={!!d.ride} />
-                              <span style={{ fontSize: 9, fontWeight: 700, color: sc }}>{d.ride?.status || d.status}</span>
-                            </div>
-                          </div>
-                          <div style={{ display: "flex", gap: 8 }}>
-                            {d.speed_kmh != null && <span style={{ fontSize: 10, color: "#555" }}>🚗 {d.speed_kmh.toFixed(0)} km/h</span>}
-                            {d.eta != null && <span style={{ fontSize: 10, color: "#555" }}>⏱ {d.eta}min ETA</span>}
-                            {d.ride && <span style={{ fontSize: 10, color: "#3b82f630" }}>#{d.ride.id}</span>}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  ) : filteredDrivers.sort((a, b) => (b.ride ? 1 : 0) - (a.ride ? 1 : 0)).map(d => (
+                    <DriverListItem key={d.driver_id} d={d} />
+                  ))}
                 </div>
               </>
             )}
@@ -1860,8 +1874,14 @@ export default function AdminLiveMap() {
                 ) : riderList.map(r => {
                   const sc = STATUS_COLOR[r.status || "WAITING"] ?? "#8b5cf6";
                   return (
-                    <div key={r.rider_id} onClick={() => mapRef.current?.panTo({ lat: r.lat, lng: r.lng })}
-                      style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 12px", borderBottom: "1px solid #111", cursor: "pointer" }}
+                    <button key={r.rider_id}
+                      onClick={() => mapRef.current?.panTo({ lat: r.lat, lng: r.lng })}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 10, padding: "12px 12px",
+                        borderBottom: "1px solid #111", cursor: "pointer",
+                        background: "transparent", border: "none", width: "100%",
+                        textAlign: "left", color: "inherit", fontFamily: "inherit"
+                      }}
                       onMouseEnter={e => e.currentTarget.style.background = "#141414"}
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                       <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#1a1a1a", border: `2px solid ${sc}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>👤</div>
@@ -1875,7 +1895,7 @@ export default function AdminLiveMap() {
                         </div>
                         <div style={{ fontSize: 10, color: "#555", marginTop: 2 }}>Ride #{r.ride_id}</div>
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -1891,8 +1911,14 @@ export default function AdminLiveMap() {
                 {incidents.length === 0 ? (
                   <div style={{ color: "#2a2a2a", fontSize: 11, textAlign: "center", marginTop: 48, fontWeight: 600 }}>No recent incidents</div>
                 ) : incidents.map(inc => (
-                  <div key={inc.id} onClick={() => { const d = driversRef.current.get(inc.driver_id); if (d) { setSelectedDriver(d); mapRef.current?.panTo({ lat: d.lat, lng: d.lng }); } }}
-                    style={{ padding: "10px 12px", borderBottom: "1px solid #111", cursor: "pointer" }}
+                  <button key={inc.id}
+                    onClick={() => { const d = driversRef.current.get(inc.driver_id); if (d) { setSelectedDriver(d); mapRef.current?.panTo({ lat: d.lat, lng: d.lng }); } }}
+                    style={{
+                      padding: "10px 12px", borderBottom: "1px solid #111", cursor: "pointer",
+                      background: "transparent", border: "none", width: "100%",
+                      textAlign: "left", color: "inherit", fontFamily: "inherit",
+                      display: "block"
+                    }}
                     onMouseEnter={e => e.currentTarget.style.background = "#141414"}
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
@@ -1901,7 +1927,7 @@ export default function AdminLiveMap() {
                     </div>
                     <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 2 }}>{inc.driver_name}</div>
                     <div style={{ fontSize: 11, color: "#555" }}>{inc.msg}</div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -2018,7 +2044,7 @@ export default function AdminLiveMap() {
                   <div style={{ display: "flex", gap: 16, marginBottom: 24, alignItems: "center" }}>
                     <div style={{ position: "relative" }}>
                       <div style={{ width: 64, height: 64, borderRadius: "var(--r-md)", background: "var(--bg-2)", border: `2px solid ${STATUS_COLOR[selectedDriver.status] || "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 0 20px ${(STATUS_COLOR[selectedDriver.status] || "#3b82f6")}22` }}>
-                        <img src={VEHICLE_ICONS[selectedDriver.ride?.vehicle_type || "go"]} style={{ width: 44, height: 44, objectFit: "contain" }} />
+                        <img src={VEHICLE_ICONS[selectedDriver.ride?.vehicle_type || "go"]} style={{ width: 44, height: 44, objectFit: "contain" }} alt={selectedDriver.ride?.vehicle_type || "vehicle"} />
                       </div>
                       {deviationAlerts.has(selectedDriver.driver_id) && (
                         <div style={{ position: "absolute", top: -6, right: -6, width: 22, height: 22, borderRadius: "50%", background: "var(--red)", border: "2px solid var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, boxShadow: "0 4px 12px rgba(239,68,68,0.4)" }}>⚠</div>
@@ -2156,13 +2182,21 @@ export default function AdminLiveMap() {
       {/* ── Admin Action Confirm Modal ── */}
       {
         rideAction && (
-          <div
-            onClick={() => !rideActionLoading && setRideAction(null)}
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", zIndex: 5000, display: "flex", alignItems: "center", justifyContent: "center" }}
-          >
+          <div style={{ position: "fixed", inset: 0, zIndex: 5000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <button
+              onClick={() => !rideActionLoading && setRideAction(null)}
+              style={{
+                position: "absolute", inset: 0, background: "rgba(0,0,0,0.7)",
+                backdropFilter: "blur(4px)", border: "none",
+                cursor: rideActionLoading ? "default" : "pointer", padding: 0,
+                width: "100%", height: "100%"
+              }}
+              aria-label="Close"
+            />
             <div
-              onClick={e => e.stopPropagation()}
-              style={{ background: "#0f0f0f", border: "1px solid #2a2a2a", borderRadius: 16, padding: "28px 32px", minWidth: 320, boxShadow: "0 24px 80px rgba(0,0,0,0.8)" }}
+              role="dialog"
+              aria-modal="true"
+              style={{ position: "relative", background: "#0f0f0f", border: "1px solid #2a2a2a", borderRadius: 16, padding: "28px 32px", minWidth: 320, boxShadow: "0 24px 80px rgba(0,0,0,0.8)" }}
             >
               <div style={{ fontSize: 32, marginBottom: 16, textAlign: "center" }}>
                 {rideAction?.action === "cancel" ? "🚫" : rideAction?.action === "reassign" ? "🔄" : "💸"}

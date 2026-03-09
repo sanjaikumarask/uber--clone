@@ -1,5 +1,6 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
+
 from .enums import NotificationStatus
 
 User = settings.AUTH_USER_MODEL
@@ -41,7 +42,9 @@ class Notification(models.Model):
         super().save(*args, **kwargs)
         if is_new:
             from django.db import transaction
+
             from .tasks import deliver_notification
+
             transaction.on_commit(lambda: deliver_notification.delay(self.id))
 
 

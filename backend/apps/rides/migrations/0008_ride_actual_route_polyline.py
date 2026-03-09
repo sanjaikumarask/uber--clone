@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rides', '0007_ridefeedback_giver_role_alter_ridefeedback_driver_and_more'),
+        ("rides", "0007_ridefeedback_giver_role_alter_ridefeedback_driver_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='ride',
-            name='actual_route_polyline',
-            field=models.TextField(blank=True, help_text='Encoded polyline of the actual path taken', null=True),
+            model_name="ride",
+            name="actual_route_polyline",
+            field=models.TextField(
+                blank=True,
+                help_text="Encoded polyline of the actual path taken",
+                null=True,
+            ),
         ),
     ]

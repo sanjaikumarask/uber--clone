@@ -8,34 +8,50 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('drivers', '0005_driver_is_verified_driverdocument'),
-        ('rides', '0006_chatmessage'),
+        ("drivers", "0005_driver_is_verified_driverdocument"),
+        ("rides", "0006_chatmessage"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='ridefeedback',
-            name='giver_role',
-            field=models.CharField(choices=[('RIDER', 'Given by Rider'), ('DRIVER', 'Given by Driver')], default='RIDER', max_length=10),
+            model_name="ridefeedback",
+            name="giver_role",
+            field=models.CharField(
+                choices=[("RIDER", "Given by Rider"), ("DRIVER", "Given by Driver")],
+                default="RIDER",
+                max_length=10,
+            ),
         ),
         migrations.AlterField(
-            model_name='ridefeedback',
-            name='driver',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='driver_feedbacks', to='drivers.driver'),
+            model_name="ridefeedback",
+            name="driver",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="driver_feedbacks",
+                to="drivers.driver",
+            ),
         ),
         migrations.AlterField(
-            model_name='ridefeedback',
-            name='ride',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='feedbacks', to='rides.ride'),
+            model_name="ridefeedback",
+            name="ride",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="feedbacks",
+                to="rides.ride",
+            ),
         ),
         migrations.AlterField(
-            model_name='ridefeedback',
-            name='rider',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='rider_feedbacks', to=settings.AUTH_USER_MODEL),
+            model_name="ridefeedback",
+            name="rider",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="rider_feedbacks",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='ridefeedback',
-            unique_together={('ride', 'giver_role')},
+            name="ridefeedback",
+            unique_together={("ride", "giver_role")},
         ),
     ]

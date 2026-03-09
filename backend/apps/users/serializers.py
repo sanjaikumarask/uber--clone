@@ -1,21 +1,32 @@
-from rest_framework import serializers
 from django.contrib.auth import authenticate, get_user_model
+from rest_framework import serializers
 
 User = get_user_model()
 
 
+INVALID_CREDENTIALS_MSG = "Invalid credentials"
+
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
-    role = serializers.ChoiceField(choices=['rider', 'driver'], required=False, default='rider')
+    role = serializers.ChoiceField(
+        choices=["rider", "driver"], required=False, default="rider"
+    )
 
     class Meta:
         model = User
         fields = ["id", "phone", "email", "password", "first_name", "last_name", "role"]
         read_only_fields = ["id"]
+        extra_kwargs = {
+            "phone": {"required": True},
+            "password": {"write_only": True},
+        }
 
     def create(self, validated_data):
         password = validated_data.pop("password")
-        role = validated_data.pop("role", "rider")  # Get role from data, default to rider
+        role = validated_data.pop(
+            "role", "rider"
+        )  # Get role from data, default to rider
         # Set username to phone to satisfy AbstractUser's unique username constraint
         validated_data["username"] = validated_data.get("phone")
         user = User(**validated_data)
@@ -33,10 +44,10 @@ class RiderLoginSerializer(serializers.Serializer):
         try:
             user = User.objects.get(phone=attrs["phone"])
         except User.DoesNotExist:
-            raise serializers.ValidationError("Invalid credentials")
+            raise serializers.ValidationError(INVALID_CREDENTIALS_MSG)
 
         if not user.check_password(attrs["password"]):
-            raise serializers.ValidationError("Invalid credentials")
+            raise serializers.ValidationError(INVALID_CREDENTIALS_MSG)
 
         if not user.is_rider:
             raise serializers.ValidationError("Not a rider account")
@@ -53,10 +64,10 @@ class DriverLoginSerializer(serializers.Serializer):
         try:
             user = User.objects.get(phone=attrs["phone"])
         except User.DoesNotExist:
-            raise serializers.ValidationError("Invalid credentials")
+            raise serializers.ValidationError(INVALID_CREDENTIALS_MSG)
 
         if not user.check_password(attrs["password"]):
-            raise serializers.ValidationError("Invalid credentials")
+            raise serializers.ValidationError(INVALID_CREDENTIALS_MSG)
 
         if not user.is_driver:
             raise serializers.ValidationError("Not a driver account")
@@ -82,12 +93,12 @@ class AdminLoginSerializer(serializers.Serializer):
                 user = authenticate(username=user_obj.username, password=password)
             except User.DoesNotExist:
                 pass
-        
+
         if not user and username:
             user = authenticate(username=username, password=password)
 
         if not user:
-            raise serializers.ValidationError("Invalid credentials")
+            raise serializers.ValidationError(INVALID_CREDENTIALS_MSG)
 
         if not user.is_admin:
             raise serializers.ValidationError("Admin access only")
@@ -101,31 +112,48 @@ class UserSerializer(serializers.ModelSerializer):
     completed_rides = serializers.SerializerMethodField()
     avg_rating = serializers.SerializerMethodField()
     level = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = User
-        fields = ["id", "phone", "role", "first_name", "last_name", "is_verified", "expo_push_token", "completed_rides", "avg_rating", "level"]
+        fields = [
+            "id",
+            "phone",
+            "role",
+            "first_name",
+            "last_name",
+            "is_verified",
+            "expo_push_token",
+            "completed_rides",
+            "avg_rating",
+            "level",
+        ]
 
     def get_is_verified(self, obj):
         if obj.role == "driver":
-            return getattr(obj, 'driver', None).is_verified if hasattr(obj, 'driver') else False
+            return (
+                getattr(obj, "driver", None).is_verified
+                if hasattr(obj, "driver")
+                else False
+            )
         return True
 
     def get_completed_rides(self, obj):
-        if obj.role == "driver" and hasattr(obj, 'driver'):
+        if obj.role == "driver" and hasattr(obj, "driver"):
             from apps.drivers.models import DriverStats
+
             stats, _ = DriverStats.objects.get_or_create(driver=obj.driver)
             return stats.completed_rides
         return 0
 
     def get_avg_rating(self, obj):
-        if obj.role == "driver" and hasattr(obj, 'driver'):
+        if obj.role == "driver" and hasattr(obj, "driver"):
             from apps.drivers.models import DriverStats
+
             stats, _ = DriverStats.objects.get_or_create(driver=obj.driver)
             return stats.avg_rating
         return 5.0
 
     def get_level(self, obj):
-        if obj.role == "driver" and hasattr(obj, 'driver'):
+        if obj.role == "driver" and hasattr(obj, "driver"):
             return obj.driver.level
         return "NORMAL"

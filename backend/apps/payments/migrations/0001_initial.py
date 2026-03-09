@@ -8,41 +8,111 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='LedgerEntry',
+            name="LedgerEntry",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('ride_id', models.PositiveBigIntegerField(db_index=True)),
-                ('amount', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('entry_type', models.CharField(choices=[('DEBIT', 'Debit'), ('CREDIT', 'Credit')], max_length=6)),
-                ('reference', models.CharField(help_text='payment:<id> | refund:<id> | adjustment:<id>', max_length=128)),
-                ('reason', models.CharField(blank=True, help_text='Optional human readable reason', max_length=64, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True, db_index=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("ride_id", models.PositiveBigIntegerField(db_index=True)),
+                ("amount", models.DecimalField(decimal_places=2, max_digits=10)),
+                (
+                    "entry_type",
+                    models.CharField(
+                        choices=[("DEBIT", "Debit"), ("CREDIT", "Credit")], max_length=6
+                    ),
+                ),
+                (
+                    "reference",
+                    models.CharField(
+                        help_text="payment:<id> | refund:<id> | adjustment:<id>",
+                        max_length=128,
+                    ),
+                ),
+                (
+                    "reason",
+                    models.CharField(
+                        blank=True,
+                        help_text="Optional human readable reason",
+                        max_length=64,
+                        null=True,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True, db_index=True)),
             ],
             options={
-                'ordering': ['created_at'],
+                "ordering": ["created_at"],
             },
         ),
         migrations.CreateModel(
-            name='Payment',
+            name="Payment",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('ride_id', models.PositiveBigIntegerField(blank=True, db_index=True, null=True)),
-                ('amount', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('refunded_amount', models.DecimalField(decimal_places=2, default=Decimal('0.00'), max_digits=10)),
-                ('currency', models.CharField(default='INR', max_length=8)),
-                ('status', models.CharField(choices=[('CREATED', 'Created'), ('AUTHORIZED', 'Authorized'), ('CAPTURED', 'Captured'), ('FAILED', 'Failed'), ('PARTIALLY_REFUNDED', 'Partially Refunded'), ('REFUNDED', 'Refunded')], db_index=True, default='CREATED', max_length=24)),
-                ('gateway', models.CharField(default='razorpay', max_length=32)),
-                ('gateway_order_id', models.CharField(blank=True, max_length=128, null=True, unique=True)),
-                ('gateway_payment_id', models.CharField(blank=True, max_length=128, null=True)),
-                ('gateway_signature', models.CharField(blank=True, max_length=256, null=True)),
-                ('failure_reason', models.TextField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "ride_id",
+                    models.PositiveBigIntegerField(
+                        blank=True, db_index=True, null=True
+                    ),
+                ),
+                ("amount", models.DecimalField(decimal_places=2, max_digits=10)),
+                (
+                    "refunded_amount",
+                    models.DecimalField(
+                        decimal_places=2, default=Decimal("0.00"), max_digits=10
+                    ),
+                ),
+                ("currency", models.CharField(default="INR", max_length=8)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("CREATED", "Created"),
+                            ("AUTHORIZED", "Authorized"),
+                            ("CAPTURED", "Captured"),
+                            ("FAILED", "Failed"),
+                            ("PARTIALLY_REFUNDED", "Partially Refunded"),
+                            ("REFUNDED", "Refunded"),
+                        ],
+                        db_index=True,
+                        default="CREATED",
+                        max_length=24,
+                    ),
+                ),
+                ("gateway", models.CharField(default="razorpay", max_length=32)),
+                (
+                    "gateway_order_id",
+                    models.CharField(
+                        blank=True, max_length=128, null=True, unique=True
+                    ),
+                ),
+                (
+                    "gateway_payment_id",
+                    models.CharField(blank=True, max_length=128, null=True),
+                ),
+                (
+                    "gateway_signature",
+                    models.CharField(blank=True, max_length=256, null=True),
+                ),
+                ("failure_reason", models.TextField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
         ),
     ]

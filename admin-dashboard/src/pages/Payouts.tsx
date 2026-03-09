@@ -38,6 +38,19 @@ export default function Payouts() {
 
     if (loading) return <div style={{ padding: 60, color: "var(--text-dim)" }}>Loading payouts...</div>;
 
+    const getStatusStyle = (status: string) => {
+        switch (status) {
+            case "PAID":
+                return { bg: "#064E3B", text: "#34D399" };
+            case "REQUESTED":
+                return { bg: "#374151", text: "#E5E7EB" };
+            case "FAILED":
+            default:
+                return { bg: "#7F1D1D", text: "#F87171" };
+        }
+    };
+
+
     return (
         <div style={{ padding: "40px" }}>
             <h1 style={{ marginBottom: "8px", fontSize: "2rem" }}>Payouts</h1>
@@ -73,8 +86,8 @@ export default function Payouts() {
                                     <td style={{ fontWeight: 500 }}>₹{p.amount}</td>
                                     <td>
                                         <span className="badge" style={{
-                                            background: p.status === "PAID" ? "#064E3B" : (p.status === "REQUESTED" ? "#374151" : "#7F1D1D"),
-                                            color: p.status === "PAID" ? "#34D399" : (p.status === "REQUESTED" ? "#E5E7EB" : "#F87171"),
+                                            background: getStatusStyle(p.status).bg,
+                                            color: getStatusStyle(p.status).text,
                                             border: "none",
                                             fontWeight: 500,
                                             fontSize: "0.75rem",

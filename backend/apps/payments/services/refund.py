@@ -1,8 +1,9 @@
 from decimal import Decimal
-from django.db import transaction
-from django.core.exceptions import ValidationError
 
-from apps.payments.models import Payment, LedgerEntry
+from django.core.exceptions import ValidationError
+from django.db import transaction
+
+from apps.payments.models import LedgerEntry, Payment
 from apps.payments.razorpay_client import razorpay_client
 
 
@@ -12,17 +13,16 @@ def refund_payment(
     payment: Payment,
     amount: Decimal,
     reason: str,
-    initiated_by,
 ):
     """
     Handles partial + full refunds.
     Idempotent via ledger + payment row lock.
     """
 
-    if payment.status not in (
+    if payment.status not in {
         Payment.Status.CAPTURED,
         Payment.Status.PARTIALLY_REFUNDED,
-    ):
+    }:
         raise ValidationError("Payment not refundable")
 
     if amount <= 0:
@@ -32,15 +32,11 @@ def refund_payment(
         raise ValidationError("Refund exceeds refundable amount")
 
     # 🔒 Lock payment row
-    payment = (
-        Payment.objects
-        .select_for_update()
-        .get(id=payment.id)
-    )
+    payment = Payment.objects.select_for_update().get(id=payment.id)
 
     # ⬇️ Handle Simulation or Missing Client
     refund_id = f"sim_ref_{payment.id}"
-    
+
     if payment.gateway != "simulation" and razorpay_client:
         # 🔁 Gateway refund (Razorpay)
         try:
@@ -56,13 +52,15 @@ def refund_payment(
             )
             refund_id = refund["id"]
         except Exception as e:
-            from django.core.exceptions import ValidationError
-            raise ValidationError(f"Gateway refund failed: {str(e)}")
+            raise ValidationError(f"Gateway refund failed: {e!s}") from e
     else:
         # For simulation, we just log it
         import logging
+
         logger = logging.getLogger(__name__)
-        logger.info(f"SIMULATED_REFUND: Payment={payment.id} Amount={amount} Reason={reason}")
+        logger.info(
+            f"SIMULATED_REFUND: Payment={payment.id} Amount={amount} Reason={reason}"
+        )
 
     # 1️⃣ Ledger: platform → rider (CREDIT)
     LedgerEntry.objects.create(
@@ -78,9 +76,12 @@ def refund_payment(
     # 2️⃣ Ledger Claws: Proportionally debit Driver and Platform
     # Based on 80/20 split
     if payment.ride_id:
-        from apps.rides.models import Ride
+        from contextlib import suppress
+
         from apps.payments.services import payout as payout_service
-        try:
+        from apps.rides.models import Ride
+
+        with suppress(Ride.DoesNotExist):
             ride = Ride.objects.get(id=payment.ride_id)
             if ride.driver:
                 platform_share = (amount * Decimal("0.20")).quantize(Decimal("0.01"))
@@ -107,8 +108,6 @@ def refund_payment(
                     reason=LedgerEntry.Reason.REFUND,
                     reference=f"refund_debit_platform:{refund_id}",
                 )
-        except Ride.DoesNotExist:
-            pass
 
     # 3️⃣ Update payment aggregates
     payment.refunded_amount += amount
@@ -118,12 +117,11 @@ def refund_payment(
     else:
         payment.status = Payment.Status.PARTIALLY_REFUNDED
 
-    payment.save(
-        update_fields=["refunded_amount", "status", "updated_at"]
-    )
+    payment.save(update_fields=["refunded_amount", "status", "updated_at"])
 
     # 3️⃣ Notify Rider
     from apps.notifications.models import Notification
+
     Notification.objects.create(
         user=payment.user,
         channel="push",
@@ -131,8 +129,8 @@ def refund_payment(
         payload={
             "ride_id": payment.ride_id,
             "amount": float(amount),
-            "message": f"A refund of ₹{amount} has been issued for your ride."
-        }
+            "message": f"A refund of ₹{amount} has been issued for your ride.",
+        },
     )
 
     return {
@@ -140,3 +138,4 @@ def refund_payment(
         "amount": amount,
         "status": payment.status,
     }
+

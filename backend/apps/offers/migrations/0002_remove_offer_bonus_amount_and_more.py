@@ -6,28 +6,28 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('offers', '0001_initial'),
+        ("offers", "0001_initial"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='offer',
-            name='bonus_amount',
+            model_name="offer",
+            name="bonus_amount",
         ),
         migrations.RemoveField(
-            model_name='offer',
-            name='driver_max_distance',
+            model_name="offer",
+            name="driver_max_distance",
         ),
         migrations.RemoveField(
-            model_name='offer',
-            name='driver_min_distance',
+            model_name="offer",
+            name="driver_min_distance",
         ),
         migrations.AlterField(
-            model_name='offer',
-            name='offer_type',
-            field=models.CharField(choices=[('RIDER', 'Rider Offer')], max_length=10),
+            model_name="offer",
+            name="offer_type",
+            field=models.CharField(choices=[("RIDER", "Rider Offer")], max_length=10),
         ),
         migrations.DeleteModel(
-            name='DriverIncentiveEarning',
+            name="DriverIncentiveEarning",
         ),
     ]

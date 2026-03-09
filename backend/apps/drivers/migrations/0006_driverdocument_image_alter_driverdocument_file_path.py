@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('drivers', '0005_driver_is_verified_driverdocument'),
+        ("drivers", "0005_driver_is_verified_driverdocument"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='driverdocument',
-            name='image',
-            field=models.FileField(blank=True, null=True, upload_to='driver_docs/'),
+            model_name="driverdocument",
+            name="image",
+            field=models.FileField(blank=True, null=True, upload_to="driver_docs/"),
         ),
         migrations.AlterField(
-            model_name='driverdocument',
-            name='file_path',
+            model_name="driverdocument",
+            name="file_path",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
     ]

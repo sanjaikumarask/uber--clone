@@ -1,0 +1,146 @@
+time="2026-03-07T13:07:13+05:30" level=warning msg="Found orphan containers ([sonarqube sonarqube_db]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container uber_postgres Running 
+ Container uber_redis Running 
+ Container uber_zookeeper Running 
+ Container uber_kafka Running 
+ Container uber_postgres Waiting 
+ Container uber_postgres Healthy 
+ Container uber-backend-backend-run-5da340c4a94d Creating 
+ Container uber-backend-backend-run-5da340c4a94d Created 
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python3.11
+cachedir: .pytest_cache
+django: version: 5.2.12, settings: config.settings (from env)
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0, django-4.12.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 32 items
+
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_web_checkout_view_success PASSED [  3%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_web_checkout_existing_payment_no_order PASSED [  6%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_web_checkout_view_gateway_missing PASSED [  9%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_web_verify_view_success PASSED [ 12%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_web_verify_view_failure PASSED [ 15%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_web_verify_view_captured_already PASSED [ 18%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_driver_payout_request_view_get PASSED [ 21%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_driver_payout_request_view_get_non_driver PASSED [ 25%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_driver_payout_request_view_post_success PASSED [ 28%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_email_success FAILED [ 31%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_sms_success FAILED [ 34%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_push_success FAILED [ 37%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_ws_exception PASSED [ 40%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_critical_alert_no_webhook PASSED [ 43%]
+tests/unit/test_coverage_booster.py::TestOfferViewsBooster::test_validate_offer_view_success FAILED [ 46%]
+tests/unit/test_coverage_booster.py::TestOfferViewsBooster::test_offer_engine_validate_all_errors PASSED [ 50%]
+tests/unit/test_coverage_booster.py::TestOfferViewsBooster::test_offer_engine_calculate_discount PASSED [ 53%]
+tests/unit/test_coverage_booster.py::TestOfferViewsBooster::test_offer_engine_finalize_usage_idempotent PASSED [ 56%]
+tests/unit/test_coverage_booster.py::TestOfferEligibilityBooster::test_eligibility_logic PASSED [ 59%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_driver_profile PASSED [ 62%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_go_online_success PASSED [ 65%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_document_upload_missing_fields PASSED [ 68%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_document_upload_file_object PASSED [ 71%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_update_location_deviation PASSED [ 75%]
+tests/unit/test_coverage_booster.py::TestSupportViewsBooster::test_create_support_ticket PASSED [ 78%]
+tests/unit/test_coverage_booster.py::TestSupportViewsBooster::test_resolve_ticket_admin PASSED [ 81%]
+tests/unit/test_coverage_booster.py::TestSupportViewsBooster::test_trigger_sos_view_success FAILED [ 84%]
+tests/unit/test_coverage_booster.py::TestIncentiveViewsBooster::test_incentive_analytics FAILED [ 87%]
+tests/unit/test_coverage_booster.py::TestRideTasksBooster::test_check_no_show_task PASSED [ 90%]
+tests/unit/test_coverage_booster.py::TestRideTasksBooster::test_auto_resolve_exception_handling PASSED [ 93%]
+tests/unit/test_coverage_booster.py::TestRideTasksBooster::test_driver_accept_timeout_no_ride PASSED [ 96%]
+tests/unit/test_coverage_booster.py::TestRealtimeServiceBooster::test_buffer_ride_progress_zero_delta PASSED [100%]
+
+=================================== FAILURES ===================================
+_______________ TestNotificationBooster.test_send_email_success ________________
+/usr/local/lib/python3.11/unittest/mock.py:1375: in patched
+    with self.decoration_helper(patched,
+/usr/local/lib/python3.11/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/unittest/mock.py:1357: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/contextlib.py:517: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/local/lib/python3.11/unittest/mock.py:1446: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/unittest/mock.py:1419: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'apps.notifications.providers.email' from '/app/apps/notifications/providers/email.py'> does not have the attribute 'send_mail'
+________________ TestNotificationBooster.test_send_sms_success _________________
+tests/unit/test_coverage_booster.py:218: in test_send_sms_success
+    with patch("apps.notifications.providers.sms.logger"):
+/usr/local/lib/python3.11/unittest/mock.py:1446: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/unittest/mock.py:1419: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'apps.notifications.providers.sms' from '/app/apps/notifications/providers/sms.py'> does not have the attribute 'logger'
+________________ TestNotificationBooster.test_send_push_success ________________
+/usr/local/lib/python3.11/unittest/mock.py:1375: in patched
+    with self.decoration_helper(patched,
+/usr/local/lib/python3.11/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/unittest/mock.py:1357: in decoration_helper
+    arg = exit_stack.enter_context(patching)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/contextlib.py:517: in enter_context
+    result = _enter(cm)
+             ^^^^^^^^^^
+/usr/local/lib/python3.11/unittest/mock.py:1446: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/unittest/mock.py:1419: in get_original
+    raise AttributeError(
+E   AttributeError: <module 'apps.notifications.providers.push' from '/app/apps/notifications/providers/push.py'> does not have the attribute 'async_to_sync'
+____________ TestOfferViewsBooster.test_validate_offer_view_success ____________
+/usr/local/lib/python3.11/site-packages/django/urls/base.py:81: in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'offers'
+
+During handling of the above exception, another exception occurred:
+tests/unit/test_coverage_booster.py:253: in test_validate_offer_view_success
+    url = reverse("offers:validate-offer")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/urls/base.py:92: in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+E   django.urls.exceptions.NoReverseMatch: 'offers' is not a registered namespace
+____________ TestSupportViewsBooster.test_trigger_sos_view_success _____________
+/usr/local/lib/python3.11/site-packages/django/urls/base.py:81: in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'supports'
+
+During handling of the above exception, another exception occurred:
+tests/unit/test_coverage_booster.py:398: in test_trigger_sos_view_success
+    url = reverse("supports:sos-trigger")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/urls/base.py:92: in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+E   django.urls.exceptions.NoReverseMatch: 'supports' is not a registered namespace
+______________ TestIncentiveViewsBooster.test_incentive_analytics ______________
+/usr/local/lib/python3.11/site-packages/django/urls/base.py:81: in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'driver_incentives'
+
+During handling of the above exception, another exception occurred:
+tests/unit/test_coverage_booster.py:406: in test_incentive_analytics
+    url = reverse("driver_incentives:incentive-analytics")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/urls/base.py:92: in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+E   django.urls.exceptions.NoReverseMatch: 'driver_incentives' is not a registered namespace
+=========================== short test summary info ============================
+FAILED tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_email_success
+FAILED tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_sms_success
+FAILED tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_push_success
+FAILED tests/unit/test_coverage_booster.py::TestOfferViewsBooster::test_validate_offer_view_success
+FAILED tests/unit/test_coverage_booster.py::TestSupportViewsBooster::test_trigger_sos_view_success
+FAILED tests/unit/test_coverage_booster.py::TestIncentiveViewsBooster::test_incentive_analytics
+======================== 6 failed, 26 passed in 13.14s =========================
+

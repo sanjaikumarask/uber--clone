@@ -110,8 +110,7 @@ export default function Layout() {
                                 {item.label}
                                 {item.path === "/live-map" && (
                                     <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: "var(--green)", fontWeight: 700, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", padding: "2px 6px", borderRadius: 99 }}>
-                                        <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} />
-                                        LIVE
+                                        <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} />{" "}LIVE
                                     </span>
                                 )}
                             </Link>

@@ -3,8 +3,10 @@ import math
 MAX_RETRIES = 5
 BASE_DELAY_SECONDS = 10  # exponential base
 
+
 def should_retry(notification):
     return notification.retry_count < MAX_RETRIES
+
 
 def get_retry_delay(notification):
     """

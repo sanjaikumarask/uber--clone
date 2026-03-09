@@ -1,229 +1,268 @@
 import logging
 import time
-from django.db import transaction
+
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.db import transaction
 
-from apps.rides.models import Ride
+from apps.common.metrics import (
+    RIDE_MATCH_ATTEMPTS,
+    RIDE_MATCH_LATENCY,
+    RIDE_MATCH_SUCCESS,
+)
 from apps.drivers.models import Driver
-from apps.notifications.models import Notification
 from apps.drivers.services.geo import get_nearby_driver_ids
+from apps.notifications.models import Notification
+from apps.rides.models import Ride
 from apps.rides.services.lifecycle import update_ride_status
 from apps.rides.tasks import driver_accept_timeout
-from apps.common.metrics import RIDE_MATCH_ATTEMPTS, RIDE_MATCH_SUCCESS, RIDE_MATCH_LATENCY
 
 logger = logging.getLogger(__name__)
 channel_layer = get_channel_layer()
 
 
+def _get_sorted_candidates(ride, rejected_ids):
+    """Fetch nearby drivers and sort by Level, Score, and Proximity."""
+    LEVEL_PRIORITY = {
+        Driver.Level.PRO: 4,
+        Driver.Level.CONSISTENT: 3,
+        Driver.Level.ACTIVE: 2,
+        Driver.Level.NORMAL: 1,
+    }
+
+    candidate_ids = get_nearby_driver_ids(
+        lat=ride.pickup_lat,
+        lng=ride.pickup_lng,
+        radius_km=10.0,
+        limit=20,
+    )
+
+    valid_ids = [cid for cid in candidate_ids if cid not in rejected_ids]
+    if not valid_ids:
+        return [], []
+
+    online_driver_ids = set(
+        Driver.objects.filter(
+            id__in=valid_ids, status=Driver.Status.ONLINE
+        ).values_list("id", flat=True)
+    )
+
+    db_candidates = (
+        Driver.objects.select_for_update(of=("self",), skip_locked=True)
+        .select_related("user", "stats")
+        .filter(
+            id__in=online_driver_ids,
+            stats__trust_score__gte=60.0,
+            stats__is_suspended=False,
+        )
+    )
+
+    geo_order = {d_id: idx for idx, d_id in enumerate(valid_ids)}
+
+    def sorting_key(d):
+        return (
+            -LEVEL_PRIORITY.get(d.level, 1),
+            -(getattr(d.stats, "score", 0.0) if hasattr(d, "stats") else 0.0),
+            geo_order.get(d.id, 999),
+        )
+
+    return sorted(db_candidates, key=sorting_key), candidate_ids
+
+
+def _notify_match_event(
+    ride, driver, auto_assign, candidate_ids, valid_candidate_ids, stats
+):
+    """Handles multi-channel notifications on successful ride matching."""
+
+    # 1. Notify DRIVER
+    _notify_driver_of_match(ride, driver, auto_assign, stats)
+
+    # 2. Notify RIDER
+    _notify_rider_of_match(ride, driver, auto_assign)
+
+    # 3. Notify ADMIN
+    _notify_admin_of_match(ride, driver, candidate_ids)
+
+    # 4. Push Notification
+    _send_match_push_notification(ride, driver, auto_assign)
+
+    # 5. Kafka Stream
+    _publish_kafka_match_event(ride, valid_candidate_ids)
+
+
+def _notify_driver_of_match(ride, driver, auto_assign, stats):
+    async_to_sync(channel_layer.group_send)(
+        f"driver_{driver.id}_rides",
+        {
+            "type": "ride_assigned" if auto_assign else "ride_offer",
+            "data": {
+                "ride_id": ride.id,
+                "pickup": {
+                    "lat": float(ride.pickup_lat),
+                    "lng": float(ride.pickup_lng),
+                },
+                "drop": {"lat": float(ride.drop_lat), "lng": float(ride.drop_lng)},
+                "pickup_address": ride.pickup_address or "",
+                "drop_address": ride.drop_address or "",
+                "fare_estimate": float(ride.base_fare),
+                "timeout": 60,
+                "is_auto_assigned": auto_assign,
+                "rejection_count": stats.rejection_count_today,
+                "rejections_until_auto": max(0, 3 - stats.rejection_count_today),
+                "rider": {
+                    "name": ride.rider.get_full_name() or ride.rider.username,
+                    "rating": float(
+                        getattr(
+                            getattr(ride.rider, "rider_stats", None), "avg_rating", 5.0
+                        )
+                    ),
+                },
+            },
+        },
+    )
+
+
+def _notify_rider_of_match(ride, driver, auto_assign):
+    async_to_sync(channel_layer.group_send)(
+        f"ride_{ride.id}",
+        {
+            "type": "ride_update",
+            "event": "RIDE_ASSIGNED" if auto_assign else "RIDE_OFFERED",
+            "data": {
+                "ride": {
+                    "id": ride.id,
+                    "status": ride.status,
+                    "driver_id": driver.id,
+                    "driver": {
+                        "id": driver.id,
+                        "name": driver.user.get_full_name() or driver.user.username,
+                        "lat": float(driver.last_lat) if driver.last_lat else None,
+                        "lng": float(driver.last_lng) if driver.last_lng else None,
+                        "status": driver.status,
+                    },
+                }
+            },
+        },
+    )
+
+
+def _notify_admin_of_match(ride, driver, candidate_ids):
+    async_to_sync(channel_layer.group_send)(
+        "admin_live_map",
+        {
+            "type": "admin_generic_event",
+            "event": "RIDE_STATUS_UPDATED",
+            "data": {
+                "ride_id": ride.id,
+                "status": ride.status,
+                "driver_id": driver.id,
+                "driver_name": driver.user.get_full_name() or driver.user.username,
+                "driver_status": driver.status,
+                "rider_id": ride.rider_id,
+                "nearby_driver_ids": candidate_ids,
+                "ride": {
+                    "id": ride.id,
+                    "status": ride.status,
+                    "pickup": {
+                        "lat": float(ride.pickup_lat),
+                        "lng": float(ride.pickup_lng),
+                    },
+                    "dropoff": {
+                        "lat": float(ride.drop_lat),
+                        "lng": float(ride.drop_lng),
+                    },
+                    "pickup_address": ride.pickup_address or "",
+                    "drop_address": ride.drop_address or "",
+                    "polyline": ride.planned_route_polyline,
+                    "rider_id": ride.rider_id,
+                    "rider_name": ride.rider.get_full_name() or ride.rider.username,
+                    "vehicle_type": ride.vehicle_type,
+                },
+            },
+        },
+    )
+
+
+def _send_match_push_notification(ride, driver, auto_assign):
+    Notification.objects.create(
+        user=driver.user,
+        channel="PUSH",
+        type="AUTO_ASSIGNED" if auto_assign else "NEW_RIDE_OFFER",
+        payload={
+            "ride_id": ride.id,
+            "title": "You have a new ride!" if auto_assign else "New Ride Request",
+            "body": (
+                f"Pick up at {ride.pickup_address}"
+                if auto_assign
+                else "Accept now to earn!"
+            ),
+            "data": {"ride_id": str(ride.id)},
+        },
+    )
+
+
+def _publish_kafka_match_event(ride, valid_candidate_ids):
+    try:
+        from apps.rides.kafka import publish_ride_match_event
+
+        publish_ride_match_event(ride=ride, driver_ids=valid_candidate_ids)
+    except Exception as e:
+        logger.warning(f"Kafka stream error: {e}")
+
+
 def find_driver_and_offer_ride(ride_id: int):
     """
-    Matching Engine:
-    Priority: 1) Level, 2) Score, 3) Distance (preserved via geo order).
+    Matching Engine Entry Point.
+    Refactored to minimize cognitive complexity.
     """
     start_time = time.time()
-    
+    from apps.drivers.models import DriverStats
+    from apps.drivers.services.geo import is_driver_locked, lock_driver_for_offer
+    from apps.drivers.services.metrics import update_driver_metrics
+
     with transaction.atomic():
         ride = Ride.objects.select_for_update().filter(id=ride_id).first()
-
         if not ride or ride.status != Ride.Status.SEARCHING:
             return
 
         RIDE_MATCH_ATTEMPTS.labels(city=ride.city, vehicle_type=ride.vehicle_type).inc()
 
-        candidate_ids = get_nearby_driver_ids(
-            lat=ride.pickup_lat,
-            lng=ride.pickup_lng,
-            radius_km=10.0,
-            limit=20,
-        )
-
         rejected_ids = set(ride.rejected_driver_ids or [])
-        valid_candidate_ids = [d_id for d_id in candidate_ids if d_id not in rejected_ids]
+        sorted_candidates, candidate_ids = _get_sorted_candidates(ride, rejected_ids)
 
-        if not valid_candidate_ids:
-            logger.info(f"Ride {ride.id}: No valid drivers.")
+        driver = next(
+            (d for d in sorted_candidates if not is_driver_locked(driver_id=d.id)), None
+        )
+
+        if not driver or not lock_driver_for_offer(driver_id=driver.id):
+            logger.info(f"Ride {ride.id}: No eligible or available drivers.")
             return
 
-        # --- Load candidates from DB with level/score for sorting ---
-        LEVEL_PRIORITY = {
-            Driver.Level.PRO:        4,
-            Driver.Level.CONSISTENT: 3,
-            Driver.Level.ACTIVE:     2,
-            Driver.Level.NORMAL:     1,
-        }
-        
-        from apps.drivers.services.geo import is_driver_locked, lock_driver_for_offer
-
-        # logger.info(f"Checking {len(valid_candidate_ids)} candidates against ONLINE status in DB")
-        online_driver_ids = set(
-            Driver.objects.filter(
-                id__in=valid_candidate_ids,
-                status=Driver.Status.ONLINE
-            ).values_list('id', flat=True)
-        )
-
-        # 🚨 FIX: Don't remove from GEO aggressively here. 
-        # If they are in GEO but OFFLINE in DB, just skip them for this request.
-        # remove_driver_from_geo(driver_id=cid) is handled by periodic pruning.
-
-        db_candidates = (
-            Driver.objects
-            .select_for_update(of=("self",), skip_locked=True)
-            .select_related("user", "stats")
-            .filter(
-                id__in=online_driver_ids,
-                stats__trust_score__gte=60.0,
-                stats__is_suspended=False,
-            )
-        )
-
-        geo_order = {d_id: idx for idx, d_id in enumerate(valid_candidate_ids)}
-        sorted_candidates = sorted(
-            db_candidates,
-            key=lambda d: (
-                -LEVEL_PRIORITY.get(d.level, 1),
-                -(getattr(d.stats, "score", 0.0) if hasattr(d, "stats") else 0.0),
-                geo_order.get(d.id, 999),
-            ),
-        )
-
-        available_candidates = []
-        for d in sorted_candidates:
-            if not is_driver_locked(driver_id=d.id):
-                available_candidates.append(d)
-
-        driver = available_candidates[0] if available_candidates else None
-
-        if not driver:
-            logger.info(f"Ride {ride.id}: No eligible drivers after sorting and lock checks.")
-            return
-
-        if not lock_driver_for_offer(driver_id=driver.id):
-            return 
-
-        from apps.drivers.models import DriverStats
-        from apps.drivers.services.metrics import update_driver_metrics
         stats, _ = DriverStats.objects.get_or_create(driver=driver)
         stats.check_and_reset_daily_stats()
 
         auto_assign = stats.rejection_count_today >= 3
-
         update_driver_metrics(driver, "OFFERED")
 
-        # ── ATTACH DRIVER & TRANSITION ──
-        # We must attach the driver before calling the lifecycle service so it can
-        # correctly generate OTPs and broadcast to the right groups.
-        ride.driver = driver
-        update_ride_status(ride, Ride.Status.ASSIGNED if auto_assign else Ride.Status.OFFERED)
+        # 1. Update status AND driver atomically via Lifecycle (Authority)
+        new_status = Ride.Status.ASSIGNED if auto_assign else Ride.Status.OFFERED
+        update_ride_status(ride, new_status, driver=driver)
 
         if not auto_assign:
-             driver_accept_timeout.apply_async((ride.id, driver.id), countdown=60)
+            driver_accept_timeout.apply_async((ride.id, driver.id), countdown=60)
         else:
-             update_driver_metrics(driver, "ACCEPTED")
+            update_driver_metrics(driver, "ACCEPTED")
 
-
-        # Record success and latency
         RIDE_MATCH_SUCCESS.labels(city=ride.city, vehicle_type=ride.vehicle_type).inc()
         RIDE_MATCH_LATENCY.observe(time.time() - start_time)
 
-        def notify():
-            # 1. Notify DRIVER
-            async_to_sync(channel_layer.group_send)(
-                f"driver_{driver.id}_rides",
-                {
-                    "type": "ride_assigned" if auto_assign else "ride_offer",
-                    "data": {
-                        "ride_id": ride.id,
-                        "pickup": {"lat": float(ride.pickup_lat), "lng": float(ride.pickup_lng)},
-                        "drop":   {"lat": float(ride.drop_lat),   "lng": float(ride.drop_lng)},
-                        "pickup_address": ride.pickup_address or "",
-                        "drop_address":   ride.drop_address or "",
-                        "fare_estimate": float(ride.base_fare),
-                        "timeout": 60,
-                        "is_auto_assigned": auto_assign,
-                        "rejection_count": stats.rejection_count_today,
-                        "rejections_until_auto": max(0, 3 - stats.rejection_count_today),
-                        "rider": {
-                             "name":   ride.rider.get_full_name() or ride.rider.username,
-                             "rating": float(getattr(getattr(ride.rider, 'rider_stats', None), 'avg_rating', 5.0))
-                        }
-                    },
-                },
+        valid_ids = [d.id for d in sorted_candidates]
+        transaction.on_commit(
+            lambda: _notify_match_event(
+                ride, driver, auto_assign, candidate_ids, valid_ids, stats
             )
+        )
 
-            # 2. Notify RIDER
-            async_to_sync(channel_layer.group_send)(
-                f"ride_{ride.id}",
-                {
-                    "type": "ride_update",
-                    "event": "RIDE_ASSIGNED" if auto_assign else "RIDE_OFFERED",
-                    "data": {
-                        "ride": {
-                            "id": ride.id,
-                            "status": ride.status,
-                            "driver_id": driver.id,
-                            "driver": {
-                                "id": driver.id,
-                                "name": driver.user.get_full_name() or driver.user.username,
-                                "lat": float(driver.last_lat) if driver.last_lat else None,
-                                "lng": float(driver.last_lng) if driver.last_lng else None,
-                                "status": driver.status,
-                            }
-                        }
-                    },
-                },
-            )
-
-            # 3. Notify ADMIN
-            async_to_sync(channel_layer.group_send)(
-                "admin_live_map",
-                {
-                    "type": "admin_generic_event",
-                    "event": "RIDE_STATUS_UPDATED",
-                    "data": {
-                        "ride_id": ride.id,
-                        "status": ride.status,
-                        "driver_id": driver.id,
-                        "driver_name": driver.user.get_full_name() or driver.user.username,
-                        "driver_status": driver.status,
-                        "rider_id": ride.rider_id,
-                        "nearby_driver_ids": candidate_ids,  
-                        "ride": {
-                             "id": ride.id,
-                             "status": ride.status,
-                             "pickup":  {"lat": float(ride.pickup_lat), "lng": float(ride.pickup_lng)},
-                             "dropoff": {"lat": float(ride.drop_lat),   "lng": float(ride.drop_lng)},
-                             "pickup_address": ride.pickup_address or "",
-                             "drop_address":   ride.drop_address or "",
-                             "polyline":       ride.planned_route_polyline,
-                             "rider_id":       ride.rider_id,
-                             "rider_name":     ride.rider.get_full_name() or ride.rider.username,
-                             "vehicle_type":   ride.vehicle_type,
-                        }
-                    },
-                },
-            )
-
-            Notification.objects.create(
-                user=driver.user,
-                channel="PUSH",
-                type="AUTO_ASSIGNED" if auto_assign else "NEW_RIDE_OFFER",
-                payload={
-                    "ride_id": ride.id,
-                    "title": "You have a new ride!" if auto_assign else "New Ride Request",
-                    "body": f"Pick up at {ride.pickup_address}" if auto_assign else "Accept now to earn!",
-                    "data": {"ride_id": str(ride.id)}
-                }
-            )
-
-            # 4. Stream event to KAFKA (Architecture Match)
-            try:
-                from apps.rides.kafka import publish_ride_match_event
-                publish_ride_match_event(ride=ride, driver_ids=valid_candidate_ids)
-            except Exception as e:
-                logger.warning(f"Kafka stream error: {e}")
-
-
-        transaction.on_commit(notify)
-        logger.info(f"Ride {ride.id} {'ASSIGNED' if auto_assign else 'OFFERED'} to Driver {driver.id}")
+    logger.info(
+        f"Ride {ride.id} {'ASSIGNED' if auto_assign else 'OFFERED'} to Driver {driver.id}"
+    )
