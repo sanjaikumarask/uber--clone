@@ -1,11 +1,12 @@
-import json
-import hmac
 import hashlib
+import hmac
+import json
 from decimal import Decimal
+
 from django.conf import settings
 from django.urls import reverse
 
-from apps.payments.models import Payout, LedgerEntry
+from apps.payments.models import LedgerEntry, Payout
 
 
 def sign(body):
@@ -17,6 +18,7 @@ def sign(body):
 
 
 from django.test import override_settings
+
 
 @override_settings(RAZORPAY_PAYOUT_WEBHOOK_SECRET="test_secret")
 def test_payout_success_webhook(client, driver_user, platform_user):
@@ -54,7 +56,7 @@ def test_payout_success_webhook(client, driver_user, platform_user):
                     "status": "processed",
                 }
             }
-        }
+        },
     }
 
     body = json.dumps(payload).encode()
@@ -79,3 +81,33 @@ def test_payout_success_webhook(client, driver_user, platform_user):
         entry_type=LedgerEntry.Type.DEBIT,
         reference__contains=payout.reference,
     ).exists()
+
+
+@override_settings(RAZORPAY_PAYOUT_WEBHOOK_SECRET="test_secret")
+def test_payout_webhook_invalid_signature(client):
+    url = reverse("payments:payout-webhook")
+    r = client.post(
+        url,
+        data=json.dumps({"test": "data"}),
+        content_type="application/json",
+        HTTP_X_RAZORPAY_SIGNATURE="invalid_sig",
+    )
+    assert r.status_code == 400
+
+
+@override_settings(RAZORPAY_PAYOUT_WEBHOOK_SECRET="test_secret")
+def test_payout_webhook_missing_signature(client):
+    url = reverse("payments:payout-webhook")
+    r = client.post(
+        url,
+        data=json.dumps({"test": "data"}),
+        content_type="application/json",
+    )
+    assert r.status_code == 400
+
+
+def test_payout_webhook_only_post_allowed(client):
+    url = reverse("payments:payout-webhook")
+    # Try GET on a @require_POST decorated view
+    r = client.get(url)
+    assert r.status_code == 405

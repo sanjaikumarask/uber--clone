@@ -1,8 +1,11 @@
 from decimal import Decimal
-from django.db import transaction
+
 from django.core.exceptions import ValidationError
-from apps.payments.models import LedgerEntry, Payment
+from django.db import transaction
+
 from apps.drivers.models import Driver
+from apps.payments.models import LedgerEntry
+
 
 @transaction.atomic
 def compensate_driver(*, driver: Driver, ride_id: int, amount: Decimal, reason: str):
@@ -20,21 +23,23 @@ def compensate_driver(*, driver: Driver, ride_id: int, amount: Decimal, reason: 
         amount=amount,
         entry_type=LedgerEntry.Type.CREDIT,
         reference=f"compensation:{ride_id}:{reason[:50]}",
-        reason=LedgerEntry.Reason.INCENTIVE
+        reason=LedgerEntry.Reason.INCENTIVE,
     )
 
     # 2. Add to Driver Earning stats (optional but good for tracking)
     from apps.payments.models import DriverEarnings
+
     DriverEarnings.objects.create(
         driver=driver,
         ride_id=ride_id,
         amount=amount,
         commission=Decimal("0.00"),
-        net_earning=amount
+        net_earning=amount,
     )
 
     # 3. Notify Driver
     from apps.notifications.models import Notification
+
     Notification.objects.create(
         user=driver.user,
         channel="push",
@@ -42,8 +47,8 @@ def compensate_driver(*, driver: Driver, ride_id: int, amount: Decimal, reason: 
         payload={
             "ride_id": ride_id,
             "amount": float(amount),
-            "message": f"You have received a compensation of ₹{amount}."
-        }
+            "message": f"You have received a compensation of ₹{amount}.",
+        },
     )
 
     return True

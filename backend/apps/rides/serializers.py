@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from apps.rides.models import Ride
 
 
@@ -59,7 +60,7 @@ class RideDetailSerializer(serializers.ModelSerializer):
                 "first_name": obj.driver.user.first_name,
                 "last_name": obj.driver.user.last_name,
                 "phone": obj.driver.user.phone,
-            }
+            },
         }
 
     def get_rider(self, obj):

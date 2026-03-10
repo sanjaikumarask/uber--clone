@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('payments', '0004_webhookevent'),
+        ("payments", "0004_webhookevent"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='payout',
-            name='gateway_payout_id',
+            model_name="payout",
+            name="gateway_payout_id",
             field=models.CharField(blank=True, max_length=128, null=True, unique=True),
         ),
     ]

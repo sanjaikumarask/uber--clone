@@ -10,49 +10,125 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('drivers', '0001_initial'),
+        ("drivers", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='RideFeedback',
+            name="RideFeedback",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('rating', models.PositiveSmallIntegerField()),
-                ('comment', models.TextField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("rating", models.PositiveSmallIntegerField()),
+                ("comment", models.TextField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
         ),
         migrations.CreateModel(
-            name='Ride',
+            name="Ride",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('pickup_lat', models.FloatField()),
-                ('pickup_lng', models.FloatField()),
-                ('drop_lat', models.FloatField()),
-                ('drop_lng', models.FloatField()),
-                ('planned_route_polyline', models.TextField(blank=True, null=True)),
-                ('planned_distance_km', models.FloatField(blank=True, null=True)),
-                ('planned_duration_min', models.FloatField(blank=True, null=True)),
-                ('candidate_driver_ids', models.JSONField(default=list, help_text='Ordered list of nearby driver IDs for matching')),
-                ('rejected_driver_ids', models.JSONField(default=list, help_text='List of drivers who rejected or timed out')),
-                ('search_attempt', models.PositiveIntegerField(default=0)),
-                ('actual_distance_km', models.FloatField(default=0.0)),
-                ('last_snapped_lat', models.FloatField(blank=True, null=True)),
-                ('last_snapped_lng', models.FloatField(blank=True, null=True)),
-                ('status', models.CharField(choices=[('SEARCHING', 'Searching'), ('OFFERED', 'Offered'), ('ASSIGNED', 'Assigned'), ('ARRIVED', 'Arrived'), ('ONGOING', 'Ongoing'), ('COMPLETED', 'Completed'), ('CANCELLED', 'Cancelled'), ('NO_SHOW', 'No Show')], db_index=True, default='SEARCHING', max_length=32)),
-                ('base_fare', models.DecimalField(decimal_places=2, default=Decimal('0.00'), max_digits=8)),
-                ('final_fare', models.DecimalField(blank=True, decimal_places=2, max_digits=8, null=True)),
-                ('otp_code', models.CharField(blank=True, max_length=6, null=True)),
-                ('otp_expires_at', models.DateTimeField(blank=True, null=True)),
-                ('otp_verified_at', models.DateTimeField(blank=True, null=True)),
-                ('arrived_at', models.DateTimeField(blank=True, null=True)),
-                ('cancelled_at', models.DateTimeField(blank=True, null=True)),
-                ('cancelled_by', models.CharField(blank=True, choices=[('RIDER', 'Rider'), ('DRIVER', 'Driver'), ('SYSTEM', 'System')], max_length=16, null=True)),
-                ('no_show_marked_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('driver', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='rides', to='drivers.driver')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("pickup_lat", models.FloatField()),
+                ("pickup_lng", models.FloatField()),
+                ("drop_lat", models.FloatField()),
+                ("drop_lng", models.FloatField()),
+                ("planned_route_polyline", models.TextField(blank=True, null=True)),
+                ("planned_distance_km", models.FloatField(blank=True, null=True)),
+                ("planned_duration_min", models.FloatField(blank=True, null=True)),
+                (
+                    "candidate_driver_ids",
+                    models.JSONField(
+                        default=list,
+                        help_text="Ordered list of nearby driver IDs for matching",
+                    ),
+                ),
+                (
+                    "rejected_driver_ids",
+                    models.JSONField(
+                        default=list,
+                        help_text="List of drivers who rejected or timed out",
+                    ),
+                ),
+                ("search_attempt", models.PositiveIntegerField(default=0)),
+                ("actual_distance_km", models.FloatField(default=0.0)),
+                ("last_snapped_lat", models.FloatField(blank=True, null=True)),
+                ("last_snapped_lng", models.FloatField(blank=True, null=True)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("SEARCHING", "Searching"),
+                            ("OFFERED", "Offered"),
+                            ("ASSIGNED", "Assigned"),
+                            ("ARRIVED", "Arrived"),
+                            ("ONGOING", "Ongoing"),
+                            ("COMPLETED", "Completed"),
+                            ("CANCELLED", "Cancelled"),
+                            ("NO_SHOW", "No Show"),
+                        ],
+                        db_index=True,
+                        default="SEARCHING",
+                        max_length=32,
+                    ),
+                ),
+                (
+                    "base_fare",
+                    models.DecimalField(
+                        decimal_places=2, default=Decimal("0.00"), max_digits=8
+                    ),
+                ),
+                (
+                    "final_fare",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=8, null=True
+                    ),
+                ),
+                ("otp_code", models.CharField(blank=True, max_length=6, null=True)),
+                ("otp_expires_at", models.DateTimeField(blank=True, null=True)),
+                ("otp_verified_at", models.DateTimeField(blank=True, null=True)),
+                ("arrived_at", models.DateTimeField(blank=True, null=True)),
+                ("cancelled_at", models.DateTimeField(blank=True, null=True)),
+                (
+                    "cancelled_by",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("RIDER", "Rider"),
+                            ("DRIVER", "Driver"),
+                            ("SYSTEM", "System"),
+                        ],
+                        max_length=16,
+                        null=True,
+                    ),
+                ),
+                ("no_show_marked_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "driver",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="rides",
+                        to="drivers.driver",
+                    ),
+                ),
             ],
         ),
     ]

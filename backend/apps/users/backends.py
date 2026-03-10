@@ -1,15 +1,16 @@
 from django.contrib.auth import get_user_model
 
+
 class PhoneBackend:
-    def authenticate(self, request, username=None, password=None, **kwargs):
-        phone = kwargs.get('phone') or username
+    def authenticate(self, _request, username=None, password=None, **kwargs):
+        phone = kwargs.get("phone") or username
         if phone is None:
             return None
 
-        User = get_user_model()
+        user_model = get_user_model()
 
         try:
-            user = User.objects.get(phone=phone)
+            user = user_model.objects.get(phone=phone)
         except Exception:
             # Handle DoesNotExist or any DB failure gracefully
             return None
@@ -19,12 +20,12 @@ class PhoneBackend:
         return None
 
     def user_can_authenticate(self, user):
-        is_active = getattr(user, 'is_active', None)
+        is_active = getattr(user, "is_active", None)
         return is_active or is_active is None
 
     def get_user(self, user_id):
-        User = get_user_model()
+        user_model = get_user_model()
         try:
-            return User.objects.get(pk=user_id)
-        except User.DoesNotExist:
+            return user_model.objects.get(pk=user_id)
+        except user_model.DoesNotExist:
             return None

@@ -138,53 +138,15 @@ export default function DriverIncentivesPage() {
                 ))}
             </div>
 
-            {loading ? <LoadingSkeleton /> : tab === "list" ? (
-                /* ─── INCENTIVES TABLE ─── */
-                <div style={{ overflowX: "auto" }}>
-                    <table>
-                        <thead><tr>
-                            <th>Type</th><th>Title</th><th>Condition</th><th>Reward</th>
-                            <th>Max/Day</th><th>City</th><th>Valid</th><th>Status</th><th>Actions</th>
-                        </tr></thead>
-                        <tbody>
-                            {incentives.length === 0 && <tr><td colSpan={9} style={{ textAlign: "center", color: "var(--text-3)", padding: 40 }}>No incentives created yet.</td></tr>}
-                            {incentives.map(inc => {
-                                const cfg = TYPE_CONFIG[inc.type] || { label: inc.type, badge: "badge-gray", icon: "📋" };
-                                return (
-                                    <tr key={inc.id}>
-                                        <td>
-                                            <span className={`badge ${cfg.badge}`}>
-                                                {cfg.icon} {cfg.label}
-                                            </span>
-                                        </td>
-                                        <td style={{ fontWeight: 500 }}>{inc.title}</td>
-                                        <td style={{ color: "var(--text-2)", fontSize: "0.85rem" }}>{conditionSummary(inc)}</td>
-                                        <td style={{ fontWeight: 700, color: "var(--green)" }}>₹{inc.reward_amount}</td>
-                                        <td style={{ color: "var(--text-2)" }}>{inc.max_per_day}</td>
-                                        <td style={{ color: "var(--text-2)" }}>{inc.city || "Global"}</td>
-                                        <td style={{ fontSize: "0.75rem", color: "var(--text-3)" }}>
-                                            {fmt(inc.valid_from)} →<br />{fmt(inc.valid_to)}
-                                        </td>
-                                        <td>
-                                            <button onClick={() => toggleActive(inc)}
-                                                className={inc.is_active ? "badge badge-green" : "badge badge-gray"}
-                                                style={{ cursor: "pointer", border: "none" }}>
-                                                {inc.is_active ? "Active" : "Inactive"}
-                                            </button>
-                                        </td>
-                                        <td>
-                                            <button className="btn-danger" style={{ fontSize: "0.75rem", padding: "4px 10px" }}
-                                                onClick={() => handleDelete(inc.id!)}>Delete</button>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
-            ) : (
-                <AnalyticsPanel analytics={analytics} />
-            )}
+            <IncentiveContent
+                loading={loading}
+                tab={tab}
+                incentives={incentives}
+                conditionSummary={conditionSummary}
+                toggleActive={toggleActive}
+                handleDelete={handleDelete}
+                analytics={analytics}
+            />
 
             {/* ─── CREATE MODAL ─── */}
             {showModal && (
@@ -289,6 +251,51 @@ function fmt(iso: string) {
     catch { return iso; }
 }
 
+function IncentiveContent({ loading, tab, incentives, conditionSummary, toggleActive, handleDelete, analytics }: any) {
+    if (loading) return <LoadingSkeleton />;
+    if (tab === "analytics") return <AnalyticsPanel analytics={analytics} />;
+    return (
+        <div style={{ overflowX: "auto" }}>
+            <table>
+                <thead><tr>
+                    <th>Type</th><th>Title</th><th>Condition</th><th>Reward</th>
+                    <th>Max/Day</th><th>City</th><th>Valid</th><th>Status</th><th>Actions</th>
+                </tr></thead>
+                <tbody>
+                    {incentives.length === 0 && <tr><td colSpan={9} style={{ textAlign: "center", color: "var(--text-3)", padding: 40 }}>No incentives created yet.</td></tr>}
+                    {incentives.map((inc: any) => {
+                        const cfg = TYPE_CONFIG[inc.type] || { label: inc.type, badge: "badge-gray", icon: "📋" };
+                        return (
+                            <tr key={inc.id}>
+                                <td><span className={`badge ${cfg.badge}`}>{cfg.icon} {cfg.label}</span></td>
+                                <td style={{ fontWeight: 500 }}>{inc.title}</td>
+                                <td style={{ color: "var(--text-2)", fontSize: "0.85rem" }}>{conditionSummary(inc)}</td>
+                                <td style={{ fontWeight: 700, color: "var(--green)" }}>₹{inc.reward_amount}</td>
+                                <td style={{ color: "var(--text-2)" }}>{inc.max_per_day}</td>
+                                <td style={{ color: "var(--text-2)" }}>{inc.city || "Global"}</td>
+                                <td style={{ fontSize: "0.75rem", color: "var(--text-3)" }}>
+                                    {fmt(inc.valid_from)} →<br />{fmt(inc.valid_to)}
+                                </td>
+                                <td>
+                                    <button onClick={() => toggleActive(inc)}
+                                        className={inc.is_active ? "badge badge-green" : "badge badge-gray"}
+                                        style={{ cursor: "pointer", border: "none" }}>
+                                        {inc.is_active ? "Active" : "Inactive"}
+                                    </button>
+                                </td>
+                                <td>
+                                    <button className="btn-danger" style={{ fontSize: "0.75rem", padding: "4px 10px" }}
+                                        onClick={() => handleDelete(inc.id!)}>Delete</button>
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -332,10 +339,10 @@ function AnalyticsPanel({ analytics }: { analytics: IncentiveAnalytics | null })
                         {analytics.per_incentive_breakdown.length === 0 && (
                             <tr><td colSpan={4} style={{ textAlign: "center", color: "var(--text-3)", padding: 32 }}>No payouts yet.</td></tr>
                         )}
-                        {analytics.per_incentive_breakdown.map((b, i) => {
+                        {analytics.per_incentive_breakdown.map((b) => {
                             const cfg = TYPE_CONFIG[b.incentive__type] || { label: b.incentive__type, badge: "badge-gray", icon: "📋" };
                             return (
-                                <tr key={i}>
+                                <tr key={b.incentive__title}>
                                     <td><span className={`badge ${cfg.badge}`}>{cfg.icon} {cfg.label}</span></td>
                                     <td>{b.incentive__title}</td>
                                     <td style={{ fontWeight: 600 }}>{b.redemption_count}</td>
@@ -354,11 +361,11 @@ function AnalyticsPanel({ analytics }: { analytics: IncentiveAnalytics | null })
                     <p style={{ color: "var(--text-3)" }}>No data for the last 7 days.</p>
                 ) : (
                     <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 160 }}>
-                        {analytics.daily_last_7_days.map((d, i) => {
+                        {analytics.daily_last_7_days.map((d) => {
                             const max = Math.max(...analytics.daily_last_7_days.map(x => x.total));
                             const h = max > 0 ? (d.total / max) * 140 : 4;
                             return (
-                                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                                <div key={d.date} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                                     <span style={{ fontSize: "0.65rem", color: "var(--text-2)", fontWeight: 600 }}>₹{d.total}</span>
                                     <div style={{
                                         width: "100%", height: h, borderRadius: "4px 4px 0 0",

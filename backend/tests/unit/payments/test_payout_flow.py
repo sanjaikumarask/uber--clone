@@ -1,8 +1,9 @@
 from decimal import Decimal
+
+from apps.payments.models import LedgerEntry, Payout
 from apps.payments.services.payout import (
     request_driver_payout,
 )
-from apps.payments.models import LedgerEntry, Payout
 
 
 def test_driver_payout_request(driver_user):

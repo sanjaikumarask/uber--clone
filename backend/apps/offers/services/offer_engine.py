@@ -1,6 +1,6 @@
-from django.utils import timezone
-from django.db import transaction
 from django.core.exceptions import ValidationError
+from django.db import transaction
+
 from apps.offers.models import Offer, OfferUsage
 
 
@@ -30,7 +30,10 @@ class OfferEngine:
             raise ValidationError(f"This offer is not valid in {city}.")
 
         # Global usage limit
-        if offer.usage_limit is not None and offer.total_usage_count >= offer.usage_limit:
+        if (
+            offer.usage_limit is not None
+            and offer.total_usage_count >= offer.usage_limit
+        ):
             raise ValidationError("This offer has reached its usage limit.")
 
         # Minimum ride value
@@ -42,7 +45,9 @@ class OfferEngine:
         # Per-user limit
         user_usage_count = OfferUsage.objects.filter(offer=offer, user=user).count()
         if user_usage_count >= offer.per_user_limit:
-            raise ValidationError("You have already used this offer the maximum number of times.")
+            raise ValidationError(
+                "You have already used this offer the maximum number of times."
+            )
 
         return offer
 
@@ -96,7 +101,9 @@ class OfferEngine:
             return
 
         # Idempotency guard: don't double-credit
-        if OfferUsage.objects.filter(offer_id=ride.applied_offer_id, ride=ride).exists():
+        if OfferUsage.objects.filter(
+            offer_id=ride.applied_offer_id, ride=ride
+        ).exists():
             return
 
         offer = Offer.objects.select_for_update().get(id=ride.applied_offer_id)

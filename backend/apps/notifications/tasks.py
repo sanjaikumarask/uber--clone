@@ -1,11 +1,11 @@
 from celery import shared_task
 from django.utils import timezone
 
+from .enums import NotificationStatus
 from .models import Notification
 from .services.dispatcher import dispatch
-from .services.retry import should_retry, get_retry_delay
 from .services.dlq import send_to_dlq
-from .enums import NotificationStatus
+from .services.retry import get_retry_delay, should_retry
 
 
 @shared_task(bind=True, max_retries=0)

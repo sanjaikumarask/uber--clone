@@ -9,36 +9,83 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('drivers', '0004_driver_vehicle_model_driver_vehicle_number'),
-        ('rides', '0003_ride_applied_offer_ride_completed_at_and_more'),
+        ("drivers", "0004_driver_vehicle_model_driver_vehicle_number"),
+        ("rides", "0003_ride_applied_offer_ride_completed_at_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='DriverIncentive',
+            name="DriverIncentive",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=255)),
-                ('description', models.TextField(blank=True)),
-                ('city', models.CharField(max_length=100)),
-                ('start_time', models.DateTimeField()),
-                ('end_time', models.DateTimeField()),
-                ('is_active', models.BooleanField(default=True)),
-                ('min_distance', models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True)),
-                ('max_distance', models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True)),
-                ('bonus_amount', models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("title", models.CharField(max_length=255)),
+                ("description", models.TextField(blank=True)),
+                ("city", models.CharField(max_length=100)),
+                ("start_time", models.DateTimeField()),
+                ("end_time", models.DateTimeField()),
+                ("is_active", models.BooleanField(default=True)),
+                (
+                    "min_distance",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=10, null=True
+                    ),
+                ),
+                (
+                    "max_distance",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=10, null=True
+                    ),
+                ),
+                (
+                    "bonus_amount",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=10, null=True
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
         ),
         migrations.CreateModel(
-            name='DriverIncentiveEarning',
+            name="DriverIncentiveEarning",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('bonus_amount', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('driver', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='drivers.driver')),
-                ('incentive', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='driver_incentives.driverincentive')),
-                ('ride', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rides.ride')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("bonus_amount", models.DecimalField(decimal_places=2, max_digits=10)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "driver",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="drivers.driver"
+                    ),
+                ),
+                (
+                    "incentive",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="driver_incentives.driverincentive",
+                    ),
+                ),
+                (
+                    "ride",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="rides.ride"
+                    ),
+                ),
             ],
         ),
     ]

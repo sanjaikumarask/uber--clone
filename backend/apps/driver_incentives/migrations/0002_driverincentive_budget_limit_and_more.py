@@ -6,18 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('driver_incentives', '0001_initial'),
+        ("driver_incentives", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='driverincentive',
-            name='budget_limit',
-            field=models.DecimalField(decimal_places=2, default=0.0, help_text='Maximum rupees this campaign is allowed to distribute before automatically halting.', max_digits=12),
+            model_name="driverincentive",
+            name="budget_limit",
+            field=models.DecimalField(
+                decimal_places=2,
+                default=0.0,
+                help_text="Maximum rupees this campaign is allowed to distribute before automatically halting.",
+                max_digits=12,
+            ),
         ),
         migrations.AddField(
-            model_name='driverincentive',
-            name='budget_spent',
+            model_name="driverincentive",
+            name="budget_spent",
             field=models.DecimalField(decimal_places=2, default=0.0, max_digits=12),
         ),
     ]

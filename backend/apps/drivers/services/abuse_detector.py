@@ -15,19 +15,22 @@ Penalties are progressive:
 """
 
 from __future__ import annotations
+
 import logging
 from datetime import timedelta
-from django.utils import timezone
+
 from django.db import transaction
+from django.utils import timezone
+
 from apps.drivers.models import Driver, DriverStats
 
 logger = logging.getLogger(__name__)
 
 # Thresholds
-ACCEPT_CANCEL_WINDOW_MINUTES = 60   # Look back 60 min
-ACCEPT_CANCEL_THRESHOLD      = 3    # 3 quick accept-then-cancel within window
-MIN_RIDE_COMPLETION_SECONDS  = 60   # Ride completed in less than 60s → suspicious
-MIN_RIDE_DISTANCE_KM         = 0.1  # Distance below 0.1 km → suspicious
+ACCEPT_CANCEL_WINDOW_MINUTES = 60  # Look back 60 min
+ACCEPT_CANCEL_THRESHOLD = 3  # 3 quick accept-then-cancel within window
+MIN_RIDE_COMPLETION_SECONDS = 60  # Ride completed in less than 60s → suspicious
+MIN_RIDE_DISTANCE_KM = 0.1  # Distance below 0.1 km → suspicious
 
 
 BLOCK_DURATIONS = [
@@ -50,7 +53,15 @@ def _apply_block(driver: Driver, stats: DriverStats, reason: str) -> None:
     stats.is_suspended = True
     stats.suspended_until = timezone.now() + duration
     stats.trust_score = max(0.0, stats.trust_score - 15.0)
-    stats.save(update_fields=["fraud_flags_count", "is_suspended", "suspended_until", "trust_score", "updated_at"])
+    stats.save(
+        update_fields=[
+            "fraud_flags_count",
+            "is_suspended",
+            "suspended_until",
+            "trust_score",
+            "updated_at",
+        ]
+    )
 
     driver.status = Driver.Status.BLOCKED
     driver.save(update_fields=["status", "updated_at"])
@@ -63,6 +74,7 @@ def _apply_block(driver: Driver, stats: DriverStats, reason: str) -> None:
     # Notify driver
     try:
         from apps.notifications.models import Notification
+
         until_str = stats.suspended_until.strftime("%H:%M %d %b")
         Notification.objects.create(
             user=driver.user,
@@ -81,6 +93,7 @@ def _apply_block(driver: Driver, stats: DriverStats, reason: str) -> None:
     if offence_count >= 3:
         try:
             from apps.notifications.services.alerts import send_critical_alert
+
             send_critical_alert(
                 title="Repeat Offender – Manual Review Required",
                 message=f"Driver {driver.user.get_full_name() or driver.id} has {offence_count} abuse flags. Blocked 24h.",
@@ -98,6 +111,7 @@ def check_accept_cancel_abuse(driver: Driver) -> bool:
     Returns True if abuse detected.
     """
     from apps.rides.models import Ride
+
     window_start = timezone.now() - timedelta(minutes=ACCEPT_CANCEL_WINDOW_MINUTES)
 
     cancel_count = Ride.objects.filter(
@@ -109,7 +123,11 @@ def check_accept_cancel_abuse(driver: Driver) -> bool:
 
     if cancel_count >= ACCEPT_CANCEL_THRESHOLD:
         stats, _ = DriverStats.objects.select_for_update().get_or_create(driver=driver)
-        _apply_block(driver, stats, f"Accept-cancel cycling detected ({cancel_count} cancellations in 1h)")
+        _apply_block(
+            driver,
+            stats,
+            f"Accept-cancel cycling detected ({cancel_count} cancellations in 1h)",
+        )
         return True
 
     return False
@@ -140,7 +158,9 @@ def check_fake_ride(driver: Driver, ride) -> bool:
         stats.fraud_flags_count = (stats.fraud_flags_count or 0) + 1
         reason = "Fake ride: " + ", ".join(reason_parts)
         _apply_block(driver, stats, reason)
-        logger.warning(f"[FAKE-RIDE] Ride {ride.id} flagged. Driver {driver.id}. {reason}")
+        logger.warning(
+            f"[FAKE-RIDE] Ride {ride.id} flagged. Driver {driver.id}. {reason}"
+        )
         return True
 
     return False

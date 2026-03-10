@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rides', '0008_ride_actual_route_polyline'),
+        ("rides", "0008_ride_actual_route_polyline"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='ride',
-            name='vehicle_type',
-            field=models.CharField(default='go', help_text='The tier requested: moto, auto, go, xl', max_length=16),
+            model_name="ride",
+            name="vehicle_type",
+            field=models.CharField(
+                default="go",
+                help_text="The tier requested: moto, auto, go, xl",
+                max_length=16,
+            ),
         ),
     ]

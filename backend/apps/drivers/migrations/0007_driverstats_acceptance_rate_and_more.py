@@ -6,28 +6,39 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('drivers', '0006_driverdocument_image_alter_driverdocument_file_path'),
+        ("drivers", "0006_driverdocument_image_alter_driverdocument_file_path"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='driverstats',
-            name='acceptance_rate',
-            field=models.FloatField(default=100.0, help_text='Percentage of offered rides accepted (0-100)'),
+            model_name="driverstats",
+            name="acceptance_rate",
+            field=models.FloatField(
+                default=100.0, help_text="Percentage of offered rides accepted (0-100)"
+            ),
         ),
         migrations.AddField(
-            model_name='driverstats',
-            name='cancellation_rate',
-            field=models.FloatField(default=0.0, help_text='Percentage of accepted rides cancelled by driver (0-100)'),
+            model_name="driverstats",
+            name="cancellation_rate",
+            field=models.FloatField(
+                default=0.0,
+                help_text="Percentage of accepted rides cancelled by driver (0-100)",
+            ),
         ),
         migrations.AddField(
-            model_name='driverstats',
-            name='fraud_flags_count',
-            field=models.PositiveIntegerField(default=0, help_text='Total number of rides flagged for anomalous distance/time'),
+            model_name="driverstats",
+            name="fraud_flags_count",
+            field=models.PositiveIntegerField(
+                default=0,
+                help_text="Total number of rides flagged for anomalous distance/time",
+            ),
         ),
         migrations.AddField(
-            model_name='driverstats',
-            name='trust_score',
-            field=models.FloatField(default=100.0, help_text='Algorithmic reputation score. Drops upon fraud flags, cancellations.'),
+            model_name="driverstats",
+            name="trust_score",
+            field=models.FloatField(
+                default=100.0,
+                help_text="Algorithmic reputation score. Drops upon fraud flags, cancellations.",
+            ),
         ),
     ]

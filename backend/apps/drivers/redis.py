@@ -1,6 +1,7 @@
 # apps/drivers/redis.py
 
 import time
+
 import redis
 from django.conf import settings
 
@@ -23,9 +24,10 @@ def update_driver_location(driver_id: int, lat: float, lng: float):
     # ── GPS VELOCITY GUARD (SPOOFING DETECTION) ────────
     # ──────────────────────────────────────────────────
     from apps.common.fraud import validate_gps_velocity
+
     if not validate_gps_velocity(driver_id, lat, lng):
         # 🚨 Log and drop the spoofed ping. do NOT update GEO position if invalid.
-        return 
+        return
 
     # Use raw Redis command to avoid geoadd() API mismatch
     redis_client.execute_command(

@@ -1,12 +1,13 @@
 import pytest
-import asyncio
 from asgiref.sync import sync_to_async
-from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.models import AnonymousUser
 from rest_framework_simplejwt.tokens import AccessToken
+
 from apps.tracking.auth import JWTAuthMiddleware
 
 User = get_user_model()
+
 
 @pytest.mark.django_db(transaction=True)
 class TestAuthSystemExecution:
@@ -18,11 +19,12 @@ class TestAuthSystemExecution:
     @pytest.fixture
     def test_user(self, db):
         import uuid
+
         uid = uuid.uuid4().hex[:6]
         user = User.objects.create_user(
             username=f"real_user_{uid}",
             phone=f"+91888{uid}",
-            password="real_password_123"
+            password="real_password_123",
         )
         return user
 
@@ -47,7 +49,9 @@ class TestAuthSystemExecution:
         # Scenario C: Fail via Inactive User (triggers user_can_authenticate path)
         test_user.is_active = False
         test_user.save()
-        user_inactive = authenticate(username=test_user.phone, password="real_password_123")
+        user_inactive = authenticate(
+            username=test_user.phone, password="real_password_123"
+        )
         assert user_inactive is None
 
         # Scenario D: Fail via Non-Existent User (triggers DoesNotExist path)
@@ -68,6 +72,7 @@ class TestAuthSystemExecution:
         WHY: Executes the JWTAuthMiddleware as a true ASGI application.
         Ensures execution through token validation and AnonymousUser fallbacks.
         """
+
         # Generate Access Token (avoids blacklisting/refresh logic)
         def get_real_token(user):
             return str(AccessToken.for_user(user))
@@ -84,14 +89,16 @@ class TestAuthSystemExecution:
         scope_valid = {
             "type": "websocket",
             "query_string": f"token={token}".encode(),
-            "user": AnonymousUser()
+            "user": AnonymousUser(),
         }
         await middleware(scope_valid, None, None)
-        
+
         # Verify user retrieval
         def verify_user(scope):
-            return scope["user"].pk == test_user.pk and not isinstance(scope["user"], AnonymousUser)
-        
+            return scope["user"].pk == test_user.pk and not isinstance(
+                scope["user"], AnonymousUser
+            )
+
         is_valid = await sync_to_async(verify_user)(scope_valid)
         assert is_valid
 
@@ -99,7 +106,7 @@ class TestAuthSystemExecution:
         scope_invalid = {
             "type": "websocket",
             "query_string": b"token=garbage_not_a_jwt_at_all",
-            "user": AnonymousUser()
+            "user": AnonymousUser(),
         }
         await middleware(scope_invalid, None, None)
         assert isinstance(scope_invalid["user"], AnonymousUser)
@@ -108,7 +115,7 @@ class TestAuthSystemExecution:
         scope_missing = {
             "type": "websocket",
             "query_string": b"foo=bar",
-            "user": AnonymousUser()
+            "user": AnonymousUser(),
         }
         await middleware(scope_missing, None, None)
         assert isinstance(scope_missing["user"], AnonymousUser)
@@ -118,12 +125,13 @@ class TestAuthSystemExecution:
         WHY: Forces execution of the get_user() method in the PhoneBackend.
         """
         from apps.users.backends import PhoneBackend
+
         backend = PhoneBackend()
-        
+
         # Valid User
         user = backend.get_user(test_user.id)
         assert user.id == test_user.id
-        
+
         # Non-Existent User ID
         no_user = backend.get_user(999999)
         assert no_user is None

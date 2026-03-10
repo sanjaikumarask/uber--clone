@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from .models import DriverIncentive, DriverIncentiveEarning
 
 
@@ -14,19 +15,19 @@ class DriverIncentiveSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if not request or not hasattr(request.user, "driver"):
             return 0
-        
+
         driver = request.user.driver
         if obj.type == DriverIncentive.Type.STREAK:
             import redis
             from django.conf import settings
             from django.utils import timezone
-            
+
             r = redis.from_url(settings.REDIS_URL, decode_responses=True)
             today_str = timezone.now().date().isoformat()
             redis_key = f"streak:{driver.id}:{obj.id}:{today_str}"
             val = r.get(redis_key)
             return int(val) if val else 0
-            
+
         return 0
 
 

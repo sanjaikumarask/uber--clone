@@ -1,19 +1,21 @@
 # apps/common/ordering.py
 import logging
+
 from apps.drivers.redis import redis_client
 
 logger = logging.getLogger(__name__)
 
 RIDE_STATUS_RANK = {
     "SEARCHING": 1,
-    "OFFERED":   2,
-    "ASSIGNED":  3,
-    "ARRIVED":   4,
-    "ONGOING":   5,
+    "OFFERED": 2,
+    "ASSIGNED": 3,
+    "ARRIVED": 4,
+    "ONGOING": 5,
     "COMPLETED": 10,
     "CANCELLED": 10,
-    "NO_SHOW":   10,
+    "NO_SHOW": 10,
 }
+
 
 class SequenceFencer:
     """
@@ -42,17 +44,16 @@ class SequenceFencer:
         Returns True if fresh, False if stale/duplicate.
         """
         redis_key = f"fence:{resource_type}:{resource_id}"
-        
+
         # Execute Lua script for atomicity
         result = redis_client.register_script(cls.LUA_FENCE)(
-            keys=[redis_key],
-            args=[incoming_rank, 86400] # 24h TTL
+            keys=[redis_key], args=[incoming_rank, 86400]  # 24h TTL
         )
 
         if result == 0:
             # We don't log warning here to prevent log floods on dupe events
             return False
-            
+
         return True
 
     @classmethod

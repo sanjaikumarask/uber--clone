@@ -37,8 +37,9 @@ export default function ResolutionModal({ ride, onClose, onSubmit }: ResolutionM
 
                 <form onSubmit={handleSubmit} style={styles.form}>
                     <div style={styles.field}>
-                        <label style={styles.label}>Action Type</label>
+                        <label htmlFor="action-type" style={styles.label}>Action Type</label>
                         <select
+                            id="action-type"
                             value={action}
                             onChange={(e) => setAction(e.target.value)}
                             style={styles.select}
@@ -49,8 +50,9 @@ export default function ResolutionModal({ ride, onClose, onSubmit }: ResolutionM
                     </div>
 
                     <div style={styles.field}>
-                        <label style={styles.label}>Reason for Resolution</label>
+                        <label htmlFor="resolution-reason" style={styles.label}>Reason for Resolution</label>
                         <select
+                            id="resolution-reason"
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             style={styles.select}
@@ -65,8 +67,9 @@ export default function ResolutionModal({ ride, onClose, onSubmit }: ResolutionM
 
                     <div style={styles.grid}>
                         <div style={styles.field}>
-                            <label style={styles.label}>Rider Refund (₹)</label>
+                            <label htmlFor="rider-refund" style={styles.label}>Rider Refund (₹)</label>
                             <input
+                                id="rider-refund"
                                 type="number"
                                 value={refundAmount}
                                 onChange={(e) => setRefundAmount(e.target.value)}
@@ -77,8 +80,9 @@ export default function ResolutionModal({ ride, onClose, onSubmit }: ResolutionM
                         </div>
 
                         <div style={styles.field}>
-                            <label style={styles.label}>Driver Compensation (₹)</label>
+                            <label htmlFor="driver-comp" style={styles.label}>Driver Compensation (₹)</label>
                             <input
+                                id="driver-comp"
                                 type="number"
                                 value={compAmount}
                                 onChange={(e) => setCompAmount(e.target.value)}
@@ -89,8 +93,9 @@ export default function ResolutionModal({ ride, onClose, onSubmit }: ResolutionM
                     </div>
 
                     <div style={styles.field}>
-                        <label style={styles.label}>Manual Driver Penalty (₹)</label>
+                        <label htmlFor="driver-penalty" style={styles.label}>Manual Driver Penalty (₹)</label>
                         <input
+                            id="driver-penalty"
                             type="number"
                             value={penaltyAmount}
                             onChange={(e) => setPenaltyAmount(e.target.value)}

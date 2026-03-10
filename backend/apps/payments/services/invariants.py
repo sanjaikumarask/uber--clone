@@ -1,11 +1,12 @@
 # apps/payments/services/invariants.py
 from decimal import Decimal
+
 from django.db.models import Sum
 
 from apps.payments.models import LedgerEntry, Payout
 from apps.payments.services.wallet import (
-    get_wallet_balance,
     get_held_balance,
+    get_wallet_balance,
 )
 
 
@@ -25,14 +26,10 @@ def assert_wallet_invariants(user):
     held = get_held_balance(user)
 
     if total < 0:
-        raise LedgerInvariantError(
-            f"NEGATIVE WALLET: user={user.id} total={total}"
-        )
+        raise LedgerInvariantError(f"NEGATIVE WALLET: user={user.id} total={total}")
 
     if held < 0:
-        raise LedgerInvariantError(
-            f"NEGATIVE HOLD: user={user.id} held={held}"
-        )
+        raise LedgerInvariantError(f"NEGATIVE HOLD: user={user.id} held={held}")
 
     if held > total:
         raise LedgerInvariantError(
@@ -45,15 +42,11 @@ def assert_payout_backed_by_hold(payout: Payout):
     Every payout MUST be backed by a HOLD entry of same amount
     """
 
-    held = (
-        LedgerEntry.objects.filter(
-            user=payout.driver,
-            entry_type=LedgerEntry.Type.HOLD,
-            reference__icontains=payout.reference,
-        )
-        .aggregate(s=Sum("amount"))["s"]
-        or Decimal("0.00")
-    )
+    held = LedgerEntry.objects.filter(
+        user=payout.driver,
+        entry_type=LedgerEntry.Type.HOLD,
+        reference__icontains=payout.reference,
+    ).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
 
     if held != payout.amount:
         raise LedgerInvariantError(

@@ -1,26 +1,25 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from apps.users.permissions import IsAdmin
-from apps.users.models import User
 from apps.payments.models import LedgerEntry, Payout
-from apps.payments.tasks import execute_driver_payout
 from apps.payments.services.invariants import assert_user_ledger
+from apps.payments.tasks import execute_driver_payout
+from apps.users.models import User
+from apps.users.permissions import IsAdmin
 
 
 class AdminPaymentsView(APIView):
     """
     Admin ledger audit view
     """
+
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        entries = (
-            LedgerEntry.objects
-            .select_related("user")
-            .order_by("-created_at")[:200]
-        )
+        entries = LedgerEntry.objects.select_related("user").order_by("-created_at")[
+            :200
+        ]
 
         data = [
             {
@@ -43,14 +42,11 @@ class AdminPayoutListView(APIView):
     """
     List payout requests
     """
+
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        payouts = (
-            Payout.objects
-            .select_related("driver")
-            .order_by("-created_at")[:100]
-        )
+        payouts = Payout.objects.select_related("driver").order_by("-created_at")[:100]
 
         data = [
             {
@@ -104,6 +100,7 @@ class AdminLedgerCheckView(APIView):
     """
     Validate ledger invariants for a user
     """
+
     permission_classes = [IsAdmin]
 
     def post(self, request):
@@ -119,8 +116,10 @@ class AdminLedgerCheckView(APIView):
 
         assert_user_ledger(user)
 
-        return Response({
-            "status": "ok",
-            "user_id": user.id,
-            "message": "Ledger is consistent",
-        })
+        return Response(
+            {
+                "status": "ok",
+                "user_id": user.id,
+                "message": "Ledger is consistent",
+            }
+        )

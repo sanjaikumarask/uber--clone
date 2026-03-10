@@ -17,7 +17,7 @@ def _clamp(value: float) -> float:
 
 def recompute_surge(cell_id: str):
     """
-    surge = demand / supply
+    Recalculates the surge multiplier for a given geo-cell based on demand and supply metrics.
     """
     demand = int(redis_client.get(f"geo:{cell_id}:demand") or 0)
     supply = int(redis_client.get(f"geo:{cell_id}:supply") or 0)
@@ -41,6 +41,7 @@ def recompute_surge(cell_id: str):
 # ----------------------------
 # COUNTERS
 # ----------------------------
+
 
 def increment_demand(cell_id: str):
     redis_client.incr(f"geo:{cell_id}:demand")

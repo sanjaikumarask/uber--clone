@@ -6,13 +6,27 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('payments', '0007_driverearnings'),
+        ("payments", "0007_driverearnings"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='ledgerentry',
-            name='reason',
-            field=models.CharField(blank=True, choices=[('PAYMENT', 'Payment'), ('DRIVER_EARNING', 'Driver Earning'), ('PLATFORM_COMMISSION', 'Platform Commission'), ('DRIVER_PAYOUT', 'Driver Payout'), ('WITHDRAWAL_FEE', 'Withdrawal Fee'), ('REFUND', 'Refund'), ('PENALTY', 'Penalty'), ('OTHER', 'Other')], max_length=64, null=True),
+            model_name="ledgerentry",
+            name="reason",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("PAYMENT", "Payment"),
+                    ("DRIVER_EARNING", "Driver Earning"),
+                    ("PLATFORM_COMMISSION", "Platform Commission"),
+                    ("DRIVER_PAYOUT", "Driver Payout"),
+                    ("WITHDRAWAL_FEE", "Withdrawal Fee"),
+                    ("REFUND", "Refund"),
+                    ("PENALTY", "Penalty"),
+                    ("OTHER", "Other"),
+                ],
+                max_length=64,
+                null=True,
+            ),
         ),
     ]

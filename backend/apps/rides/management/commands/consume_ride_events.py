@@ -1,7 +1,8 @@
 import json
 import logging
-from django.core.management.base import BaseCommand
+
 from django.conf import settings
+from django.core.management.base import BaseCommand
 from kafka import KafkaConsumer
 
 from apps.rides.services.matching import handle_ride_searching

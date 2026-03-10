@@ -1,8 +1,9 @@
 import logging
 import time
-from django.db import models
-from channels.generic.websocket import AsyncJsonWebsocketConsumer
+
 from channels.db import database_sync_to_async
+from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from django.db import models
 
 from apps.rides.models import Ride
 
@@ -59,15 +60,17 @@ class RideConsumer(AsyncJsonWebsocketConsumer):
 
         # Optional: initial handshake message with current ride state
         ride_data = await self.get_ride_data(self.ride_id)
-        payload = {
-            "ride": ride_data
-        }
-        logger.info(f"Sending WS_CONNECTED for ride {self.ride_id} with payload: {payload}")
-        await self.send_json({
-            "type": "WS_CONNECTED",
-            "ride_id": self.ride_id,
-            "payload": payload,
-        })
+        payload = {"ride": ride_data}
+        logger.info(
+            f"Sending WS_CONNECTED for ride {self.ride_id} with payload: {payload}"
+        )
+        await self.send_json(
+            {
+                "type": "WS_CONNECTED",
+                "ride_id": self.ride_id,
+                "payload": payload,
+            }
+        )
 
     async def disconnect(self, close_code):
         if hasattr(self, "group_name"):
@@ -96,17 +99,19 @@ class RideConsumer(AsyncJsonWebsocketConsumer):
 
     async def location_update(self, event):
         """Handle GPS pings from DriverLocationConsumer"""
-        await self.send_json({
-            "type": "DRIVER_LOCATION_UPDATED",
-            "ride_id": self.ride_id,
-            "payload": {
-                "lat": event.get("lat"),
-                "lng": event.get("lng"),
-                "heading": event.get("heading"),
-                "eta": event.get("eta"),
-                "ts": event.get("ts"),
+        await self.send_json(
+            {
+                "type": "DRIVER_LOCATION_UPDATED",
+                "ride_id": self.ride_id,
+                "payload": {
+                    "lat": event.get("lat"),
+                    "lng": event.get("lng"),
+                    "heading": event.get("heading"),
+                    "eta": event.get("eta"),
+                    "ts": event.get("ts"),
+                },
             }
-        })
+        )
 
     async def driver_location_updated(self, event):
         """Alias for simulator consistency"""
@@ -114,13 +119,15 @@ class RideConsumer(AsyncJsonWebsocketConsumer):
 
     async def ride_completed(self, event):
         """Specifically handle ride completion"""
-        await self.send_json({
-            "type": "RIDE_COMPLETED",
-            "ride_id": self.ride_id,
-            "payload": {
-                "fare": event.get("fare"),
+        await self.send_json(
+            {
+                "type": "RIDE_COMPLETED",
+                "ride_id": self.ride_id,
+                "payload": {
+                    "fare": event.get("fare"),
+                },
             }
-        })
+        )
 
     async def ride_status_update(self, event):
         """Specifically handle status changes (ARRIVED, ONGOING, etc.)"""
@@ -130,11 +137,13 @@ class RideConsumer(AsyncJsonWebsocketConsumer):
         if not ride_data:
             ride_data = await self.get_ride_data(self.ride_id)
 
-        await self.send_json({
-            "type": "RIDE_STATUS_UPDATED",
-            "ride_id": self.ride_id,
-            "payload": ride_data
-        })
+        await self.send_json(
+            {
+                "type": "RIDE_STATUS_UPDATED",
+                "ride_id": self.ride_id,
+                "payload": ride_data,
+            }
+        )
 
     # ======================================================
     # INCOMING MESSAGES (CHAT)
@@ -160,8 +169,8 @@ class RideConsumer(AsyncJsonWebsocketConsumer):
                             "lat": lat,
                             "lng": lng,
                             "ts": int(time.time()),
-                        }
-                    }
+                        },
+                    },
                 )
             return
 
@@ -180,21 +189,23 @@ class RideConsumer(AsyncJsonWebsocketConsumer):
                     "type": "chat_message",
                     "sender_id": user.id,
                     "message": message_text,
-                    "created_at": str(msg_obj.created_at)
-                }
+                    "created_at": str(msg_obj.created_at),
+                },
             )
 
     async def chat_message(self, event):
         """Handler for 'chat_message' group event"""
-        await self.send_json({
-            "type": "NEW_CHAT_MESSAGE",
-            "ride_id": self.ride_id,
-            "payload": {
-                "sender_id": event["sender_id"],
-                "message": event["message"],
-                "created_at": event["created_at"]
+        await self.send_json(
+            {
+                "type": "NEW_CHAT_MESSAGE",
+                "ride_id": self.ride_id,
+                "payload": {
+                    "sender_id": event["sender_id"],
+                    "message": event["message"],
+                    "created_at": event["created_at"],
+                },
             }
-        })
+        )
 
     # ======================================================
     # HELPERS
@@ -202,26 +213,23 @@ class RideConsumer(AsyncJsonWebsocketConsumer):
     @database_sync_to_async
     def save_chat_message(self, user, ride_id, text):
         from .models import ChatMessage
-        return ChatMessage.objects.create(
-            ride_id=ride_id,
-            sender=user,
-            content=text
-        )
+
+        return ChatMessage.objects.create(ride_id=ride_id, sender=user, content=text)
 
     # ======================================================
     # PERMISSION CHECK
     # ======================================================
     @database_sync_to_async
     def user_can_access_ride(self, user, ride_id: int) -> bool:
-        return Ride.objects.filter(
-            id=ride_id
-        ).filter(
-            models.Q(rider=user)
-            | models.Q(driver__user=user)
-        ).exists()
+        return (
+            Ride.objects.filter(id=ride_id)
+            .filter(models.Q(rider=user) | models.Q(driver__user=user))
+            .exists()
+        )
 
     @database_sync_to_async
     def get_ride_data(self, ride_id: int):
         from .serializers import RideDetailSerializer
+
         ride = Ride.objects.get(id=ride_id)
         return RideDetailSerializer(ride).data

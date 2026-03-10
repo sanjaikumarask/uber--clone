@@ -1,0 +1,51 @@
+time="2026-03-07T13:21:02+05:30" level=warning msg="Found orphan containers ([sonarqube sonarqube_db]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container uber_redis Running 
+ Container uber_zookeeper Running 
+ Container uber_kafka Running 
+ Container uber_postgres Running 
+ Container uber_postgres Waiting 
+ Container uber_postgres Healthy 
+ Container uber-backend-backend-run-45dff6211090 Creating 
+ Container uber-backend-backend-run-45dff6211090 Created 
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python3.11
+cachedir: .pytest_cache
+django: version: 5.2.12, settings: config.settings (from env)
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0, django-4.12.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 16 items
+
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_web_checkout_view_success PASSED [  6%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_web_checkout_view_gateway_missing PASSED [ 12%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_web_verify_view_success PASSED [ 18%]
+tests/unit/test_coverage_booster.py::TestPaymentViewsBooster::test_driver_payout_request_view_post_success PASSED [ 25%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_email_success PASSED [ 31%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_sms_success PASSED [ 37%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_push_success PASSED [ 43%]
+tests/unit/test_coverage_booster.py::TestNotificationBooster::test_send_ws_exception PASSED [ 50%]
+tests/unit/test_coverage_booster.py::TestOfferViewsBooster::test_validate_offer_view_success PASSED [ 56%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_driver_profile PASSED [ 62%]
+tests/unit/test_coverage_booster.py::TestDriverViewsBooster::test_go_online_success PASSED [ 68%]
+tests/unit/test_coverage_booster.py::TestSupportViewsBooster::test_create_support_ticket PASSED [ 75%]
+tests/unit/test_coverage_booster.py::TestSupportViewsBooster::test_trigger_sos_view_success PASSED [ 81%]
+tests/unit/test_coverage_booster.py::TestCommonBooster::test_idempotency_middleware PASSED [ 87%]
+tests/unit/test_coverage_booster.py::TestCommonBooster::test_circuit_breaker FAILED [ 93%]
+tests/unit/test_coverage_booster.py::TestCommonBooster::test_tracing_middleware PASSED [100%]
+
+=================================== FAILURES ===================================
+____________________ TestCommonBooster.test_circuit_breaker ____________________
+tests/unit/test_coverage_booster.py:294: in test_circuit_breaker
+    assert my_api() == "SUCCESS"
+           ^^^^^^^^
+apps/common/resilience.py:49: in wrapper
+    raise CircuitBreakerError(f"Circuit {self.name} is OPEN")
+E   apps.common.resilience.CircuitBreakerError: Circuit test is OPEN
+----------------------------- Captured stderr call -----------------------------
+WARNING 2026-03-07 07:51:20,867 resilience [Resilience] Circuit test is OPEN. Rejecting request.
+WARNING 2026-03-07 07:51:20,870 resilience [Resilience] Circuit test is OPEN. Rejecting request.
+=========================== short test summary info ============================
+FAILED tests/unit/test_coverage_booster.py::TestCommonBooster::test_circuit_breaker
+========================= 1 failed, 15 passed in 9.34s =========================
+

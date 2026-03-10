@@ -1,11 +1,12 @@
-import json
-import hmac
 import hashlib
+import hmac
+import json
 from decimal import Decimal
-from django.urls import reverse
-from django.conf import settings
 
-from apps.payments.models import Payment, LedgerEntry
+from django.conf import settings
+from django.urls import reverse
+
+from apps.payments.models import LedgerEntry, Payment
 
 
 def sign(body: bytes):
@@ -65,6 +66,32 @@ def test_payment_captured_webhook_idempotent(client, user):
     assert payment.status == Payment.Status.CAPTURED
 
     # Ledger entry created ONCE
-    assert LedgerEntry.objects.filter(
-        reference=f"payment:{payment.id}"
-    ).count() == 1
+    assert LedgerEntry.objects.filter(reference=f"payment:{payment.id}").count() == 1
+
+
+def test_payment_webhook_invalid_signature(client):
+    url = reverse("payments:razorpay-webhook")
+    r = client.post(
+        url,
+        data=json.dumps({"test": "data"}),
+        content_type="application/json",
+        HTTP_X_RAZORPAY_SIGNATURE="invalid_sig",
+    )
+    assert r.status_code == 400
+
+
+def test_payment_webhook_missing_signature(client):
+    url = reverse("payments:razorpay-webhook")
+    r = client.post(
+        url,
+        data=json.dumps({"test": "data"}),
+        content_type="application/json",
+    )
+    assert r.status_code == 400
+
+
+def test_payment_webhook_only_post_allowed(client):
+    url = reverse("payments:razorpay-webhook")
+    # Try GET on a @require_POST decorated view
+    r = client.get(url)
+    assert r.status_code == 405

@@ -6,4 +6,4 @@ class DriverIncentivesConfig(AppConfig):
     name = "apps.driver_incentives"
 
     def ready(self):
-        import apps.driver_incentives.signals
+        import apps.driver_incentives.signals  # noqa: F401

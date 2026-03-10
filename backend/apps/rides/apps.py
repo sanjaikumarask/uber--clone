@@ -6,4 +6,4 @@ class RidesConfig(AppConfig):
     name = "apps.rides"
 
     def ready(self):
-        import apps.rides.signals
+        import apps.rides.signals  # noqa: F401

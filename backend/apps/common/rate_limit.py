@@ -1,6 +1,8 @@
 # apps/common/rate_limit.py
 import logging
+
 from django.http import JsonResponse
+
 from apps.common.backpressure import endpoint_cooldown
 
 logger = logging.getLogger(__name__)
@@ -25,11 +27,11 @@ class RateLimitMiddleware:
     # Only include WRITE / MUTATION endpoints that need abuse protection.
     # DO NOT add polling/read endpoints here.
     SENSITIVE_ENDPOINTS = {
-        "/api/users/login/":       (5,  60),   # 5 login attempts per minute
-        "/api/rides/request/":     (5,  60),   # 5 ride creations per minute
-        "/api/rides/":             (5,  60),   # same — POST /api/rides/ alias
-        "/api/rides/verify-otp/":  (10, 60),   # 10 OTP attempts per minute
-        "/api/payments/":          (10, 60),   # 10 payment calls per minute
+        "/api/users/login/": (5, 60),  # 5 login attempts per minute
+        "/api/rides/request/": (5, 60),  # 5 ride creations per minute
+        "/api/rides/": (5, 60),  # same — POST /api/rides/ alias
+        "/api/rides/verify-otp/": (10, 60),  # 10 OTP attempts per minute
+        "/api/payments/": (10, 60),  # 10 payment calls per minute
     }
 
     def __init__(self, get_response):
@@ -48,6 +50,7 @@ class RateLimitMiddleware:
         if auth_header.startswith("Bearer "):
             try:
                 from rest_framework_simplejwt.tokens import AccessToken
+
                 token_str = auth_header.split(" ")[1]
                 token = AccessToken(token_str)
                 user_id = token.get("user_id")
@@ -56,7 +59,6 @@ class RateLimitMiddleware:
                     return f"user:{user_id}"
             except Exception as e:
                 logger.warning(f"[RateLimit] JWT Decode Failed: {e}")
-                pass  # Invalid/expired token — fall through to IP
 
         xff = request.META.get("HTTP_X_FORWARDED_FOR")
         if xff:
@@ -74,10 +76,10 @@ class RateLimitMiddleware:
             max_calls, window = config
             key = self._get_rate_limit_key(request)
 
-            if not endpoint_cooldown(key, f"rl:{path}", max_calls=max_calls, window=window):
-                logger.warning(
-                    f"[RateLimit] 🛑 Blocked: key={key} path={path}"
-                )
+            if not endpoint_cooldown(
+                key, f"rl:{path}", max_calls=max_calls, window=window
+            ):
+                logger.warning(f"[RateLimit] 🛑 Blocked: key={key} path={path}")
                 return JsonResponse(
                     {"error": "Too many requests. Please try again later."},
                     status=429,

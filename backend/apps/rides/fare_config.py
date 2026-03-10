@@ -5,11 +5,11 @@ from decimal import Decimal
 # BASE FARE CONFIG
 # =========================
 
-BASE_FARE = Decimal("40.00")          # ₹40 flat
-PER_KM_RATE = Decimal("12.00")        # ₹12 per km
-PER_MIN_RATE = Decimal("1.50")        # ₹1.50 per minute
+BASE_FARE = Decimal("40.00")  # ₹40 flat
+PER_KM_RATE = Decimal("12.00")  # ₹12 per km
+PER_MIN_RATE = Decimal("1.50")  # ₹1.50 per minute
 
-MINIMUM_FARE = Decimal("60.00")       # hard floor
+MINIMUM_FARE = Decimal("60.00")  # hard floor
 
 # =========================
 # PLATFORM ECONOMICS

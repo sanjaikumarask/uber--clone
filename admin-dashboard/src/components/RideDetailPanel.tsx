@@ -186,8 +186,17 @@ export default function RideDetailPanel({ rideId, onClose }: Props) {
         .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 
     return (
-        <div style={styles.overlay} onClick={onClose}>
-            <div style={styles.panel} onClick={(e) => e.stopPropagation()}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", justifyContent: "flex-end" }}>
+            <button
+                style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", border: "none", cursor: "default", padding: 0, width: "100%", height: "100%" }}
+                onClick={onClose}
+                aria-label="Close panel"
+            />
+            <div
+                role="dialog"
+                aria-modal="true"
+                style={{ ...styles.panel, position: "relative" }}
+            >
                 {/* Header */}
                 <div style={styles.header}>
                     <div>
@@ -353,7 +362,7 @@ export default function RideDetailPanel({ rideId, onClose }: Props) {
                                 <div style={{ fontSize: 10, fontWeight: 800, color: "#475569", marginBottom: 20, letterSpacing: 1 }}>AUDIT TRAIL</div>
                                 <div style={{ display: "flex", flexDirection: "column" }}>
                                     {events.map((ev, i) => (
-                                        <div key={i} style={{ display: "flex", gap: 20, position: "relative" }}>
+                                        <div key={ev.label} style={{ display: "flex", gap: 20, position: "relative" }}>
                                             <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                                                 <div style={{
                                                     width: 8,

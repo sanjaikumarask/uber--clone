@@ -1,18 +1,17 @@
 import os
-import django
 
-from django.core.asgi import get_asgi_application
+import django
 from channels.routing import ProtocolTypeRouter, URLRouter
+from django.core.asgi import get_asgi_application
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 
-from apps.rides.middleware import JwtAuthMiddleware
-
-import apps.rides.routing
 import apps.admin_dashboard.routing
 import apps.driver_incentives.routing
-import apps.tracking.routing   # 🔥 ADD THIS
+import apps.rides.routing
+import apps.tracking.routing  # 🔥 ADD THIS
+from apps.rides.middleware import JwtAuthMiddleware
 
 application = ProtocolTypeRouter(
     {

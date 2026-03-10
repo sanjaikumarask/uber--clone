@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rides', '0003_ride_applied_offer_ride_completed_at_and_more'),
+        ("rides", "0003_ride_applied_offer_ride_completed_at_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='ride',
-            name='drop_address',
+            model_name="ride",
+            name="drop_address",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='ride',
-            name='pickup_address',
+            model_name="ride",
+            name="pickup_address",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
     ]

@@ -1,4 +1,3 @@
-import hashlib
 from django.db import IntegrityError, transaction
 
 from apps.payments.models import WebhookEvent
@@ -17,6 +16,7 @@ def register_webhook_event(
     """
 
     import json
+
     payload = json.loads(raw_body)
 
     try:

@@ -1,9 +1,10 @@
 import os
-import django
-from django.utils import timezone
 from datetime import timedelta
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+import django
+from django.utils import timezone
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 
 from apps.offers.models import Offer
@@ -19,7 +20,7 @@ offers_data = [
         "valid_from": timezone.now(),
         "valid_to": timezone.now() + timedelta(days=30),
         "is_active": True,
-        "city": "Chennai"
+        "city": "Chennai",
     },
     {
         "code": "PEAK20",
@@ -30,7 +31,7 @@ offers_data = [
         "valid_from": timezone.now(),
         "valid_to": timezone.now() + timedelta(days=7),
         "is_active": True,
-        "city": "Chennai"
+        "city": "Chennai",
     },
     {
         "code": "SUMMER10",
@@ -41,8 +42,8 @@ offers_data = [
         "valid_from": timezone.now(),
         "valid_to": timezone.now() + timedelta(days=60),
         "is_active": False,
-        "city": "Chennai"
-    }
+        "city": "Chennai",
+    },
 ]
 
 for data in offers_data:

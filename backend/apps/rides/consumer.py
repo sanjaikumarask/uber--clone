@@ -1,11 +1,12 @@
 import logging
-from django.db import transaction
+
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.db import transaction
 
-from apps.rides.models import Ride
 from apps.drivers.models import Driver
 from apps.drivers.services import remove_driver_from_geo
+from apps.rides.models import Ride
 from apps.rides.tasks import driver_accept_timeout
 
 logger = logging.getLogger(__name__)
@@ -61,9 +62,7 @@ def handle_ride_searching(event: dict):
                             "lat": ride.drop_lat,
                             "lng": ride.drop_lng,
                         },
-                        "fare_estimate": float(
-                            ride.base_fare + ride.distance_fare
-                        ),
+                        "fare_estimate": float(ride.base_fare + ride.distance_fare),
                         "timeout": 30,
                     },
                 },

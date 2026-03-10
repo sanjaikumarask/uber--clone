@@ -10,19 +10,27 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('drivers', '0001_initial'),
+        ("drivers", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='driver',
-            name='user',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='driver', to=settings.AUTH_USER_MODEL),
+            model_name="driver",
+            name="user",
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="driver",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='driverstats',
-            name='driver',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='stats', to='drivers.driver'),
+            model_name="driverstats",
+            name="driver",
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="stats",
+                to="drivers.driver",
+            ),
         ),
     ]

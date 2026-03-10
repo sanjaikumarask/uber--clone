@@ -8,41 +8,163 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rides', '0010_ride_end_time_ride_start_lat_ride_start_lng_and_more'),
+        ("rides", "0010_ride_end_time_ride_start_lat_ride_start_lng_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='FareConfig',
+            name="FareConfig",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('vehicle_type', models.CharField(choices=[('moto', 'Uber Moto 🏍️'), ('auto', 'Uber Auto 🛺'), ('go', 'UberGo 🚗'), ('xl', 'UberXL 🚙')], help_text='One config per vehicle type', max_length=10, unique=True)),
-                ('base_fare', models.DecimalField(decimal_places=2, default=Decimal('59.00'), help_text='Flat base charge for ANY ride (₹)', max_digits=8, validators=[django.core.validators.MinValueValidator(Decimal('0.00'))])),
-                ('base_distance_km', models.DecimalField(decimal_places=2, default=Decimal('2.00'), help_text='Distance included in base fare (km). Extra km charged separately.', max_digits=5, validators=[django.core.validators.MinValueValidator(Decimal('0.10'))])),
-                ('per_km_rate', models.DecimalField(decimal_places=2, default=Decimal('18.00'), help_text='Charge per km BEYOND base_distance_km (₹/km)', max_digits=8, validators=[django.core.validators.MinValueValidator(Decimal('0.00'))])),
-                ('per_min_rate', models.DecimalField(decimal_places=2, default=Decimal('1.50'), help_text='Charge per minute of ride duration (₹/min) — for fare estimation only', max_digits=8, validators=[django.core.validators.MinValueValidator(Decimal('0.00'))])),
-                ('waiting_free_minutes', models.PositiveSmallIntegerField(default=2, help_text='First N minutes of waiting are FREE')),
-                ('waiting_per_minute', models.DecimalField(decimal_places=2, default=Decimal('2.00'), help_text='Charge per minute AFTER free waiting period (₹/min)', max_digits=6, validators=[django.core.validators.MinValueValidator(Decimal('0.00'))])),
-                ('surge_multiplier', models.DecimalField(decimal_places=2, default=Decimal('1.00'), help_text='Admin-controlled surge. Dynamic surge from Redis OVERRIDES this.', max_digits=4, validators=[django.core.validators.MinValueValidator(Decimal('1.00'))])),
-                ('minimum_fare', models.DecimalField(decimal_places=2, default=Decimal('60.00'), help_text='Absolute minimum fare charged (₹)', max_digits=8, validators=[django.core.validators.MinValueValidator(Decimal('0.00'))])),
-                ('platform_commission_pct', models.DecimalField(decimal_places=2, default=Decimal('20.00'), help_text='Platform cut from each ride as percentage (e.g. 20.00 = 20%)', max_digits=5, validators=[django.core.validators.MinValueValidator(Decimal('0.00'))])),
-                ('is_active', models.BooleanField(default=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "vehicle_type",
+                    models.CharField(
+                        choices=[
+                            ("moto", "Uber Moto 🏍️"),
+                            ("auto", "Uber Auto 🛺"),
+                            ("go", "UberGo 🚗"),
+                            ("xl", "UberXL 🚙"),
+                        ],
+                        help_text="One config per vehicle type",
+                        max_length=10,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "base_fare",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=Decimal("59.00"),
+                        help_text="Flat base charge for ANY ride (₹)",
+                        max_digits=8,
+                        validators=[
+                            django.core.validators.MinValueValidator(Decimal("0.00"))
+                        ],
+                    ),
+                ),
+                (
+                    "base_distance_km",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=Decimal("2.00"),
+                        help_text="Distance included in base fare (km). Extra km charged separately.",
+                        max_digits=5,
+                        validators=[
+                            django.core.validators.MinValueValidator(Decimal("0.10"))
+                        ],
+                    ),
+                ),
+                (
+                    "per_km_rate",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=Decimal("18.00"),
+                        help_text="Charge per km BEYOND base_distance_km (₹/km)",
+                        max_digits=8,
+                        validators=[
+                            django.core.validators.MinValueValidator(Decimal("0.00"))
+                        ],
+                    ),
+                ),
+                (
+                    "per_min_rate",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=Decimal("1.50"),
+                        help_text="Charge per minute of ride duration (₹/min) — for fare estimation only",
+                        max_digits=8,
+                        validators=[
+                            django.core.validators.MinValueValidator(Decimal("0.00"))
+                        ],
+                    ),
+                ),
+                (
+                    "waiting_free_minutes",
+                    models.PositiveSmallIntegerField(
+                        default=2, help_text="First N minutes of waiting are FREE"
+                    ),
+                ),
+                (
+                    "waiting_per_minute",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=Decimal("2.00"),
+                        help_text="Charge per minute AFTER free waiting period (₹/min)",
+                        max_digits=6,
+                        validators=[
+                            django.core.validators.MinValueValidator(Decimal("0.00"))
+                        ],
+                    ),
+                ),
+                (
+                    "surge_multiplier",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=Decimal("1.00"),
+                        help_text="Admin-controlled surge. Dynamic surge from Redis OVERRIDES this.",
+                        max_digits=4,
+                        validators=[
+                            django.core.validators.MinValueValidator(Decimal("1.00"))
+                        ],
+                    ),
+                ),
+                (
+                    "minimum_fare",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=Decimal("60.00"),
+                        help_text="Absolute minimum fare charged (₹)",
+                        max_digits=8,
+                        validators=[
+                            django.core.validators.MinValueValidator(Decimal("0.00"))
+                        ],
+                    ),
+                ),
+                (
+                    "platform_commission_pct",
+                    models.DecimalField(
+                        decimal_places=2,
+                        default=Decimal("20.00"),
+                        help_text="Platform cut from each ride as percentage (e.g. 20.00 = 20%)",
+                        max_digits=5,
+                        validators=[
+                            django.core.validators.MinValueValidator(Decimal("0.00"))
+                        ],
+                    ),
+                ),
+                ("is_active", models.BooleanField(default=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'verbose_name': 'Fare Configuration',
-                'verbose_name_plural': 'Fare Configurations',
-                'ordering': ['vehicle_type'],
+                "verbose_name": "Fare Configuration",
+                "verbose_name_plural": "Fare Configurations",
+                "ordering": ["vehicle_type"],
             },
         ),
         migrations.AddField(
-            model_name='ride',
-            name='tip_amount',
-            field=models.DecimalField(decimal_places=2, default=Decimal('0.00'), help_text='Tip added by rider AFTER payment. 100% goes to driver.', max_digits=8),
+            model_name="ride",
+            name="tip_amount",
+            field=models.DecimalField(
+                decimal_places=2,
+                default=Decimal("0.00"),
+                help_text="Tip added by rider AFTER payment. 100% goes to driver.",
+                max_digits=8,
+            ),
         ),
         migrations.AddField(
-            model_name='ride',
-            name='waiting_seconds',
-            field=models.PositiveIntegerField(default=0, help_text='Total seconds driver waited at pickup (arrived_at → otp_verified_at)'),
+            model_name="ride",
+            name="waiting_seconds",
+            field=models.PositiveIntegerField(
+                default=0,
+                help_text="Total seconds driver waited at pickup (arrived_at → otp_verified_at)",
+            ),
         ),
     ]

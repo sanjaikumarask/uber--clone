@@ -143,11 +143,12 @@ export default function FareConfig() {
 
                             {/* Checkbox for is_active */}
                             <div>
-                                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>
+                                <div style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>
                                     Is Active
-                                </label>
-                                <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", height: "48px" }}>
+                                </div>
+                                <label htmlFor="fare-is-active" style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", height: "48px" }}>
                                     <input
+                                        id="fare-is-active"
                                         type="checkbox"
                                         checked={selectedConfig.is_active}
                                         onChange={e => updateField("is_active", e.target.checked)}

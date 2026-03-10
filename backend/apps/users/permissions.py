@@ -7,9 +7,7 @@ class IsRider(BasePermission):
     def has_permission(self, request, view):
         user = request.user
         return bool(
-            user
-            and user.is_authenticated
-            and getattr(user, "role", None) == "rider"
+            user and user.is_authenticated and getattr(user, "role", None) == "rider"
         )
 
 
@@ -19,9 +17,7 @@ class IsDriver(BasePermission):
     def has_permission(self, request, view):
         user = request.user
         return bool(
-            user
-            and user.is_authenticated
-            and getattr(user, "role", None) == "driver"
+            user and user.is_authenticated and getattr(user, "role", None) == "driver"
         )
 
 
@@ -30,8 +26,4 @@ class IsAdmin(BasePermission):
 
     def has_permission(self, request, view):
         user = request.user
-        return bool(
-            user
-            and user.is_authenticated
-            and user.is_admin
-        )
+        return bool(user and user.is_authenticated and user.is_admin)

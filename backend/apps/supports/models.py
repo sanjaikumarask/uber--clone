@@ -1,6 +1,6 @@
-from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db import models
 from django.utils import timezone
 
 from apps.rides.models import Ride
@@ -53,7 +53,7 @@ class SupportTicket(models.Model):
         related_name="resolved_tickets",
     )
 
-    resolution_note = models.TextField(null=True, blank=True)
+    resolution_note = models.TextField(blank=True, default="")
 
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
@@ -72,12 +72,14 @@ class SupportTicket(models.Model):
         self.resolution_note = note
         self.resolved_at = timezone.now()
 
-        self.save(update_fields=[
-            "status",
-            "resolved_by",
-            "resolution_note",
-            "resolved_at",
-        ])
+        self.save(
+            update_fields=[
+                "status",
+                "resolved_by",
+                "resolution_note",
+                "resolved_at",
+            ]
+        )
 
     def reject(self, *, admin, note):
         if self.status != self.Status.OPEN:
@@ -88,12 +90,14 @@ class SupportTicket(models.Model):
         self.resolution_note = note
         self.resolved_at = timezone.now()
 
-        self.save(update_fields=[
-            "status",
-            "resolved_by",
-            "resolution_note",
-            "resolved_at",
-        ])
+        self.save(
+            update_fields=[
+                "status",
+                "resolved_by",
+                "resolution_note",
+                "resolved_at",
+            ]
+        )
 
 
 class Emergency(models.Model):
@@ -112,18 +116,18 @@ class Emergency(models.Model):
         on_delete=models.CASCADE,
         related_name="emergencies",
     )
-    
+
     # Snapshot of location when SOS was pressed
     lat = models.FloatField()
     lng = models.FloatField()
-    
+
     status = models.CharField(
         max_length=16,
         choices=Status.choices,
         default=Status.ACTIVE,
     )
-    
-    resolution_note = models.TextField(null=True, blank=True)
+
+    resolution_note = models.TextField(blank=True, default="")
     resolved_at = models.DateTimeField(null=True, blank=True)
     resolved_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -132,8 +136,11 @@ class Emergency(models.Model):
         blank=True,
         related_name="resolved_emergencies",
     )
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Emergencies"
 
     def resolve(self, admin_user, note, status=Status.RESOLVED):
         self.status = status
@@ -141,9 +148,6 @@ class Emergency(models.Model):
         self.resolved_at = timezone.now()
         self.resolved_by = admin_user
         self.save()
-
-    class Meta:
-        verbose_name_plural = "Emergencies"
 
 
 class FAQ(models.Model):
@@ -160,16 +164,20 @@ class FAQ(models.Model):
 
     question = models.CharField(max_length=255)
     answer = models.TextField()
-    audience = models.CharField(max_length=10, choices=Audience.choices, default=Audience.BOTH)
-    category = models.CharField(max_length=20, choices=Category.choices, default=Category.RIDE_ISSUE)
-    
+    audience = models.CharField(
+        max_length=10, choices=Audience.choices, default=Audience.BOTH
+    )
+    category = models.CharField(
+        max_length=20, choices=Category.choices, default=Category.RIDE_ISSUE
+    )
+
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f"[{self.audience}] {self.question}"
-
     class Meta:
         verbose_name = "FAQ"
         verbose_name_plural = "FAQs"
+
+    def __str__(self):
+        return f"[{self.audience}] {self.question}"

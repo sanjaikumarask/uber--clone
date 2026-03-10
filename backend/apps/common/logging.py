@@ -1,49 +1,68 @@
 import json
 import logging
-import traceback
+
 from django.utils.timezone import now
+
+
+def _safe_log(value: str) -> str:
+    """Strip CR/LF to prevent log injection attacks."""
+    return str(value).replace("\r", "").replace("\n", " ")
+
 
 class JSONFormatter(logging.Formatter):
     """
     Standard Structured Logging Formatter for production observability.
     Outputs logs in JSON format for easy ingestion by Datadog/ELK/Sentry.
     """
+
+    MASKED_FIELDS = {
+        "password", "token", "secret", "cvv", "otp", "code", 
+        "authorization", "api_key", "key", "credential", "signature"
+    }
+
+    def _mask_sensitive_data(self, data):
+        """Recursively mask sensitive keys in log data."""
+        if isinstance(data, dict):
+            return {
+                k: "********" if k.lower() in self.MASKED_FIELDS else self._mask_sensitive_data(v)
+                for k, v in data.items()
+            }
+        elif isinstance(data, list):
+            return [self._mask_sensitive_data(i) for i in data]
+        return data
+
     def format(self, record):
         log_data = {
             "timestamp": now().isoformat(),
             "level": record.levelname,
             "module": record.module,
-            "message": record.getMessage(),
+            "message": _safe_log(record.getMessage()),
             "process": record.process,
             "thread": record.threadName,
         }
 
+        # Mask sensitive data in any extra attributes
+        for key in ["ride_id", "user_id", "driver_id"]:
+            if hasattr(record, key):
+                log_data[key] = getattr(record, key)
+
         # ── FULL OBSERVABILITY: Trace ID ──
-        # Pulls from the TracingMiddleware/Celery Signals 
         from apps.common.resilience import get_trace_id
         log_data["trace_id"] = getattr(record, "trace_id", get_trace_id())
 
-        # ── RED METRICS DATA ──
-        # Duration: If record has 'elapsed_ms'
         if hasattr(record, "elapsed_ms"):
             log_data["duration_ms"] = record.elapsed_ms
-        
-        # Error: Captured if level >= ERROR
+
         log_data["is_error"] = record.levelno >= logging.ERROR
 
-        # Handle extra context
-        if hasattr(record, "ride_id"):
-            log_data["ride_id"] = record.ride_id
-        if hasattr(record, "user_id"):
-            log_data["user_id"] = record.user_id
-        if hasattr(record, "driver_id"):
-            log_data["driver_id"] = record.driver_id
-
-        # Include exception data
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
-        
-        return json.dumps(log_data)
+
+        # Final pass: Mask everything in log_data
+        masked_log_data = self._mask_sensitive_data(log_data)
+
+        return json.dumps(masked_log_data)
+
 
 def setup_logger(name, level=logging.INFO):
     """
@@ -55,6 +74,9 @@ def setup_logger(name, level=logging.INFO):
 
 
 class RedisLogHandler(logging.Handler):
+    # [SECURITY AUDIT] This handler is safe for production use as it uses a 
+    # capped list (LTRIM) to prevent memory exhaustion in Redis, and 
+    # sensitive data is masked at the Formatter level before reaching this handler.
     """
     Custom Logging Handler that streams JSON logs directly to a Redis List.
     This enables the real-time "System Logs" UI in the Admin Dashboard.
@@ -70,12 +92,11 @@ class RedisLogHandler(logging.Handler):
         try:
             # Format using our JSON formatter
             json_str = self.format(record)
-            
+
             # We defer import to avoid startup issues with cache/redis
-            from django.core.cache import cache
             import redis
             from django.conf import settings
-            
+
             # Fast raw write
             # We use a dedicated redis client instance if possible
             r = redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)

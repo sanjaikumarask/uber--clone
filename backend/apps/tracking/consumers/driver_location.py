@@ -1,377 +1,238 @@
 # apps/tracking/consumers/driver_location.py
 
 import json
-import time
 import logging
-from channels.generic.websocket import AsyncWebsocketConsumer
+import time
+
 from channels.db import database_sync_to_async
+from channels.generic.websocket import AsyncWebsocketConsumer
 
 logger = logging.getLogger(__name__)
 
-from apps.rides.models import Ride
-from apps.tracking.geo import (
-    decode_route,
-    snap_to_route,
-    is_deviated,
-    accumulate_distance,
-    snap_to_roads,
-)
-from apps.rides.services.realtime import buffer_ride_progress
-from apps.tracking.smoothing import smooth
 from apps.drivers.redis import (
-    update_driver_location,
     get_driver_last_point,
-    set_driver_last_point,
     redis_client,
+    set_driver_last_point,
+    update_driver_location,
 )
+from apps.rides.models import Ride
+from apps.rides.services.realtime import buffer_ride_progress
+from apps.tracking.geo import (
+    accumulate_distance,
+    decode_route,
+    is_deviated,
+    snap_to_route,
+)
+from apps.tracking.smoothing import smooth
 
 
 class DriverLocationConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         user = self.scope.get("user")
+        if not await self._authenticate_driver(user):
+            return
 
+        # ── BACKPRESSURE: Connection Rate Limiting ──
+        from apps.common.backpressure import ConnectionRateLimiter
+        if not ConnectionRateLimiter.is_allowed(self.driver.id):
+            logger.warning(f"[LocationSocket] 🛑 Rate Limited: Driver {self.driver.id} reconnecting too fast")
+            await self.close(code=4029)
+            return
+
+        await self._enforce_single_session()
+        await self._sync_driver_status_online()
+        await self.accept()
+        logger.info(f"[LocationSocket] ✅ Connected: Driver {self.driver.id}")
+        await self._broadcast_initial_location()
+
+    async def _authenticate_driver(self, user):
         if not user or not user.is_authenticated:
             logger.warning("[LocationSocket] Rejecting: Unauthenticated user")
             await self.close(code=4001)
-            return
-
+            return False
         driver = await self._get_driver(user)
         if not driver:
             logger.warning(f"[LocationSocket] Rejecting: User {user.id} has no driver profile")
             await self.close(code=4003)
-            return
-
+            return False
         self.driver = driver
         self.last_seq = -1
         self.prev_point = None
-        self.last_ping_ts = None  # ⏱️ Track time between pings for speed/waiting logic
-        self.last_deviation_alert_ts = 0  # 🚨 Rate limit deviation alerts
-        self.last_admin_broadcast_ts = 0  # 📡 Rate limit admin map flood
+        self.last_ping_ts = None
+        self.last_deviation_alert_ts = 0
+        self.last_admin_broadcast_ts = 0
+        return True
 
-        # ── BACKPRESSURE: Connection Rate Limiting (10k+ Scale) ──
-        from apps.common.backpressure import ConnectionRateLimiter
-        if not ConnectionRateLimiter.is_allowed(driver.id):
-            logger.warning(f"[LocationSocket] 🛑 Rate Limited: Driver {driver.id} reconnecting too fast")
-            await self.close(code=4029)  # 4029: Too Many Requests (Custom)
-            return
-
-        # ── CONCURRENCY: Single Session Enforcement (Last-one-wins) ──
-        from apps.drivers.redis import redis_client
-        session_key = f"driver_socket:{driver.id}"
+    async def _enforce_single_session(self):
+        session_key = f"driver_socket:{self.driver.id}"
         old_channel = redis_client.get(session_key)
-        
         if old_channel and old_channel != self.channel_name:
-            # Force disconnect the old socket
-            logger.info(f"[LocationSocket] Evicting old session {old_channel} for Driver {driver.id}")
-            await self.channel_layer.send(
-                old_channel,
-                {"type": "force_disconnect", "reason": "new_login"}
-            )
-        
-        # Register this channel as the active one
-        redis_client.set(session_key, self.channel_name, ex=3600)  # 1h expiry
+            logger.info(f"[LocationSocket] Evicting old session {old_channel} for Driver {self.driver.id}")
+            await self.channel_layer.send(old_channel, {"type": "force_disconnect", "reason": "new_login"})
+        redis_client.set(session_key, self.channel_name, ex=3600)
 
-        # ── HEARTBEAT & STATUS SYNC (NEW) ──
-        # Register liveness immediately on connect to prevent matching engine gaps
-        heartbeat_key = f"driver:{self.driver.id}:last_seen"
-        redis_client.set(heartbeat_key, int(time.time()), ex=300)
-        
-        # Ensure DB status is synced to ONLINE (Refresh with select_related to keep .user cached)
-        self.driver = await self._get_driver(user)
-        
+    async def _sync_driver_status_online(self):
+        redis_client.set(f"driver:{self.driver.id}:last_seen", int(time.time()), ex=300)
+        self.driver = await self._get_driver(self.scope.get("user"))
         if self.driver.status == "OFFLINE":
-             def _sync_status():
-                 from apps.drivers.models import Driver
-                 Driver.objects.filter(id=self.driver.id).update(status="ONLINE")
-             await database_sync_to_async(_sync_status)()
-             self.driver.status = "ONLINE" # Optimistic update for the broadcast below
+            def _sync():
+                from apps.drivers.models import Driver
+                Driver.objects.filter(id=self.driver.id).update(status="ONLINE")
+            await database_sync_to_async(_sync)()
+            self.driver.status = "ONLINE"
 
-        await self.accept()
-        logger.info(f"[LocationSocket] ✅ Connected: Driver {driver.id}")
-
-        # 🚀 BROADCAST ON CONNECT (Task 3)
+    async def _broadcast_initial_location(self):
         if self.driver.last_lat and self.driver.last_lng:
             ride = await self._get_active_ride()
-            admin_data = {
-                "driver_id": self.driver.id,
-                "name":      self.driver.user.get_full_name() or self.driver.user.username,
-                "phone":     self.driver.user.phone or "",
-                "lat": float(self.driver.last_lat),
-                "lng": float(self.driver.last_lng),
-                "status": self.driver.status,
-                "ts": int(time.time()),
-            }
-            if ride:
-                admin_data["ride"] = {
-                    "id": ride.id,
-                    "status": ride.status,
-                    "pickup":  {"lat": float(ride.pickup_lat), "lng": float(ride.pickup_lng)},
-                    "pickup_address": ride.pickup_address or "",
-                    "dropoff": {"lat": float(ride.drop_lat),  "lng": float(ride.drop_lng)},
-                    "drop_address": ride.drop_address or "",
-                    "polyline": ride.planned_route_polyline,
-                    "rider_id": ride.rider_id,
-                    "rider_name": ride.rider.get_full_name() or ride.rider.username,
-                    "vehicle_type": ride.vehicle_type,
-                }
-
-            await self.channel_layer.group_send(
-                "admin_live_map",
-                {"type": "driver_location_updated", "data": admin_data},
-            )
+            admin_data = self._build_broadcast_data(ride, float(self.driver.last_lat), float(self.driver.last_lng), {}, None)
+            await self.channel_layer.group_send("admin_live_map", {"type": "driver_location_updated", "data": admin_data})
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        
-        # ── HEARTBEAT (Consolidated) ──
-        # Register liveness in Redis with standardized key for Matching Engine
-        heartbeat_key = f"driver:{self.driver.id}:last_seen"
-        redis_client.set(heartbeat_key, int(time.time()), ex=300)
+        redis_client.set(f"driver:{self.driver.id}:last_seen", int(time.time()), ex=300)
 
-        # Handle ping from client
         if data.get("type") == "ping":
             await self.send(json.dumps({"type": "pong", "ts": int(time.time())}))
             return
 
-        seq = data.get("seq")
-        if seq is None or seq <= self.last_seq:
+        if not self._is_valid_sequence(data.get("seq")):
             return
-
-        self.last_seq = seq
-        
 
         raw_lat, raw_lng = float(data["lat"]), float(data["lng"])
-        accuracy_m = data.get("accuracy_m")
-        
-        # 🚫 1. Reject noisy GPS pings BEFORE processing (relaxed for indoor testing)
-        if accuracy_m is not None and float(accuracy_m) > 120:
-            logger.warning(f"[LocationSocket] Dropping noisy ping ({accuracy_m}m): Driver {self.driver.id}")
-            # Still update heartbeat in Redis so they don't appear OFFLINE
-            from django.utils import timezone
-            await database_sync_to_async(update_driver_location)(
-                self.driver.id, raw_lat, raw_lng,
-            )
+        accuracy_m = float(data.get("accuracy_m", 0))
+
+        from apps.tracking.services import LocationProcessor
+        if LocationProcessor.filter_noisy_ping(accuracy_m):
+            await database_sync_to_async(update_driver_location)(self.driver.id, raw_lat, raw_lng)
             return
 
-        # 🚀 2. Road Snapping (Google Roads API) - throttled for efficiency
-        # We only snap if:
-        # a) No 403/Forbidden error state in Redis
-        # b) Every 10th message (save cost/latency)
-        # c) Active ride is ONGOING (precision matters more)
-        from apps.tracking.geo import snap_to_roads
-        
-        snap_error_key = "google_roads_403_circuit_breaker"
-        should_snap = (seq % 10 == 0) and not redis_client.get(snap_error_key)
-        
-        final_lat, final_lng = raw_lat, raw_lng # Default to raw
-        
-        if should_snap:
-            from django.conf import settings
-            try:
-                snapped = await snap_to_roads(raw_lat, raw_lng, api_key=settings.GOOGLE_MAPS_API_KEY)
-                if snapped:
-                    final_lat, final_lng = snapped
-            except Exception as e:
-                logger.error(f"[LocationSocket] SnapToRoads failed: {e}")
-        
-        
-        heading = data.get("heading")
-        speed_kmh = data.get("speed_kmh")
+        final_lat, final_lng = await LocationProcessor.get_snapped_coords(raw_lat, raw_lng, self.last_seq)
+        await self._persist_location(final_lat, final_lng)
 
-        #  3. Update Redis (Real-time, extremely fast)
-        await database_sync_to_async(update_driver_location)(
-            self.driver.id, final_lat, final_lng,
-        )
-        
-        # 🐘 4. Throttled DB update (PostgreSQL) — every 10 pings to save IO
-        if seq % 10 == 0:
-            def _update_db():
-                from apps.drivers.models import Driver
-                from django.utils import timezone
-                Driver.objects.filter(id=self.driver.id).update(
-                    last_lat=final_lat, 
-                    last_lng=final_lng,
-                    updated_at=timezone.now()
-                )
-                # Refresh status from DB (it might have changed server-side)
-                self.driver.refresh_from_db(fields=["status"])
-            await database_sync_to_async(_update_db)()
-
-        # 2️⃣ Get active ride
         ride = await self._get_active_ride()
+        eta_min = await self._process_ride_location(ride, final_lat, final_lng) if ride else None
 
+        await self._broadcast_location(ride, final_lat, final_lng, data, eta_min)
+        await self.send(json.dumps({"type": "location_sync", "lat": final_lat, "lng": final_lng, "eta": eta_min}))
+
+    def _is_valid_sequence(self, seq):
+        if seq is None or seq <= self.last_seq:
+            return False
+        self.last_seq = seq
+        return True
+
+    async def _persist_location(self, lat, lng):
+        await database_sync_to_async(update_driver_location)(self.driver.id, lat, lng)
+        if self.last_seq % 10 == 0:
+            await self._update_driver_db(lat, lng)
+
+    async def _process_ride_location(self, ride, lat, lng):
+        from apps.tracking.services import LocationProcessor
+        if ride.planned_route_polyline:
+            route = decode_route(ride.planned_route_polyline)
+            snapped, deviation_m = snap_to_route(lat, lng, route)
+            if not is_deviated(deviation_m):
+                lat, lng = smooth(self.prev_point, snapped)
+            elif time.time() - self.last_deviation_alert_ts > 30:
+                await self._send_deviation_alert(ride, lat, lng, deviation_m)
+
+        if ride.status == Ride.Status.ONGOING:
+            now_ts = time.time()
+            elapsed = (now_ts - self.last_ping_ts) if self.last_ping_ts else 0
+            self.last_ping_ts = now_ts
+            prev = await database_sync_to_async(get_driver_last_point)(self.driver.id)
+            delta_km = accumulate_distance(prev, (lat, lng))
+            if not LocationProcessor.detect_fraud(ride, delta_km, elapsed):
+                buffer_ride_progress(ride.id, lat, lng, delta_km)
+                await database_sync_to_async(set_driver_last_point)(self.driver.id, lat, lng)
+
+        return LocationProcessor.calculate_eta(ride, lat, lng)
+
+    async def _broadcast_location(self, ride, lat, lng, data, eta_min):
+        admin_data = self._build_broadcast_data(ride, lat, lng, data, eta_min)
+        await self._throttled_admin_broadcast(admin_data)
         if ride:
-            deviation_m = None
-            if ride.planned_route_polyline:
-                route = decode_route(ride.planned_route_polyline)
-                snapped, deviation_m = snap_to_route(final_lat, final_lng, route)
+            await self._broadcast_to_rider(ride.id, lat, lng, data, eta_min)
 
-                if not is_deviated(deviation_m):
-                    smooth_point = smooth(self.prev_point, snapped)
-                    self.prev_point = smooth_point
-                    final_lat, final_lng = smooth_point
-                else:
-                    # 🚨 Driver is off-route — alert admin (Rate limited to 30s)
-                    now = time.time()
-                    if now - self.last_deviation_alert_ts > 30:
-                        self.last_deviation_alert_ts = now
-                        logger.warning(
-                            f"[LocationSocket] Driver {self.driver.id} deviated {deviation_m:.0f}m from route"
-                        )
-                        await self.channel_layer.group_send(
-                            "admin_live_map",
-                            {
-                                "type": "route_deviation_alert",
-                                "data": {
-                                    "driver_id": self.driver.id,
-                                    "driver_name": self.driver.user.get_full_name() or self.driver.user.username,
-                                    "ride_id": ride.id,
-                                    "deviation_m": round(deviation_m, 1),
-                                    "lat": final_lat,
-                                    "lng": final_lng,
-                                    "ts": int(now),
-                                },
-                            },
-                        )
+    async def _update_driver_db(self, lat, lng):
+        from django.utils import timezone
 
-            # 3️⃣ Accumulate actual distance & route polyline during trip
-            if ride.status == Ride.Status.ONGOING:
-                now_ts = time.time()
-                elapsed_seconds = (now_ts - self.last_ping_ts) if self.last_ping_ts else 0
-                self.last_ping_ts = now_ts
+        from apps.drivers.models import Driver
 
-                prev = await database_sync_to_async(get_driver_last_point)(self.driver.id)
-                delta_km = accumulate_distance(prev, (final_lat, final_lng))
-                
-                # ── VELOCITY VALIDATION (NEW: Fraud Prevention) ──
-                # If speed > 150 km/h, flag as potential fraud/teleportation
-                if elapsed_seconds > 0 and delta_km > 0:
-                    speed_kmh_calc = (delta_km / elapsed_seconds) * 3600
-                    if speed_kmh_calc > 150:
-                        logger.warning(f"[LocationSocket] 🚨 Velocity Violation: Driver {self.driver.id} speed {speed_kmh_calc:.1f} km/h. Flagging Ride {ride.id}")
-                        def _flag_fraud():
-                            ride.is_fraud_flagged = True
-                            ride.save(update_fields=["is_fraud_flagged"])
-                        await database_sync_to_async(_flag_fraud)()
-                        # Optional: drop this ping if it's too crazy
-                        if speed_kmh_calc > 500: # Teleportation
-                            logger.error(f"[LocationSocket] 🛑 Dropping teleportation ping for Driver {self.driver.id}")
-                            return 
-                
-                # ── Waiting Detector (New) ───────────────────────────────────
-                from apps.rides.services.waiting_detector import process_location_update
-                if prev:
-                    wait_data = await database_sync_to_async(process_location_update)(
-                        ride_id=ride.id,
-                        lat=final_lat,
-                        lng=final_lng,
-                        prev_lat=prev[0],
-                        prev_lng=prev[1],
-                        elapsed_seconds=elapsed_seconds
-                    )
-                    # If state changed, we could broadcast it, but for now we just 
-                    # let it accumulate in Redis until ride completion.
-                # ──────────────────────────────────────────────────────────────
+        await database_sync_to_async(Driver.objects.filter(id=self.driver.id).update)(
+            last_lat=lat, last_lng=lng, updated_at=timezone.now()
+        )
 
-                # Buffer ride progress (distance and polyline) in Redis
-                buffer_ride_progress(ride.id, final_lat, final_lng, delta_km)
-                
-                await database_sync_to_async(set_driver_last_point)(
-                    self.driver.id, final_lat, final_lng
-                )
-            else:
-                # Still track timestamp even if ride not ONGOING (for pickup waiting)
-                self.last_ping_ts = time.time()
+    async def _send_deviation_alert(self, ride, lat, lng, deviation_m):
+        self.last_deviation_alert_ts = time.time()
+        await self.channel_layer.group_send(
+            "admin_live_map",
+            {
+                "type": "route_deviation_alert",
+                "data": {
+                    "driver_id": self.driver.id,
+                    "ride_id": ride.id,
+                    "deviation_m": round(deviation_m, 1),
+                    "lat": lat,
+                    "lng": lng,
+                    "ts": int(time.time()),
+                },
+            },
+        )
 
-        # 4️⃣ Calculate simple ETA
-        eta_min = None
-        if ride:
-            # If driver is on the way to pickup or has arrived but trip hasn't started
-            if ride.status in [Ride.Status.ASSIGNED, Ride.Status.ARRIVED]:
-                dest_lat = ride.pickup_lat
-                dest_lng = ride.pickup_lng
-            else:
-                # Trip has started (ONGOING)
-                dest_lat = ride.drop_lat
-                dest_lng = ride.drop_lng
-            
-            from apps.tracking.geo import haversine_m
-            dist_m = haversine_m(final_lat, final_lng, dest_lat, dest_lng)
-            # Estimate 25 km/h = 0.41 km/min
-            eta_min = int(max(1, (dist_m / 1000.0) / 0.41))
-
-        # 5️⃣ Broadcast to admin live map
-        admin_data = {
+    def _build_broadcast_data(self, ride, lat, lng, raw_data, eta_min):
+        res = {
             "driver_id": self.driver.id,
-            "name":      self.driver.user.get_full_name() or self.driver.user.username,
-            "phone":     self.driver.user.phone or "",
-            "lat": final_lat,
-            "lng": final_lng,
-            "heading": heading,
-            "speed_kmh": round(float(speed_kmh), 1) if speed_kmh is not None else None,
+            "lat": lat,
+            "lng": lng,
+            "heading": raw_data.get("heading"),
+            "speed_kmh": round(float(raw_data.get("speed_kmh", 0)), 1),
             "status": self.driver.status,
             "eta": eta_min,
             "ts": int(time.time()),
         }
         if ride:
-            admin_data["ride"] = {
+            res["ride"] = {
                 "id": ride.id,
                 "status": ride.status,
-                "pickup":  {"lat": float(ride.pickup_lat), "lng": float(ride.pickup_lng)},
-                "pickup_address": ride.pickup_address or "",
-                "dropoff": {"lat": float(ride.drop_lat),  "lng": float(ride.drop_lng)},
-                "drop_address": ride.drop_address or "",
-                "polyline": ride.planned_route_polyline,
-                "rider_id": ride.rider_id,
-                "rider_name": ride.rider.get_full_name() or ride.rider.username,
-                "distance_km": round(float(ride.actual_distance_km), 2),
-                "vehicle_type": ride.vehicle_type,
+                "pickup_address": ride.pickup_address,
+                "drop_address": ride.drop_address,
             }
+        return res
 
-        # 5️⃣ Throttled Broadcast to admin live map (Production Fix)
-        # Prevents "Broadcast Death-Star" (5M+ msgs/sec fanout) at 100k driver scale.
+    async def _throttled_admin_broadcast(self, data):
         now = time.time()
-        if now - self.last_admin_broadcast_ts >= 1.0: # Throttle to 1Hz for Admin
+        if now - self.last_admin_broadcast_ts >= 1.0:
             self.last_admin_broadcast_ts = now
             await self.channel_layer.group_send(
-                "admin_live_map",
-                {"type": "driver_location_updated", "data": admin_data},
-            )
-        else:
-            # Skip broadcast to save Redis/Channels CPU
-            pass
-
-        # 6️⃣ Broadcast to rider group
-        if ride:
-            await self.channel_layer.group_send(
-                f"ride_{ride.id}",
-                {
-                    "type": "location_update",
-                    "lat": final_lat,
-                    "lng": final_lng,
-                    "heading": heading,
-                    "eta": eta_min,
-                    "ts": int(time.time()),
-                },
+                "admin_live_map", {"type": "driver_location_updated", "data": data}
             )
 
-        # 7️⃣ Sync back to Driver (Echo)
-        await self.send(text_data=json.dumps({
-            "type": "location_sync",
-            "lat": final_lat,
-            "lng": final_lng,
-            "heading": heading,
-            "eta": eta_min
-        }))
+    async def _broadcast_to_rider(self, ride_id, lat, lng, data, eta_min):
+        await self.channel_layer.group_send(
+            f"ride_{ride_id}",
+            {
+                "type": "location_update",
+                "lat": lat,
+                "lng": lng,
+                "heading": data.get("heading"),
+                "eta": eta_min,
+                "ts": int(time.time()),
+            },
+        )
 
     async def force_disconnect(self, event):
         """Forcefully disconnect this socket because a newer one arrived."""
-        await self.send(json.dumps({
-            "type": "error",
-            "code": "SESSION_EVICTED",
-            "message": "Another connection for this driver was detected. Disconnecting."
-        }))
+        await self.send(
+            json.dumps(
+                {
+                    "type": "error",
+                    "code": "SESSION_EVICTED",
+                    "message": "Another connection for this driver was detected. Disconnecting.",
+                }
+            )
+        )
         await self.close(code=4999)
 
     async def disconnect(self, code):
@@ -379,6 +240,7 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
         if hasattr(self, "driver"):
             # ── Session Cleanup ──
             from apps.drivers.redis import redis_client
+
             session_key = f"driver_socket:{self.driver.id}"
             current_channel = redis_client.get(session_key)
             if current_channel == self.channel_name:
@@ -390,10 +252,14 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
                     "type": "driver_location_updated",
                     "data": {
                         "driver_id": self.driver.id,
-                        "offline": True,       # signal to remove from map
+                        "offline": True,  # signal to remove from map
                         "status": "OFFLINE",
-                        "lat": float(self.driver.last_lat) if self.driver.last_lat else 0,
-                        "lng": float(self.driver.last_lng) if self.driver.last_lng else 0,
+                        "lat": (
+                            float(self.driver.last_lat) if self.driver.last_lat else 0
+                        ),
+                        "lng": (
+                            float(self.driver.last_lng) if self.driver.last_lng else 0
+                        ),
                         "ts": int(time.time()),
                     },
                 },
@@ -403,18 +269,23 @@ class DriverLocationConsumer(AsyncWebsocketConsumer):
     def _get_driver(self, user):
         try:
             from apps.drivers.models import Driver
+
             return Driver.objects.select_related("user").get(user=user)
         except Exception:
             return None
 
     @database_sync_to_async
     def _get_active_ride(self):
-        return Ride.objects.filter(
-            driver=self.driver,
-            status__in=[
-                Ride.Status.OFFERED,
-                Ride.Status.ASSIGNED,
-                Ride.Status.ARRIVED,
-                Ride.Status.ONGOING,
-            ],
-        ).select_related("rider").first()
+        return (
+            Ride.objects.filter(
+                driver=self.driver,
+                status__in=[
+                    Ride.Status.OFFERED,
+                    Ride.Status.ASSIGNED,
+                    Ride.Status.ARRIVED,
+                    Ride.Status.ONGOING,
+                ],
+            )
+            .select_related("rider")
+            .first()
+        )

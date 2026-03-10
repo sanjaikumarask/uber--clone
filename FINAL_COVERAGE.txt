@@ -1,0 +1,182 @@
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.11.15-final-0 _______________
+
+Name                                                  Stmts   Miss Branch BrPart   Cover   Missing
+--------------------------------------------------------------------------------------------------
+apps/__init__.py                                          0      0      0      0 100.00%
+apps/admin_dashboard/__init__.py                          0      0      0      0 100.00%
+apps/admin_dashboard/consumers/live_map.py              117     27     30      9  72.79%   27-28, 37-41, 57, 60, 64, 91, 93, 115-120, 162-166, 225, 247, 249->exit, 262, 266, 270-276, 287
+apps/admin_dashboard/models.py                           19      1      0      0  94.74%   30
+apps/admin_dashboard/routing.py                           3      0      0      0 100.00%
+apps/admin_dashboard/serializers.py                      31      1      2      1  93.94%   73
+apps/admin_dashboard/urls.py                              5      0      0      0 100.00%
+apps/admin_dashboard/views.py                           138      0     20      1  99.37%   211->209
+apps/admin_dashboard/views_admin.py                      78     11     22      0  85.00%   166-181
+apps/common/__init__.py                                   0      0      0      0 100.00%
+apps/common/adaptive.py                                  35     12      6      0  65.85%   26-54
+apps/common/backpressure.py                              82      8     10      1  90.22%   74-76, 119-120, 143, 157-158
+apps/common/budget.py                                    32      4      2      0  88.24%   31-32, 51-52
+apps/common/chaos.py                                     20      0      4      1  95.83%   27->exit
+apps/common/circuit_breaker.py                           30      2      4      0  94.12%   42-43
+apps/common/fraud.py                                    102      9     34      5  89.71%   71, 175-181, 226, 235, 238, 252-253
+apps/common/http.py                                      12      0      4      0 100.00%
+apps/common/idempotency.py                              132     17     36      6  86.31%   96-97, 105-107, 199, 225->227, 239-242, 259-260, 267, 281, 293-295, 301-302
+apps/common/ledger_recon.py                              22      4      2      1  79.17%   51-59, 67
+apps/common/logging.py                                   46      4     12      1  91.38%   54, 71-73
+apps/common/metrics.py                                   10      0      0      0 100.00%
+apps/common/ordering.py                                  20      0      2      0 100.00%
+apps/common/rate_limit.py                                35      3     10      3  86.67%   57->63, 65, 82-83
+apps/common/redis.py                                      3      0      0      0 100.00%
+apps/common/resilience.py                                81     10     18      4  83.84%   63-64, 89-91, 104, 136-137, 144, 146
+apps/common/tasks.py                                     17     17      0      0   0.00%   2-39
+apps/driver_incentives/__init__.py                        0      0      0      0 100.00%
+apps/driver_incentives/consumers.py                      10      5      0      0  50.00%   6-8, 11, 14
+apps/driver_incentives/models.py                         37      3      0      0  91.89%   29, 32-33
+apps/driver_incentives/routing.py                         3      0      0      0 100.00%
+apps/driver_incentives/selectors.py                       5      0      0      0 100.00%
+apps/driver_incentives/serializers.py                    28     11      4      1  56.25%   19-31
+apps/driver_incentives/services/__init__.py               8      3      0      0  62.50%   11-14
+apps/driver_incentives/services/incentive_engine.py      99      6     36      8  86.67%   46->49, 53-58, 71->77, 119->exit, 135->139, 147->exit, 151->exit, 156->exit
+apps/driver_incentives/signals.py                        11      0      0      0 100.00%
+apps/driver_incentives/urls.py                            7      0      0      0 100.00%
+apps/driver_incentives/views.py                          52     26      8      0  43.33%   24-26, 29-34, 38-41, 45-48, 61-68, 79-110
+apps/drivers/__init__.py                                  0      0      0      0 100.00%
+apps/drivers/admin_views.py                             158     49     40      7  64.65%   49, 186-192, 199-202, 208-209, 238, 252-253, 272-290, 297-306, 313-333, 340-375, 392, 395
+apps/drivers/models.py                                  138     14     12      2  85.33%   67-78, 139-144, 255
+apps/drivers/redis.py                                    28      1      4      1  93.75%   30
+apps/drivers/redis_rider.py                              26      7      2      1  71.43%   59, 63-71, 75, 82-89
+apps/drivers/serializers.py                              25     25      4      0   0.00%   1-52
+apps/drivers/services/__init__.py                         2      0      0      0 100.00%
+apps/drivers/services/abuse_detector.py                  69     16     12      5  71.60%   89-90, 94-103, 113-133, 145->151, 147->151, 152->156, 166
+apps/drivers/services/geo.py                             32      8      4      1  75.00%   44-45, 59-62, 69-70, 77-78
+apps/drivers/services/level_engine.py                    54     19     26     12  61.25%   22-25, 37-38, 41-42, 45-46, 51-52, 56, 58, 60, 65, 69, 78, 89, 128-130
+apps/drivers/services/metrics.py                         42      1     18      2  95.00%   38, 48->53
+apps/drivers/services/scoring.py                         33      1      2      1  94.29%   65
+apps/drivers/services/trust.py                           39      1      6      3  91.11%   20, 83->exit, 99->exit
+apps/drivers/tasks.py                                   116      2     20      0  98.53%   178-179
+apps/drivers/urls.py                                      5      0      0      0 100.00%
+apps/drivers/views.py                                   149     32     32     10  75.69%   56, 97-135, 155-161, 217->231, 284, 298, 314, 378, 389-393, 405, 410, 418, 428-429, 449-462
+apps/notifications/__init__.py                            0      0      0      0 100.00%
+apps/notifications/consumers/__init__.py                  0      0      0      0 100.00%
+apps/notifications/consumers/kafka.py                    23     23      6      0   0.00%   3-37
+apps/notifications/enums.py                               9      0      0      0 100.00%
+apps/notifications/metrics.py                             0      0      0      0 100.00%
+apps/notifications/models.py                             38      3      2      0  92.50%   38, 59, 68
+apps/notifications/providers/__init__.py                  0      0      0      0 100.00%
+apps/notifications/providers/email.py                    15      2      4      2  78.95%   18, 28
+apps/notifications/providers/push.py                     19     14      2      0  23.81%   14-38
+apps/notifications/providers/sms.py                      14      2      4      2  77.78%   15, 19
+apps/notifications/providers/websocket.py                12      0      0      0 100.00%
+apps/notifications/push.py                                0      0      0      0 100.00%
+apps/notifications/selectors.py                           6      6      0      0   0.00%   1-10
+apps/notifications/serializers.py                        12      2      0      0  83.33%   25, 29
+apps/notifications/services/__init__.py                   0      0      0      0 100.00%
+apps/notifications/services/alerts.py                    46      5     12      2  87.93%   47->72, 63, 86-87, 95-98
+apps/notifications/services/dispatcher.py                 4      0      0      0 100.00%
+apps/notifications/services/dlq.py                        3      0      0      0 100.00%
+apps/notifications/services/factory.py                    5      0      0      0 100.00%
+apps/notifications/services/payloads.py                   6      0      0      0 100.00%
+apps/notifications/services/registry.py                   3      0      0      0 100.00%
+apps/notifications/services/retry.py                      7      0      0      0 100.00%
+apps/notifications/services/router.py                    23      6      8      0  80.65%   7-8, 12-13, 17-18
+apps/notifications/tasks.py                              27      2      2      0  93.10%   15-16
+apps/notifications/urls.py                                5      0      0      0 100.00%
+apps/notifications/views.py                              17      5      0      0  70.59%   15, 21-24
+apps/offers/__init__.py                                   0      0      0      0 100.00%
+apps/offers/models.py                                    31      1      0      0  96.77%   41
+apps/offers/selectors.py                                  8      0      2      0 100.00%
+apps/offers/serializers.py                               23      6      6      0  58.62%   13-22
+apps/offers/services/__init__.py                          0      0      0      0 100.00%
+apps/offers/services/eligibility_service.py               9      0      6      1  93.33%   5->10
+apps/offers/services/offer_engine.py                     53      0     20      0 100.00%
+apps/offers/services/rider_offer_service.py              32      5     14      3  82.61%   17, 23, 27-28, 34
+apps/offers/urls.py                                       6      0      0      0 100.00%
+apps/offers/views.py                                     75     40      8      0  42.17%   28-53, 65-103, 119-122, 126-129, 142-143, 155-183
+apps/payments/__init__.py                                 0      0      0      0 100.00%
+apps/payments/admin_views.py                             51      0      6      0 100.00%
+apps/payments/models.py                                  97      0      0      0 100.00%
+apps/payments/razorpay_client.py                         10      1      2      1  83.33%   17
+apps/payments/services/compensation.py                   15      1      2      1  88.24%   17
+apps/payments/services/invariants.py                     25      4     12      4  78.38%   29, 32, 35, 52
+apps/payments/services/ledger.py                         25     10      2      0  55.56%   11-13, 65-82
+apps/payments/services/payout.py                         83     13     20      5  80.58%   40, 59, 81-82, 91, 162-176, 187
+apps/payments/services/payout_gateway.py                 18      7      4      0  50.00%   57-66
+apps/payments/services/razorpay.py                       15      2      4      1  84.21%   19-20
+apps/payments/services/reconciliation.py                 34     13     10      3  54.55%   26, 34, 41-43, 47-53, 61-69
+apps/payments/services/refund.py                         44      0     14      1  98.28%   78->113
+apps/payments/services/wallet.py                         18      2      0      0  88.89%   77, 89
+apps/payments/services/webhooks.py                       11      0      0      0 100.00%
+apps/payments/tasks.py                                  199      3     38      4  97.05%   143->147, 274->259, 332->323, 337, 359-360
+apps/payments/urls.py                                     9      0      0      0 100.00%
+apps/payments/views.py                                  111      0     30      2  98.58%   194->202, 214->216
+apps/payments/views_payout.py                            43      1      8      1  96.08%   67
+apps/payments/views_refund.py                            23      2      0      0  91.30%   35-36
+apps/payments/views_wallet.py                            21      0      2      0 100.00%
+apps/payments/views_web.py                               50      2     12      4  90.32%   27, 51->59, 60->73, 98
+apps/payments/webhooks.py                                94     17     26      9  76.67%   29-31, 57-59, 70, 94, 115, 153-155, 170, 179, 183, 188-189
+apps/rides/__init__.py                                    0      0      0      0 100.00%
+apps/rides/admin_views.py                               184      3     60      5  96.72%   92, 148->152, 245-246, 321->exit, 332->exit
+apps/rides/consumer.py                                   34     34     10      0   0.00%   1-79
+apps/rides/consumers.py                                  81     81     16      0   0.00%   1-235
+apps/rides/fare_config.py                                 6      0      0      0 100.00%
+apps/rides/fare_models.py                                58      1      4      0  98.39%   117
+apps/rides/kafka.py                                      35     11      8      2  65.12%   27-29, 35, 39-40, 60-61, 72-75
+apps/rides/middleware.py                                 50     10     16      5  74.24%   17->22, 19, 30->34, 37-42, 52, 62-63
+apps/rides/models.py                                    116      4      8      2  95.16%   224, 240, 255, 314
+apps/rides/routing.py                                     3      0      0      0 100.00%
+apps/rides/serializers.py                                17      0      2      0 100.00%
+apps/rides/services/__init__.py                           0      0      0      0 100.00%
+apps/rides/services/cancellation.py                      34      0     16      0 100.00%
+apps/rides/services/complete_ride.py                     58     14      8      2  75.76%   31-32, 63-64, 74-75, 83-91, 103->119, 126-127
+apps/rides/services/deviation.py                         53      0     18      1  98.59%   79->99
+apps/rides/services/distance.py                          39      1      4      1  95.35%   69
+apps/rides/services/eta.py                               17      0      0      0 100.00%
+apps/rides/services/eta_cache.py                          8      0      0      0 100.00%
+apps/rides/services/eta_updater.py                       10      0      2      0 100.00%
+apps/rides/services/fare.py                              23      0      0      0 100.00%
+apps/rides/services/final_fare.py                        56      4      4      0  93.33%   51-52, 134-135
+apps/rides/services/lifecycle.py                        133      6     28      4  92.55%   53->81, 95->99, 131->135, 247-262, 406-407
+apps/rides/services/matching.py                          76      0      8      0 100.00%
+apps/rides/services/no_show.py                           17      0      2      0 100.00%
+apps/rides/services/otp.py                               30      0     12      0 100.00%
+apps/rides/services/realtime.py                          42      6      4      2  82.61%   39, 60-64
+apps/rides/services/stale_resolver.py                    28      0      6      0 100.00%
+apps/rides/services/surge.py                              9      0      0      0 100.00%
+apps/rides/services/surge_engine.py                      29      0      2      0 100.00%
+apps/rides/services/waiting_detector.py                  77      4     22      5  88.89%   97, 151->160, 157-159, 166->176, 167->170
+apps/rides/signals.py                                    11      0      0      0 100.00%
+apps/rides/tasks.py                                      76     12     20      6  79.17%   71, 89, 92, 95, 104->107, 143-144, 154-160
+apps/rides/urls.py                                        4      0      0      0 100.00%
+apps/rides/views.py                                     447      5    114      6  98.04%   597, 610-612, 697->exit, 700->exit, 726, 813->818, 999->1044
+apps/supports/__init__.py                                 0      0      0      0 100.00%
+apps/supports/models.py                                  87      3      4      2  94.51%   68, 86, 183
+apps/supports/serializers.py                             14      1      0      0  92.86%   25
+apps/supports/services.py                                29      0     10      0 100.00%
+apps/supports/urls.py                                     3      0      0      0 100.00%
+apps/supports/views.py                                   80      6     10      2  91.11%   55, 65, 90-91, 116, 168
+apps/tracking/__init__.py                                 0      0      0      0 100.00%
+apps/tracking/auth.py                                    23      0      2      0 100.00%
+apps/tracking/consumers/driver_location.py              157      1     44      4  97.51%   136, 137->140, 146->150, 240->exit
+apps/tracking/consumers/driver_rides.py                  68     12     12      5  78.75%   29-30, 34-35, 55->65, 120->122, 122->124, 152-155, 168, 181, 187-190, 207-208
+apps/tracking/consumers/rider_tracking.py                94     24     26     10  66.67%   25-26, 31-32, 47->exit, 61->74, 76, 95-99, 109->exit, 114->exit, 148->exit, 163-164, 178, 241, 256-259, 277-286, 315->exit, 322, 344
+apps/tracking/geo.py                                     69     24     18      3  59.77%   13, 43, 59, 69->64, 99-127
+apps/tracking/routing.py                                  5      0      0      0 100.00%
+apps/tracking/services.py                                39      6     10      1  81.63%   27-34
+apps/tracking/smoothing.py                                5      0      2      0 100.00%
+apps/tracking/urls.py                                     3      0      0      0 100.00%
+apps/tracking/views.py                                   23      2      2      0  92.00%   26-27
+apps/users/__init__.py                                    1      0      0      0 100.00%
+apps/users/backends.py                                   23      0      4      0 100.00%
+apps/users/models.py                                     41      1      2      0  97.67%   80
+apps/users/permissions.py                                16      0      0      0 100.00%
+apps/users/serializers.py                               100     15     24      6  81.45%   46-47, 53, 70, 73, 91-95, 98, 103-107
+apps/users/signals.py                                    10      0      4      0 100.00%
+apps/users/tasks.py                                       0      0      0      0 100.00%
+apps/users/urls.py                                        4      0      0      0 100.00%
+apps/users/views.py                                      74      5      6      1  92.50%   96-99, 121
+consumers/__init__.py                                     0      0      0      0 100.00%
+consumers/ride_events.py                                118      0     28      0 100.00%
+--------------------------------------------------------------------------------------------------
+TOTAL                                                  6720    856   1338    208  85.01%
+Required test coverage of 75.0% reached. Total coverage: 85.01%
+======================= 959 passed in 388.47s (0:06:28) ========================

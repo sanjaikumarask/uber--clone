@@ -1,5 +1,5 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 from django.utils import timezone
 
 
@@ -12,21 +12,25 @@ class Offer(models.Model):
     code = models.CharField(max_length=20, unique=True, db_index=True)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    
+
     discount_type = models.CharField(max_length=20, choices=DISCOUNT_TYPE_CHOICES)
     value = models.DecimalField(max_digits=10, decimal_places=2)
-    max_discount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    max_discount = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
     min_ride_value = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    
-    usage_limit = models.PositiveIntegerField(null=True, blank=True, help_text="Total usage limit across all users")
+
+    usage_limit = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Total usage limit across all users"
+    )
     per_user_limit = models.PositiveIntegerField(default=1)
     total_usage_count = models.PositiveIntegerField(default=0)
-    
+
     valid_from = models.DateTimeField()
     valid_to = models.DateTimeField()
     is_active = models.BooleanField(default=True)
-    
-    city = models.CharField(max_length=100, blank=True, null=True)
+
+    city = models.CharField(max_length=100, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def is_valid_now(self):
@@ -44,6 +48,3 @@ class OfferUsage(models.Model):
 
     discount_applied = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
-
-
-

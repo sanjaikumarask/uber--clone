@@ -8,28 +8,70 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rides', '0005_alter_ride_cancelled_by'),
-        ('supports', '0002_initial'),
+        ("rides", "0005_alter_ride_cancelled_by"),
+        ("supports", "0002_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Emergency',
+            name="Emergency",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('lat', models.FloatField()),
-                ('lng', models.FloatField()),
-                ('status', models.CharField(choices=[('ACTIVE', 'Active Emergency'), ('RESOLVED', 'Resolved'), ('FALSE_ALARM', 'False Alarm')], default='ACTIVE', max_length=16)),
-                ('resolution_note', models.TextField(blank=True, null=True)),
-                ('resolved_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('resolved_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='resolved_emergencies', to=settings.AUTH_USER_MODEL)),
-                ('ride', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='emergencies', to='rides.ride')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='emergencies', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("lat", models.FloatField()),
+                ("lng", models.FloatField()),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("ACTIVE", "Active Emergency"),
+                            ("RESOLVED", "Resolved"),
+                            ("FALSE_ALARM", "False Alarm"),
+                        ],
+                        default="ACTIVE",
+                        max_length=16,
+                    ),
+                ),
+                ("resolution_note", models.TextField(blank=True, null=True)),
+                ("resolved_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "resolved_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="resolved_emergencies",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "ride",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="emergencies",
+                        to="rides.ride",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="emergencies",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name_plural': 'Emergencies',
+                "verbose_name_plural": "Emergencies",
             },
         ),
     ]

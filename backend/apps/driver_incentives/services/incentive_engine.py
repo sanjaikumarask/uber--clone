@@ -1,12 +1,14 @@
 import logging
+
 import redis
 from django.conf import settings
-from django.utils import timezone
 from django.db import transaction
-from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 from apps.driver_incentives.models import (
-    DriverIncentive, DriverIncentiveProgress, DriverIncentiveEarning
+    DriverIncentive,
+    DriverIncentiveEarning,
+    DriverIncentiveProgress,
 )
 from apps.payments.models import LedgerEntry
 
@@ -25,7 +27,9 @@ class IncentiveEngine:
         Checks all active incentives and updates progress/earnings.
         """
         if not IncentiveEngine._is_valid_ride_for_incentive(ride):
-            logger.info(f"Ride {ride.id} did not pass anti-abuse checks for incentives.")
+            logger.info(
+                f"Ride {ride.id} did not pass anti-abuse checks for incentives."
+            )
             return
 
         driver = ride.driver
@@ -50,14 +54,17 @@ class IncentiveEngine:
                     IncentiveEngine._handle_peak(driver, incentive, ride)
                 elif incentive.type == DriverIncentive.Type.ZONE:
                     IncentiveEngine._handle_zone(driver, incentive, ride)
-            except Exception as e:
-                logger.error(f"Error processing incentive {incentive.id} for ride {ride.id}: {e}")
+            except Exception:
+                logger.exception(
+                    f"Error processing incentive {incentive.id} for ride {ride.id}"
+                )
 
     @staticmethod
     def _is_valid_ride_for_incentive(ride):
         """Anti-abuse: min distance, duration, no self-rides."""
         # Minimum 500m
-        if (getattr(ride, "actual_distance_km", None) or 0) < 0.5:
+        actual_distance = getattr(ride, "actual_distance_km", None) or 0
+        if actual_distance < 0.5:
             return False
 
         # Min 2 minutes duration
@@ -67,10 +74,7 @@ class IncentiveEngine:
                 return False
 
         # Self-ride check: rider == driver's user
-        if ride.rider_id == getattr(ride.driver, "user_id", None):
-            return False
-
-        return True
+        return ride.rider_id != getattr(ride.driver, "user_id", None)
 
     @staticmethod
     def _handle_streak(driver, incentive, ride):
@@ -95,7 +99,9 @@ class IncentiveEngine:
         progress.save(update_fields=["current_count", "updated_at"])
 
         if current_streak >= required:
-            IncentiveEngine._credit_incentive(driver, incentive, ride, "Streak completed")
+            IncentiveEngine._credit_incentive(
+                driver, incentive, ride, "Streak completed"
+            )
             # Reset streak after rewarding
             redis_client.set(redis_key, 0)
             progress.current_count = 0
@@ -111,7 +117,9 @@ class IncentiveEngine:
 
         local_hour = timezone.localtime(timezone.now()).hour
         if start_hour <= local_hour < end_hour:
-            IncentiveEngine._credit_incentive(driver, incentive, ride, "Peak hour bonus")
+            IncentiveEngine._credit_incentive(
+                driver, incentive, ride, "Peak hour bonus"
+            )
 
     @staticmethod
     def _handle_zone(driver, incentive, ride):
@@ -125,7 +133,9 @@ class IncentiveEngine:
         # City-match mode
         if target_city:
             if getattr(ride, "city", None) == target_city:
-                IncentiveEngine._credit_incentive(driver, incentive, ride, f"Zone bonus ({target_city})")
+                IncentiveEngine._credit_incentive(
+                    driver, incentive, ride, f"Zone bonus ({target_city})"
+                )
             return
 
         # Bounding-box mode: {lat_min, lat_max, lng_min, lng_max}
@@ -140,11 +150,13 @@ class IncentiveEngine:
 
             if pickup_lat and pickup_lng:
                 in_zone = (
-                    lat_min <= float(pickup_lat) <= lat_max and
-                    lng_min <= float(pickup_lng) <= lng_max
+                    lat_min <= float(pickup_lat) <= lat_max
+                    and lng_min <= float(pickup_lng) <= lng_max
                 )
                 if in_zone:
-                    IncentiveEngine._credit_incentive(driver, incentive, ride, "Geo-zone bonus")
+                    IncentiveEngine._credit_incentive(
+                        driver, incentive, ride, "Geo-zone bonus"
+                    )
 
     @staticmethod
     @transaction.atomic
@@ -168,8 +180,12 @@ class IncentiveEngine:
 
         # ── IDEMPOTENCY GUARD ──
         # Check if already credited for THIS ride and THIS incentive
-        if DriverIncentiveEarning.objects.filter(incentive=incentive, ride=ride).exists():
-            logger.info(f"Driver {driver.id} already received incentive {incentive.id} for ride {ride.id}. Skipping.")
+        if DriverIncentiveEarning.objects.filter(
+            incentive=incentive, ride=ride
+        ).exists():
+            logger.info(
+                f"Driver {driver.id} already received incentive {incentive.id} for ride {ride.id}. Skipping."
+            )
             return
 
         # Record earning

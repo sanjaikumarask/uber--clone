@@ -53,7 +53,7 @@ export default function Payments() {
             {alerts.length > 0 && (
                 <div style={{ marginBottom: 32, display: "flex", flexDirection: "column", gap: 12 }}>
                     {alerts.map((a, i) => (
-                        <div key={i} className="animate-shake" style={{
+                        <div key={`${a.type}-${i}`} className="animate-shake" style={{
                             padding: "16px 20px", borderRadius: 12,
                             background: a.level === "ERROR" ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.1)",
                             border: `1px solid ${a.level === "ERROR" ? "rgba(239,68,68,0.2)" : "rgba(245,158,11,0.2)"}`,

@@ -1,8 +1,10 @@
 # backend/apps/notifications/services/registry.py
 
+
 # specific payload builders can be imported, or defined here
 def default_builder(data):
     return data
+
 
 EVENT_REGISTRY = {
     # ---------------------------------------------------------
@@ -12,7 +14,6 @@ EVENT_REGISTRY = {
         "channels": ["ws"],  # Websocket is critical for live driver screen
         "payload_builder": default_builder,
     },
-    
     # ---------------------------------------------------------
     # FLOWCHART STEP: Ride Assigned (Notify Rider)
     # ---------------------------------------------------------
@@ -20,7 +21,6 @@ EVENT_REGISTRY = {
         "channels": ["ws", "push"],
         "payload_builder": default_builder,
     },
-    
     # ---------------------------------------------------------
     # FLOWCHART STEP: Ride Started / Ongoing
     # ---------------------------------------------------------
@@ -28,7 +28,6 @@ EVENT_REGISTRY = {
         "channels": ["ws"],
         "payload_builder": default_builder,
     },
-    
     # ---------------------------------------------------------
     # FLOWCHART STEP: Ride Completed / Payment
     # ---------------------------------------------------------
@@ -36,7 +35,6 @@ EVENT_REGISTRY = {
         "channels": ["ws", "email"],
         "payload_builder": default_builder,
     },
-
     # ---------------------------------------------------------
     # FLOWCHART STEP: Cancelled / Issues
     # ---------------------------------------------------------

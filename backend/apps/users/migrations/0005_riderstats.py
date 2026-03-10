@@ -8,20 +8,35 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0004_user_expo_push_token'),
+        ("users", "0004_user_expo_push_token"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='RiderStats',
+            name="RiderStats",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('total_rides', models.PositiveIntegerField(default=0)),
-                ('rating_sum', models.PositiveIntegerField(default=0)),
-                ('rating_count', models.PositiveIntegerField(default=0)),
-                ('avg_rating', models.FloatField(default=5.0)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='rider_stats', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("total_rides", models.PositiveIntegerField(default=0)),
+                ("rating_sum", models.PositiveIntegerField(default=0)),
+                ("rating_count", models.PositiveIntegerField(default=0)),
+                ("avg_rating", models.FloatField(default=5.0)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="rider_stats",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

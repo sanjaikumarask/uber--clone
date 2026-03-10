@@ -6,18 +6,25 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rides', '0011_add_fareconfig_tip_waiting'),
+        ("rides", "0011_add_fareconfig_tip_waiting"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='ride',
-            name='fare_breakdown',
-            field=models.JSONField(blank=True, help_text='Immutable audit log snapshot of fare calculation (base, distance, surge, waiting, etc) at trip completion', null=True),
+            model_name="ride",
+            name="fare_breakdown",
+            field=models.JSONField(
+                blank=True,
+                help_text="Immutable audit log snapshot of fare calculation (base, distance, surge, waiting, etc) at trip completion",
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='ride',
-            name='is_fraud_flagged',
-            field=models.BooleanField(default=False, help_text='Flagged if distance or waiting time is abnormally high compared to estimates.'),
+            model_name="ride",
+            name="is_fraud_flagged",
+            field=models.BooleanField(
+                default=False,
+                help_text="Flagged if distance or waiting time is abnormally high compared to estimates.",
+            ),
         ),
     ]

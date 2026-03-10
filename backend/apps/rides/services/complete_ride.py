@@ -8,7 +8,9 @@ Ride completion service.
 """
 
 import logging
+
 from django.db import transaction
+
 from apps.rides.models import Ride
 from apps.rides.services.realtime import persist_ride_history_to_db
 
@@ -44,9 +46,10 @@ def complete_ride(ride_id: int) -> Ride:
         # ── Step 1: Pull GPS waiting time from Redis ───────────────────────
         try:
             from apps.rides.services.waiting_detector import (
-                get_total_waiting_seconds,
                 clear_waiting_state,
+                get_total_waiting_seconds,
             )
+
             gps_waiting_seconds = get_total_waiting_seconds(ride_id)
 
             # Use GPS waiting only if it's MORE than what lifecycle already locked
@@ -54,14 +57,17 @@ def complete_ride(ride_id: int) -> Ride:
                 ride.waiting_seconds = gps_waiting_seconds
                 ride.save(update_fields=["waiting_seconds"])
 
-            logger.info(f"complete_ride({ride_id}): waiting_seconds={ride.waiting_seconds}s")
+            logger.info(
+                f"complete_ride({ride_id}): waiting_seconds={ride.waiting_seconds}s"
+            )
         except Exception as e:
             logger.warning(f"complete_ride({ride_id}): waiting detector error ({e})")
 
         # ── Step 2: Calculate final fare ──────────────────────────────────
         from .final_fare import calculate_final_fare, get_fare_breakdown
+
         ride.final_fare = calculate_final_fare(ride)
-        
+
         # Snapshot the fare math components
         try:
             ride.fare_breakdown = get_fare_breakdown(ride)
@@ -70,7 +76,8 @@ def complete_ride(ride_id: int) -> Ride:
 
         # ── Step 2.5: ADVANCED FRAUD DETECTION ───────────────────────────────
         try:
-            from apps.common.fraud import run_fraud_checks, apply_fraud_penalties
+            from apps.common.fraud import apply_fraud_penalties, run_fraud_checks
+
             fraud_signals = run_fraud_checks(ride)
             if fraud_signals:
                 ride.is_fraud_flagged = True
@@ -78,7 +85,7 @@ def complete_ride(ride_id: int) -> Ride:
                 apply_fraud_penalties(ride, fraud_signals)
                 logger.warning(
                     f"[FraudEngine] Ride {ride.id} flagged: {fraud_signals}",
-                    extra={"ride_id": ride.id, "driver_id": ride.driver_id}
+                    extra={"ride_id": ride.id, "driver_id": ride.driver_id},
                 )
         except Exception as e:
             logger.error(f"[FraudEngine] Check failed for ride {ride.id}: {e}")
@@ -89,23 +96,28 @@ def complete_ride(ride_id: int) -> Ride:
 
         # ── Step 3: Status COMPLETED + all broadcasts ─────────────────────
         from .lifecycle import update_ride_status
+
         update_ride_status(ride, Ride.Status.COMPLETED)
 
         # ── Step 4: Driver metrics — completed ride ───────────────────────
         if ride.driver:
             from apps.drivers.services.metrics import update_driver_metrics
+
             update_driver_metrics(ride.driver, "COMPLETED")
 
             # Anti-abuse: fake ride detection
             from apps.drivers.services.abuse_detector import check_fake_ride
+
             check_fake_ride(ride.driver, ride)
-            
+
             # DRIVER INCENTIVES
             from apps.driver_incentives.services import apply_driver_incentive
+
             apply_driver_incentive(ride)
 
         # RIDER OFFERS
         from apps.offers.services.offer_engine import OfferEngine
+
         OfferEngine.finalize_usage(ride)
 
         # ── Step 5: Clean up Redis ─────────────────────────────────────────

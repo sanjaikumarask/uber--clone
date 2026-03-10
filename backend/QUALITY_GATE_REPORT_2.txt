@@ -1,0 +1,251 @@
+time="2026-03-07T14:36:44+05:30" level=warning msg="Found orphan containers ([sonarqube sonarqube_db]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container uber_redis Running 
+ Container uber_zookeeper Running 
+ Container uber_kafka Running 
+ Container uber_postgres Running 
+ Container uber_postgres Waiting 
+ Container uber_postgres Healthy 
+ Container uber-backend-backend-run-556ecd429dd2 Creating 
+ Container uber-backend-backend-run-556ecd429dd2 Created 
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python3.11
+cachedir: .pytest_cache
+django: version: 5.2.12, settings: config.settings (from env)
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0, django-4.12.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 7 items
+
+tests/unit/test_quality_gate.py::TestAdminDashboardFinancials::test_admin_ledger_and_payouts PASSED [ 14%]
+tests/unit/test_quality_gate.py::TestPaymentsWalletExtended::test_wallet_views PASSED [ 28%]
+tests/unit/test_quality_gate.py::TestPaymentsWalletExtended::test_web_checkout_and_verify FAILED [ 42%]
+tests/unit/test_quality_gate.py::TestSupportsExtended::test_emergency_flow FAILED [ 57%]
+tests/unit/test_quality_gate.py::TestSupportsExtended::test_ticket_refund PASSED [ 71%]
+tests/unit/test_quality_gate.py::TestDriversViewsExtended::test_onboarding_and_upload FAILED [ 85%]
+tests/unit/test_quality_gate.py::test_alerts_service PASSED              [100%]
+
+=================================== FAILURES ===================================
+___________ TestPaymentsWalletExtended.test_web_checkout_and_verify ____________
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   psycopg2.errors.UniqueViolation: duplicate key value violates unique constraint "payments_payment_gateway_order_id_key"
+E   DETAIL:  Key (gateway_order_id)=(ord_1) already exists.
+
+The above exception was the direct cause of the following exception:
+tests/unit/test_quality_gate.py:119: in test_web_checkout_and_verify
+    Payment.objects.create(user=rider, ride_id=ride.id, gateway_order_id="ord_1", amount=100)
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:665: in create
+    obj.save(force_insert=True, using=self.db)
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:902: in save
+    self.save_base(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1008: in save_base
+    updated = self._save_table(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1169: in _save_table
+    results = self._do_insert(
+/usr/local/lib/python3.11/site-packages/django_prometheus/models.py:43: in _do_insert
+    return super()._do_insert(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1210: in _do_insert
+    return manager._insert(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:1873: in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/sql/compiler.py:1882: in execute_sql
+    cursor.execute(sql, params)
+/usr/local/lib/python3.11/site-packages/sentry_sdk/utils.py:1842: in runner
+    return sentry_patched_function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/sentry_sdk/integrations/django/__init__.py:645: in execute
+    result = real_execute(self, sql, params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:79: in execute
+    return self._execute_with_wrappers(
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+/usr/local/lib/python3.11/site-packages/django/db/utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.IntegrityError: duplicate key value violates unique constraint "payments_payment_gateway_order_id_key"
+E   DETAIL:  Key (gateway_order_id)=(ord_1) already exists.
+___________________ TestSupportsExtended.test_emergency_flow ___________________
+tests/unit/test_quality_gate.py:134: in test_emergency_flow
+    assert resp.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = <HttpResponseNotFound status_code=404, "text/html; charset=utf-8">.status_code
+----------------------------- Captured stderr call -----------------------------
+WARNING 2026-03-07 09:06:55,033 log Not Found: /api/supports/sos/2/
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/supports/sos/2/
+_____________ TestDriversViewsExtended.test_onboarding_and_upload ______________
+tests/unit/test_quality_gate.py:165: in test_onboarding_and_upload
+    assert api_client.post("/api/drivers/online/").status_code == 200
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/rest_framework/test.py:299: in post
+    response = super().post(
+/usr/local/lib/python3.11/site-packages/rest_framework/test.py:213: in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/rest_framework/test.py:237: in generic
+    return super().generic(
+/usr/local/lib/python3.11/site-packages/django/test/client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/rest_framework/test.py:289: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/rest_framework/test.py:241: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/test/client.py:1087: in request
+    self.check_exception(response)
+/usr/local/lib/python3.11/site-packages/django/test/client.py:802: in check_exception
+    raise exc_value
+/usr/local/lib/python3.11/site-packages/django/core/handlers/exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/core/handlers/base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/sentry_sdk/integrations/django/views.py:87: in sentry_wrapped_callback
+    return callback(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/views/decorators/csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/views/generic/base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/rest_framework/views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/rest_framework/views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+/usr/local/lib/python3.11/site-packages/rest_framework/views.py:486: in raise_uncaught_exception
+    raise exc
+/usr/local/lib/python3.11/site-packages/rest_framework/views.py:512: in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+apps/drivers/views.py:73: in post
+    async_to_sync(channel_layer.group_send)(
+/usr/local/lib/python3.11/site-packages/asgiref/sync.py:325: in __call__
+    return call_result.result()
+           ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/concurrent/futures/_base.py:449: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+/usr/local/lib/python3.11/site-packages/asgiref/sync.py:365: in main_wrap
+    result = await awaitable
+             ^^^^^^^^^^^^^^^
+E   TypeError: object MagicMock can't be used in 'await' expression
+----------------------------- Captured stderr call -----------------------------
+ERROR 2026-03-07 09:06:56,701 log Internal Server Error: /api/drivers/online/
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sentry_sdk/integrations/django/views.py", line 87, in sentry_wrapped_callback
+    return callback(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/django/views/generic/base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/usr/local/lib/python3.11/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/apps/drivers/views.py", line 73, in post
+    async_to_sync(channel_layer.group_send)(
+  File "/usr/local/lib/python3.11/site-packages/asgiref/sync.py", line 325, in __call__
+    return call_result.result()
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/local/lib/python3.11/site-packages/asgiref/sync.py", line 365, in main_wrap
+    result = await awaitable
+             ^^^^^^^^^^^^^^^
+TypeError: object MagicMock can't be used in 'await' expression
+------------------------------ Captured log call -------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/drivers/online/
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/sentry_sdk/integrations/django/views.py", line 87, in sentry_wrapped_callback
+    return callback(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/django/views/generic/base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/usr/local/lib/python3.11/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/usr/local/lib/python3.11/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/apps/drivers/views.py", line 73, in post
+    async_to_sync(channel_layer.group_send)(
+  File "/usr/local/lib/python3.11/site-packages/asgiref/sync.py", line 325, in __call__
+    return call_result.result()
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/local/lib/python3.11/site-packages/asgiref/sync.py", line 365, in main_wrap
+    result = await awaitable
+             ^^^^^^^^^^^^^^^
+TypeError: object MagicMock can't be used in 'await' expression
+=============================== warnings summary ===============================
+tests/unit/test_quality_gate.py::TestDriversViewsExtended::test_onboarding_and_upload
+tests/unit/test_quality_gate.py::test_alerts_service
+  /usr/local/lib/python3.11/site-packages/asgiref/sync.py:608: UserWarning: async_to_sync was passed a non-async-marked callable
+    return AsyncToSync(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/unit/test_quality_gate.py::TestPaymentsWalletExtended::test_web_checkout_and_verify
+FAILED tests/unit/test_quality_gate.py::TestSupportsExtended::test_emergency_flow
+FAILED tests/unit/test_quality_gate.py::TestDriversViewsExtended::test_onboarding_and_upload
+=================== 3 failed, 4 passed, 2 warnings in 7.34s ====================
+

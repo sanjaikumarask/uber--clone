@@ -1,15 +1,17 @@
 # apps/rides/models.py
 
-from django.db import models
-from django.core.exceptions import ValidationError
-from django.conf import settings
-from django.utils import timezone
 from decimal import Decimal
+
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.db import models
+from django.utils import timezone
 from django_prometheus.models import ExportModelOperationsMixin
+
 from apps.drivers.models import Driver
 
 
-class Ride(ExportModelOperationsMixin('ride'), models.Model):
+class Ride(ExportModelOperationsMixin("ride"), models.Model):
     class Status(models.TextChoices):
         SEARCHING = "SEARCHING"
         OFFERED = "OFFERED"
@@ -45,15 +47,15 @@ class Ride(ExportModelOperationsMixin('ride'), models.Model):
     # --------------------
     pickup_lat = models.FloatField()
     pickup_lng = models.FloatField()
-    pickup_address = models.CharField(max_length=255, null=True, blank=True)
+    pickup_address = models.CharField(max_length=255, blank=True, default="")
     drop_lat = models.FloatField()
     drop_lng = models.FloatField()
-    drop_address = models.CharField(max_length=255, null=True, blank=True)
+    drop_address = models.CharField(max_length=255, blank=True, default="")
 
     # --------------------
     # Planned route
     # --------------------
-    planned_route_polyline = models.TextField(null=True, blank=True)
+    planned_route_polyline = models.TextField(blank=True, default="")
     planned_distance_km = models.FloatField(null=True, blank=True)
     planned_duration_min = models.FloatField(null=True, blank=True)
 
@@ -75,7 +77,9 @@ class Ride(ExportModelOperationsMixin('ride'), models.Model):
     # Actual tracking
     # --------------------
     actual_distance_km = models.FloatField(default=0.0)
-    actual_route_polyline = models.TextField(null=True, blank=True, help_text="Encoded polyline of the actual path taken")
+    actual_route_polyline = models.TextField(
+        blank=True, default="", help_text="Encoded polyline of the actual path taken"
+    )
     last_snapped_lat = models.FloatField(null=True, blank=True)
     last_snapped_lng = models.FloatField(null=True, blank=True)
 
@@ -83,20 +87,16 @@ class Ride(ExportModelOperationsMixin('ride'), models.Model):
     # Ride Lifecycle Times
     # --------------------
     start_time = models.DateTimeField(
-        null=True, blank=True,
-        help_text="Locked when ONGOING begins (OTP verified)"
+        null=True, blank=True, help_text="Locked when ONGOING begins (OTP verified)"
     )
     start_lat = models.FloatField(
-        null=True, blank=True,
-        help_text="Driver GPS latitude at ride start"
+        null=True, blank=True, help_text="Driver GPS latitude at ride start"
     )
     start_lng = models.FloatField(
-        null=True, blank=True,
-        help_text="Driver GPS longitude at ride start"
+        null=True, blank=True, help_text="Driver GPS longitude at ride start"
     )
     end_time = models.DateTimeField(
-        null=True, blank=True,
-        help_text="Locked when ride is COMPLETED"
+        null=True, blank=True, help_text="Locked when ride is COMPLETED"
     )
 
     # --------------------
@@ -108,7 +108,6 @@ class Ride(ExportModelOperationsMixin('ride'), models.Model):
         default=Status.SEARCHING,
         db_index=True,
     )
-
     vehicle_type = models.CharField(
         max_length=16,
         default="go",
@@ -130,23 +129,23 @@ class Ride(ExportModelOperationsMixin('ride'), models.Model):
         null=True,
         blank=True,
     )
-    
+
     fare_breakdown = models.JSONField(
         null=True,
         blank=True,
-        help_text="Immutable audit log snapshot of fare calculation (base, distance, surge, waiting, etc) at trip completion"
+        help_text="Immutable audit log snapshot of fare calculation (base, distance, surge, waiting, etc) at trip completion",
     )
 
     # --------------------
     # OTP / arrival
     # --------------------
-    otp_code = models.CharField(max_length=6, null=True, blank=True)
+    otp_code = models.CharField(max_length=6, blank=True, default="")
     otp_expires_at = models.DateTimeField(null=True, blank=True)
     otp_verified_at = models.DateTimeField(null=True, blank=True)
     arrived_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     city = models.CharField(max_length=100, default="Chennai", db_index=True)
-    
+
     # --------------------
     # Offers & Payments
     # --------------------
@@ -155,7 +154,7 @@ class Ride(ExportModelOperationsMixin('ride'), models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="rides"
+        related_name="rides",
     )
     discount_amount = models.DecimalField(
         max_digits=10, decimal_places=2, default=Decimal("0.00")
@@ -164,13 +163,14 @@ class Ride(ExportModelOperationsMixin('ride'), models.Model):
         max_digits=10, decimal_places=2, default=Decimal("0.00")
     )
     tip_amount = models.DecimalField(
-        max_digits=8, decimal_places=2,
+        max_digits=8,
+        decimal_places=2,
         default=Decimal("0.00"),
-        help_text="Tip added by rider AFTER payment. 100% goes to driver."
+        help_text="Tip added by rider AFTER payment. 100% goes to driver.",
     )
     waiting_seconds = models.PositiveIntegerField(
         default=0,
-        help_text="Total seconds driver waited at pickup (arrived_at → otp_verified_at)"
+        help_text="Total seconds driver waited at pickup (arrived_at → otp_verified_at)",
     )
 
     # --------------------
@@ -180,8 +180,8 @@ class Ride(ExportModelOperationsMixin('ride'), models.Model):
     cancelled_by = models.CharField(
         max_length=16,
         choices=CancelledBy.choices,
-        null=True,
         blank=True,
+        default="",
     )
     no_show_marked_at = models.DateTimeField(null=True, blank=True)
 
@@ -192,9 +192,8 @@ class Ride(ExportModelOperationsMixin('ride'), models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     is_fraud_flagged = models.BooleanField(
         default=False,
-        help_text="Flagged if distance or waiting time is abnormally high compared to estimates."
+        help_text="Flagged if distance or waiting time is abnormally high compared to estimates.",
     )
-
 
     ALLOWED_TRANSITIONS = {
         Status.SEARCHING: {Status.OFFERED, Status.ASSIGNED, Status.CANCELLED},
@@ -204,10 +203,13 @@ class Ride(ExportModelOperationsMixin('ride'), models.Model):
         Status.ONGOING: {Status.COMPLETED},
     }
 
-    def transition_to(self, new_status):
+    def __str__(self):
+        return f"Ride #{self.id} ({self.status})"
+
+    def transition_to(self, new_status, **extra_fields):
         """
         Server-Authoritative State Machine.
-        Validates transition and updates specific fields only to prevent 
+        Validates transition and updates specific fields only to prevent
         concurrency 'ghost' overwrites.
         """
         allowed = self.ALLOWED_TRANSITIONS.get(self.status, set())
@@ -216,14 +218,22 @@ class Ride(ExportModelOperationsMixin('ride'), models.Model):
             raise ValidationError(
                 f"Invalid state transition {self.status} → {new_status}"
             )
-        
+
         # Hard restriction on terminal states
         if self.status in {self.Status.COMPLETED, self.Status.CANCELLED}:
-            raise ValidationError(f"Cannot transition from terminal state {self.status}")
+            raise ValidationError(
+                f"Cannot transition from terminal state {self.status}"
+            )
 
         self.status = new_status
         self.updated_at = timezone.now()
-        self.save(update_fields=["status", "updated_at"])
+
+        save_fields = ["status", "updated_at"]
+        for field, value in extra_fields.items():
+            setattr(self, field, value)
+            save_fields.append(field)
+
+        self.save(update_fields=save_fields)
 
     def cancel(self, *, by):
         if self.status in {self.Status.COMPLETED, self.Status.CANCELLED}:
@@ -231,19 +241,19 @@ class Ride(ExportModelOperationsMixin('ride'), models.Model):
         self.status = self.Status.CANCELLED
         self.cancelled_at = timezone.now()
         self.cancelled_by = by
-        self.save(update_fields=[
-            "status",
-            "cancelled_at",
-            "cancelled_by",
-            "updated_at",
-        ])
-
-    def __str__(self):
-        return f"Ride #{self.id} ({self.status})"
+        self.save(
+            update_fields=[
+                "status",
+                "cancelled_at",
+                "cancelled_by",
+                "updated_at",
+            ]
+        )
 
     @property
     def distance(self):
         return self.actual_distance_km or self.planned_distance_km or 0
+
 
 class RideFeedback(models.Model):
     class GiverRole(models.TextChoices):
@@ -256,9 +266,7 @@ class RideFeedback(models.Model):
         related_name="feedbacks",
     )
     giver_role = models.CharField(
-        max_length=10,
-        choices=GiverRole.choices,
-        default=GiverRole.RIDER
+        max_length=10, choices=GiverRole.choices, default=GiverRole.RIDER
     )
     driver = models.ForeignKey(
         Driver,
@@ -271,7 +279,7 @@ class RideFeedback(models.Model):
         related_name="rider_feedbacks",
     )
     rating = models.PositiveSmallIntegerField()
-    comment = models.TextField(null=True, blank=True)
+    comment = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

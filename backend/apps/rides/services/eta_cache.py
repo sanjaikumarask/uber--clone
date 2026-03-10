@@ -17,5 +17,6 @@ def get_cached_eta(ride_id: int):
     raw = redis_client.get(f"ride:{ride_id}:eta")
     return int(raw) if raw else None
 
+
 # Helper Alias
 set_cached_eta = cache_planned_eta

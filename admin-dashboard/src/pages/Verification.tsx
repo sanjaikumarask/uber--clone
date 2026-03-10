@@ -38,17 +38,26 @@ export default function Verification() {
         fetchPending();
     }, []);
 
+    const updateDriverDocumentState = (docId: number, action: "approve" | "reject", reason?: string) => {
+        setDrivers(prev => prev.map(d => {
+            const updatedDocs = d.documents.map(doc => {
+                if (doc.id === docId) {
+                    return { ...doc, status: action === "approve" ? "APPROVED" : "REJECTED", rejection_reason: action === "reject" ? (reason || "") : "" };
+                }
+                return doc;
+            });
+            return { ...d, documents: updatedDocs };
+        }));
+    };
+
     const handleDocAction = async (docId: number, action: "approve" | "reject", reason?: string) => {
         try {
             await api.post(`/drivers/admin/documents/${docId}/approve/`, {
                 action,
                 reason: action === "reject" ? reason : ""
             });
-            // Update local state
-            setDrivers(prev => prev.map(d => ({
-                ...d,
-                documents: d.documents.map(doc => doc.id === docId ? { ...doc, status: action === "approve" ? "APPROVED" : "REJECTED", rejection_reason: action === "reject" ? (reason || "") : "" } : doc)
-            })));
+
+            updateDriverDocumentState(docId, action, reason);
 
             if (rejectionModal.isOpen) setRejectionModal({ isOpen: false, docId: null });
         } catch (err) {
@@ -149,12 +158,13 @@ export default function Verification() {
 
                                             {doc ? (
                                                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                                                    <div
+                                                    <button
                                                         onClick={() => setSelectedImg(doc.file_path)}
-                                                        style={{ height: 160, backgroundColor: "#000", borderRadius: 8, overflow: "hidden", cursor: "zoom-in", border: "1px solid var(--border)" }}
+                                                        style={{ height: 160, backgroundColor: "#000", borderRadius: 8, overflow: "hidden", cursor: "zoom-in", border: "1px solid var(--border)", padding: 0, display: "block", width: "100%" }}
+                                                        aria-label={`Preview ${type} document`}
                                                     >
-                                                        <img src={doc.file_path} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt={type} />
-                                                    </div>
+                                                        <img src={doc.file_path} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt={`${type} document`} />
+                                                    </button>
                                                     {doc.status === "PENDING" && (
                                                         <div style={{ display: "flex", gap: "10px" }}>
                                                             <button
@@ -195,8 +205,13 @@ export default function Verification() {
 
             {/* Rejection Modal */}
             {rejectionModal.isOpen && (
-                <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-                    <div className="card animate-fade" style={{ width: 400, padding: 30, borderRadius: "12px", border: "1px solid var(--border)", background: "var(--bg-2)" }}>
+                <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <button
+                        onClick={() => setRejectionModal({ isOpen: false, docId: null })}
+                        style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", border: "none", cursor: "default", padding: 0, width: "100%", height: "100%" }}
+                        aria-label="Close modal"
+                    />
+                    <div className="card animate-fade" style={{ position: "relative", width: 400, padding: 30, borderRadius: "12px", border: "1px solid var(--border)", background: "var(--bg-2)" }}>
                         <h3 style={{ marginBottom: 10 }}>Reject Document</h3>
                         <p style={{ color: "var(--text-dim)", fontSize: "14px", marginBottom: 20 }}>Please select a reason for rejecting this document:</p>
 
@@ -233,13 +248,14 @@ export default function Verification() {
 
             {/* Image Preview Modal */}
             {selectedImg && (
-                <div
+                <button
                     onClick={() => setSelectedImg(null)}
-                    style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.95)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 40, cursor: "zoom-out" }}
+                    style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.95)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 40, cursor: "zoom-out", border: "none", width: "100%" }}
+                    aria-label="Close image preview"
                 >
-                    <img src={selectedImg} style={{ maxWidth: "90%", maxHeight: "90%", borderRadius: 12, boxShadow: "0 0 50px rgba(0,0,0,0.5)" }} alt="Preview" />
-                    <div style={{ position: "absolute", top: 40, right: 40, color: "#fff", fontSize: "40px", fontWeight: "bold", cursor: "pointer" }}>×</div>
-                </div>
+                    <img src={selectedImg} style={{ maxWidth: "90%", maxHeight: "90%", borderRadius: 12, boxShadow: "0 0 50px rgba(0,0,0,0.5)", pointerEvents: "none" }} alt="Document preview" />
+                    <span style={{ position: "absolute", top: 40, right: 40, color: "#fff", fontSize: "40px", fontWeight: "bold", lineHeight: 1 }}>×</span>
+                </button>
             )}
         </div>
     );

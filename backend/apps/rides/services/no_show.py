@@ -1,10 +1,10 @@
 from decimal import Decimal
+
 from django.db import transaction
 from django.utils import timezone
 
+from apps.payments.models import LedgerEntry, Payment
 from apps.rides.models import Ride
-from apps.payments.models import Payment, LedgerEntry
-
 
 NO_SHOW_FEE = Decimal("50.00")
 NO_SHOW_DRIVER_PAYOUT = Decimal("40.00")

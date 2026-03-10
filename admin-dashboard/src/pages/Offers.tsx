@@ -104,53 +104,14 @@ export default function Offers() {
                 ))}
             </div>
 
-            {loading ? <LoadingSkeleton /> : tab === "list" ? (
-                /* ─── OFFERS TABLE ─── */
-                <div style={{ overflowX: "auto" }}>
-                    <table>
-                        <thead><tr>
-                            <th>Code</th><th>Title</th><th>Type</th><th>Value</th>
-                            <th>Max Disc.</th><th>Usage</th><th>City</th>
-                            <th>Valid</th><th>Status</th><th>Actions</th>
-                        </tr></thead>
-                        <tbody>
-                            {offers.length === 0 && <tr><td colSpan={10} style={{ textAlign: "center", color: "var(--text-3)", padding: 40 }}>No offers created yet.</td></tr>}
-                            {offers.map(o => (
-                                <tr key={o.id}>
-                                    <td><span className="badge badge-blue">{o.code}</span></td>
-                                    <td style={{ fontWeight: 500 }}>{o.title}</td>
-                                    <td><span className="badge badge-purple">{o.discount_type}</span></td>
-                                    <td style={{ fontWeight: 600 }}>
-                                        {o.discount_type === "FLAT" ? `₹${o.value}` : `${o.value}%`}
-                                    </td>
-                                    <td style={{ color: "var(--text-2)" }}>{o.max_discount ? `₹${o.max_discount}` : "—"}</td>
-                                    <td style={{ color: "var(--text-2)" }}>
-                                        {o.total_usage_count}{o.usage_limit ? `/${o.usage_limit}` : ""}
-                                    </td>
-                                    <td style={{ color: "var(--text-2)" }}>{o.city || "Global"}</td>
-                                    <td style={{ fontSize: "0.75rem", color: "var(--text-3)" }}>
-                                        {fmt(o.valid_from)} →<br />{fmt(o.valid_to)}
-                                    </td>
-                                    <td>
-                                        <button onClick={() => toggleActive(o)}
-                                            className={o.is_active ? "badge badge-green" : "badge badge-gray"}
-                                            style={{ cursor: "pointer", border: "none" }}>
-                                            {o.is_active ? "Active" : "Inactive"}
-                                        </button>
-                                    </td>
-                                    <td>
-                                        <button className="btn-danger" style={{ fontSize: "0.75rem", padding: "4px 10px" }}
-                                            onClick={() => handleDelete(o.id!)}>Delete</button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            ) : (
-                /* ─── ANALYTICS TAB ─── */
-                <AnalyticsPanel analytics={analytics} />
-            )}
+            <OfferContent
+                loading={loading}
+                tab={tab}
+                offers={offers}
+                toggleActive={toggleActive}
+                handleDelete={handleDelete}
+                analytics={analytics}
+            />
 
             {/* ─── CREATE MODAL ─── */}
             {showModal && (
@@ -236,6 +197,59 @@ export default function Offers() {
     );
 }
 
+function OfferContent({ loading, tab, offers, toggleActive, handleDelete, analytics }: any) {
+    if (loading) return <LoadingSkeleton />;
+    if (tab === "analytics") return <AnalyticsPanel analytics={analytics} />;
+
+    return (
+        <div style={{ overflowX: "auto" }}>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Code</th><th>Title</th><th>Type</th><th>Value</th>
+                        <th>Max Disc.</th><th>Usage</th><th>City</th>
+                        <th>Valid</th><th>Status</th><th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {offers.length === 0 && (
+                        <tr><td colSpan={10} style={{ textAlign: "center", color: "var(--text-3)", padding: 40 }}>No offers created yet.</td></tr>
+                    )}
+                    {offers.map((o: any) => (
+                        <tr key={o.id}>
+                            <td><span className="badge badge-blue">{o.code}</span></td>
+                            <td style={{ fontWeight: 500 }}>{o.title}</td>
+                            <td><span className="badge badge-purple">{o.discount_type}</span></td>
+                            <td style={{ fontWeight: 600 }}>
+                                {o.discount_type === "FLAT" ? `₹${o.value}` : `${o.value}%`}
+                            </td>
+                            <td style={{ color: "var(--text-2)" }}>{o.max_discount ? `₹${o.max_discount}` : "—"}</td>
+                            <td style={{ color: "var(--text-2)" }}>
+                                {o.total_usage_count}{o.usage_limit ? `/${o.usage_limit}` : ""}
+                            </td>
+                            <td style={{ color: "var(--text-2)" }}>{o.city || "Global"}</td>
+                            <td style={{ fontSize: "0.75rem", color: "var(--text-3)" }}>
+                                {fmt(o.valid_from)} →<br />{fmt(o.valid_to)}
+                            </td>
+                            <td>
+                                <button onClick={() => toggleActive(o)}
+                                    className={o.is_active ? "badge badge-green" : "badge badge-gray"}
+                                    style={{ cursor: "pointer", border: "none" }}>
+                                    {o.is_active ? "Active" : "Inactive"}
+                                </button>
+                            </td>
+                            <td>
+                                <button className="btn-danger" style={{ fontSize: "0.75rem", padding: "4px 10px" }}
+                                    onClick={() => handleDelete(o.id!)}>Delete</button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
 /* ── Helpers ──────────────────────────────────────────────────────── */
 function fmt(iso: string) {
     try { return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" }); }
@@ -285,8 +299,8 @@ function AnalyticsPanel({ analytics }: { analytics: OfferAnalytics | null }) {
                         {analytics.per_offer_breakdown.length === 0 && (
                             <tr><td colSpan={4} style={{ textAlign: "center", color: "var(--text-3)", padding: 32 }}>No usage data yet.</td></tr>
                         )}
-                        {analytics.per_offer_breakdown.map((b, i) => (
-                            <tr key={i}>
+                        {analytics.per_offer_breakdown.map((b) => (
+                            <tr key={b.offer__code}>
                                 <td><span className="badge badge-blue">{b.offer__code}</span></td>
                                 <td>{b.offer__title}</td>
                                 <td style={{ fontWeight: 600 }}>{b.usage_count}</td>
@@ -304,11 +318,11 @@ function AnalyticsPanel({ analytics }: { analytics: OfferAnalytics | null }) {
                     <p style={{ color: "var(--text-3)" }}>No data for the last 7 days.</p>
                 ) : (
                     <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 160 }}>
-                        {analytics.daily_last_7_days.map((d, i) => {
+                        {analytics.daily_last_7_days.map((d) => {
                             const max = Math.max(...analytics.daily_last_7_days.map(x => x.total));
                             const h = max > 0 ? (d.total / max) * 140 : 4;
                             return (
-                                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                                <div key={d.date} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                                     <span style={{ fontSize: "0.65rem", color: "var(--text-2)", fontWeight: 600 }}>₹{d.total}</span>
                                     <div style={{
                                         width: "100%", height: h, borderRadius: "4px 4px 0 0",

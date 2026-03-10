@@ -1,10 +1,12 @@
 # backend/apps/notifications/consumers/kafka.py
 
 import logging
+
 from apps.notifications.services.factory import create_and_enqueue_notification
 from apps.notifications.services.registry import EVENT_REGISTRY
 
 logger = logging.getLogger(__name__)
+
 
 def handle_event(message: dict):
     """
@@ -27,8 +29,8 @@ def handle_event(message: dict):
     try:
         payload_builder = config["payload_builder"]
         payload = payload_builder(data)
-    except Exception as e:
-        logger.error(f"KAFKA_ERROR: Payload builder failed for {event_type}: {e}")
+    except Exception:
+        logger.exception(f"KAFKA_ERROR: Payload builder failed for {event_type}")
         return
 
     for channel in config["channels"]:

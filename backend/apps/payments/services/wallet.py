@@ -1,8 +1,8 @@
 from decimal import Decimal
+
 from django.db.models import Sum
 
 from apps.payments.models import LedgerEntry
-
 
 ZERO = Decimal("0.00")
 
@@ -14,27 +14,23 @@ def get_wallet_balance(user) -> Decimal:
     (HOLD does NOT reduce wallet balance)
     """
 
-    credits = (
-        LedgerEntry.objects
-        .filter(
+    total_credits = (
+        LedgerEntry.objects.filter(
             user=user,
             entry_type=LedgerEntry.Type.CREDIT,
-        )
-        .aggregate(total=Sum("amount"))["total"]
+        ).aggregate(total=Sum("amount"))["total"]
         or ZERO
     )
 
-    debits = (
-        LedgerEntry.objects
-        .filter(
+    total_debits = (
+        LedgerEntry.objects.filter(
             user=user,
             entry_type=LedgerEntry.Type.DEBIT,
-        )
-        .aggregate(total=Sum("amount"))["total"]
+        ).aggregate(total=Sum("amount"))["total"]
         or ZERO
     )
 
-    return credits - debits
+    return total_credits - total_debits
 
 
 def get_held_balance(user) -> Decimal:
@@ -43,27 +39,23 @@ def get_held_balance(user) -> Decimal:
     HOLD - RELEASE
     """
 
-    holds = (
-        LedgerEntry.objects
-        .filter(
+    total_holds = (
+        LedgerEntry.objects.filter(
             user=user,
             entry_type=LedgerEntry.Type.HOLD,
-        )
-        .aggregate(total=Sum("amount"))["total"]
+        ).aggregate(total=Sum("amount"))["total"]
         or ZERO
     )
 
-    releases = (
-        LedgerEntry.objects
-        .filter(
+    total_releases = (
+        LedgerEntry.objects.filter(
             user=user,
             entry_type=LedgerEntry.Type.RELEASE,
-        )
-        .aggregate(total=Sum("amount"))["total"]
+        ).aggregate(total=Sum("amount"))["total"]
         or ZERO
     )
 
-    return holds - releases
+    return total_holds - total_releases
 
 
 def get_available_balance(user) -> Decimal:
@@ -73,8 +65,8 @@ def get_available_balance(user) -> Decimal:
     """
 
     return get_wallet_balance(user) - get_held_balance(user)
-    
-  
+
+
 def debit_rider_wallet(user, amount: Decimal):
     """
     Deduct amount from rider wallet.
@@ -95,7 +87,7 @@ def credit_driver_wallet(driver, amount: Decimal):
     Add earnings to driver wallet.
     """
     LedgerEntry.objects.create(
-        user=driver.user, # Driver object passed, need user
+        user=driver.user,  # Driver object passed, need user
         amount=amount,
         entry_type=LedgerEntry.Type.CREDIT,
         reason=LedgerEntry.Reason.DRIVER_EARNING,

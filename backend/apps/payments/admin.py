@@ -1,7 +1,6 @@
 from django.contrib import admin
-from django.db.models import Sum
 
-from apps.payments.models import Payment, LedgerEntry, Payout
+from apps.payments.models import LedgerEntry, Payment, Payout
 
 
 @admin.register(Payment)
@@ -125,9 +124,7 @@ class PayoutAdmin(admin.ModelAdmin):
     mark_paid.short_description = "Mark selected payouts as PAID (manual)"
 
     def mark_failed(self, request, queryset):
-        queryset.exclude(status=Payout.Status.PAID).update(
-            status=Payout.Status.FAILED
-        )
+        queryset.exclude(status=Payout.Status.PAID).update(status=Payout.Status.FAILED)
 
     mark_failed.short_description = "Mark selected payouts as FAILED"
 

@@ -1,10 +1,13 @@
-import math
-import polyline
 import logging
+import math
+
+import polyline
+
 from apps.common.http import get_async_client
 
 DEVIATION_THRESHOLD_METERS = 50
 logger = logging.getLogger(__name__)
+
 
 def decode_route(polyline_str):
     return polyline.decode(polyline_str)
@@ -41,10 +44,10 @@ def p_to_segment_dist(p_lat, p_lng, a_lat, a_lng, b_lat, b_lng):
 
     t = ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)
     t = max(0, min(1, t))
-    
+
     snap_lat = a_lat + t * (b_lat - a_lat)
     snap_lng = a_lng + t * (b_lng - a_lng)
-    
+
     return haversine_m(p_lat, p_lng, snap_lat, snap_lng), (snap_lat, snap_lng)
 
 
@@ -60,9 +63,9 @@ def snap_to_route(lat, lng, route_points):
 
     for i in range(len(route_points) - 1):
         a = route_points[i]
-        b = route_points[i+1]
+        b = route_points[i + 1]
         dist, snapped = p_to_segment_dist(lat, lng, a[0], a[1], b[0], b[1])
-        
+
         if dist < min_dist:
             min_dist = dist
             closest_point = snapped
@@ -78,10 +81,15 @@ def accumulate_distance(prev, curr):
     if not prev or not curr:
         return 0.0
 
-    return haversine_m(
-        prev[0], prev[1],
-        curr[0], curr[1],
-    ) / 1000.0
+    return (
+        haversine_m(
+            prev[0],
+            prev[1],
+            curr[0],
+            curr[1],
+        )
+        / 1000.0
+    )
 
 
 async def snap_to_roads(lat, lng, api_key=None):
@@ -93,12 +101,8 @@ async def snap_to_roads(lat, lng, api_key=None):
 
     client = get_async_client()
     url = "https://roads.googleapis.com/v1/snapToRoads"
-    params = {
-        "path": f"{lat},{lng}",
-        "interpolate": "false",
-        "key": api_key
-    }
-    
+    params = {"path": f"{lat},{lng}", "interpolate": "false", "key": api_key}
+
     try:
         resp = await client.get(url, params=params)
         if resp.status_code == 200:
@@ -110,8 +114,11 @@ async def snap_to_roads(lat, lng, api_key=None):
         elif resp.status_code == 403:
             # 🚨 CIRCUIT BREAKER: If 403, stop calling Google for 24h to avoid waste.
             from apps.drivers.redis import redis_client
+
             redis_client.set("google_roads_403_circuit_breaker", "true", ex=86400)
-            logger.error("[Geo] Google Roads API returned 403. Disabling snapping for 24h.")
+            logger.error(
+                "[Geo] Google Roads API returned 403. Disabling snapping for 24h."
+            )
         else:
             logger.warning(f"[Geo] snap_to_roads unexpected status {resp.status_code}")
     except Exception as e:

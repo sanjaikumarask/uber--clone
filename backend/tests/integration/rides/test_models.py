@@ -1,15 +1,17 @@
 """
 Unit Tests for Ride Models and Business Logic
 """
-import pytest
-from decimal import Decimal
-from django.utils import timezone
-from django.contrib.auth import get_user_model
 
-from apps.rides.models import Ride
+from decimal import Decimal
+
+import pytest
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+
 from apps.drivers.models import Driver
-from apps.rides.services.otp import generate_and_attach_otp
 from apps.rides import fare_config
+from apps.rides.models import Ride
+from apps.rides.services.otp import generate_and_attach_otp
 
 User = get_user_model()
 
@@ -20,16 +22,13 @@ class TestRideModel:
 
     def setup_method(self):
         self.rider = User.objects.create_user(
-            username="rider",
-            phone="9876543210",
-            password="pass123",
-            role="rider"
+            username="rider", phone="9876543210", password="pass123", role="rider"
         )
         self.driver_user = User.objects.create_user(
-            username="driver",
-            phone="1234567890",
-            password="pass123",
-            role="driver"
+            username="driver", phone="1234567890", password="pass123", role="driver"
+        )
+        Driver.objects.get_or_create(
+            user=self.driver_user, defaults={"status": Driver.Status.OFFLINE}
         )
         self.driver = Driver.objects.get(user=self.driver_user)
 
@@ -47,7 +46,7 @@ class TestRideModel:
             planned_duration_min=15,
             # estimated_fare=Decimal("120.00")
         )
-        
+
         assert ride.id is not None
         assert ride.status == Ride.Status.SEARCHING
         assert ride.rider == self.rider
@@ -60,32 +59,32 @@ class TestRideModel:
             pickup_lat=13.0827,
             pickup_lng=80.2707,
             drop_lat=13.0569,
-            drop_lng=80.2425
+            drop_lng=80.2425,
         )
-        
+
         # PENDING -> SEARCHING
         ride.status = Ride.Status.SEARCHING
         ride.save()
         assert ride.status == Ride.Status.SEARCHING
-        
+
         # SEARCHING -> ASSIGNED
         ride.driver = self.driver
         ride.status = Ride.Status.ASSIGNED
         ride.save()
         assert ride.status == Ride.Status.ASSIGNED
-        
+
         # ASSIGNED -> ARRIVED
         ride.status = Ride.Status.ARRIVED
         ride.arrived_at = timezone.now()
         ride.save()
         assert ride.status == Ride.Status.ARRIVED
-        
+
         # ARRIVED -> ONGOING
         ride.status = Ride.Status.ONGOING
         ride.started_at = timezone.now()
         ride.save()
         assert ride.status == Ride.Status.ONGOING
-        
+
         # ONGOING -> COMPLETED
         ride.status = Ride.Status.COMPLETED
         ride.completed_at = timezone.now()
@@ -101,14 +100,14 @@ class TestRideModel:
             pickup_lng=80.2707,
             drop_lat=13.0569,
             drop_lng=80.2425,
-            status=Ride.Status.SEARCHING
+            status=Ride.Status.SEARCHING,
         )
-        
+
         ride.status = Ride.Status.CANCELLED
         ride.cancelled_at = timezone.now()
         ride.cancelled_by = "rider"
         ride.save()
-        
+
         assert ride.status == Ride.Status.CANCELLED
         assert ride.cancelled_by == "rider"
 
@@ -119,10 +118,7 @@ class TestOTPService:
 
     def setup_method(self):
         self.rider = User.objects.create_user(
-            username="rider",
-            phone="9876543210",
-            password="pass123",
-            role="rider"
+            username="rider", phone="9876543210", password="pass123", role="rider"
         )
         self.ride = Ride.objects.create(
             rider=self.rider,
@@ -130,13 +126,13 @@ class TestOTPService:
             pickup_lng=80.2707,
             drop_lat=13.0569,
             drop_lng=80.2425,
-            status=Ride.Status.ARRIVED
+            status=Ride.Status.ARRIVED,
         )
 
     def test_generate_otp(self):
         """Test OTP generation"""
         otp = generate_and_attach_otp(self.ride)
-        
+
         assert otp is not None
         assert len(otp) == 4
         assert otp.isdigit()

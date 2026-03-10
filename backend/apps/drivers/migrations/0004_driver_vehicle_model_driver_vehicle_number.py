@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('drivers', '0003_driver_bank_account_number_driver_ifsc_code_and_more'),
+        ("drivers", "0003_driver_bank_account_number_driver_ifsc_code_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='driver',
-            name='vehicle_model',
+            model_name="driver",
+            name="vehicle_model",
             field=models.CharField(blank=True, max_length=64, null=True),
         ),
         migrations.AddField(
-            model_name='driver',
-            name='vehicle_number',
+            model_name="driver",
+            name="vehicle_number",
             field=models.CharField(blank=True, max_length=20, null=True),
         ),
     ]

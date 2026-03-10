@@ -10,32 +10,43 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('notifications', '0001_initial'),
+        ("notifications", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='notification',
-            name='user',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+            model_name="notification",
+            name="user",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL
+            ),
         ),
         migrations.AddField(
-            model_name='notificationdeadletter',
-            name='notification',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='notifications.notification'),
+            model_name="notificationdeadletter",
+            name="notification",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                to="notifications.notification",
+            ),
         ),
         migrations.AddField(
-            model_name='notificationpreference',
-            name='user',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+            model_name="notificationpreference",
+            name="user",
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL
+            ),
         ),
         migrations.AddIndex(
-            model_name='notification',
-            index=models.Index(fields=['user', 'status'], name='notificatio_user_id_7088ed_idx'),
+            model_name="notification",
+            index=models.Index(
+                fields=["user", "status"], name="notificatio_user_id_7088ed_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='notification',
-            index=models.Index(fields=['status', 'retry_count'], name='notificatio_status_e60683_idx'),
+            model_name="notification",
+            index=models.Index(
+                fields=["status", "retry_count"], name="notificatio_status_e60683_idx"
+            ),
         ),
     ]

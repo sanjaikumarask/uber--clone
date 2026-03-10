@@ -1,12 +1,14 @@
 import os
+
 import django
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 
-from apps.users.models import User
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from apps.users.models import User
 
 # Get any admin user
 user = User.objects.filter(is_superuser=True).first()
@@ -24,4 +26,3 @@ else:
         print("User extracted:", u.username)
     except Exception as e:
         print("Error validating:", e)
-

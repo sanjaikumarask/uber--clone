@@ -1,6 +1,7 @@
 # apps/rides/tasks/surge.py
 
 from celery import shared_task
+
 from apps.common.redis import redis_client
 
 MAX_SURGE = 3.0

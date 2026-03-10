@@ -7,95 +7,103 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('offers', '0002_remove_offer_bonus_amount_and_more'),
+        ("offers", "0002_remove_offer_bonus_amount_and_more"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='offer',
-            old_name='discount_value',
-            new_name='max_discount',
+            model_name="offer",
+            old_name="discount_value",
+            new_name="max_discount",
         ),
         migrations.RemoveField(
-            model_name='offer',
-            name='end_time',
+            model_name="offer",
+            name="end_time",
         ),
         migrations.RemoveField(
-            model_name='offer',
-            name='max_discount_cap',
+            model_name="offer",
+            name="max_discount_cap",
         ),
         migrations.RemoveField(
-            model_name='offer',
-            name='min_distance',
+            model_name="offer",
+            name="min_distance",
         ),
         migrations.RemoveField(
-            model_name='offer',
-            name='min_ride_amount',
+            model_name="offer",
+            name="min_ride_amount",
         ),
         migrations.RemoveField(
-            model_name='offer',
-            name='offer_type',
+            model_name="offer",
+            name="offer_type",
         ),
         migrations.RemoveField(
-            model_name='offer',
-            name='start_time',
+            model_name="offer",
+            name="start_time",
         ),
         migrations.RemoveField(
-            model_name='offer',
-            name='total_usage_limit',
+            model_name="offer",
+            name="total_usage_limit",
         ),
         migrations.RemoveField(
-            model_name='offer',
-            name='usage_limit_per_user',
+            model_name="offer",
+            name="usage_limit_per_user",
         ),
         migrations.AddField(
-            model_name='offer',
-            name='code',
-            field=models.CharField(blank=True, db_index=True, max_length=20, null=True, unique=True),
+            model_name="offer",
+            name="code",
+            field=models.CharField(
+                blank=True, db_index=True, max_length=20, null=True, unique=True
+            ),
         ),
         migrations.AddField(
-            model_name='offer',
-            name='min_ride_value',
+            model_name="offer",
+            name="min_ride_value",
             field=models.DecimalField(decimal_places=2, default=0, max_digits=10),
         ),
         migrations.AddField(
-            model_name='offer',
-            name='per_user_limit',
+            model_name="offer",
+            name="per_user_limit",
             field=models.PositiveIntegerField(default=1),
         ),
         migrations.AddField(
-            model_name='offer',
-            name='usage_limit',
-            field=models.PositiveIntegerField(blank=True, help_text='Total usage limit across all users', null=True),
+            model_name="offer",
+            name="usage_limit",
+            field=models.PositiveIntegerField(
+                blank=True, help_text="Total usage limit across all users", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='offer',
-            name='valid_from',
+            model_name="offer",
+            name="valid_from",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
         migrations.AddField(
-            model_name='offer',
-            name='valid_to',
+            model_name="offer",
+            name="valid_to",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
         migrations.AddField(
-            model_name='offer',
-            name='value',
+            model_name="offer",
+            name="value",
             field=models.DecimalField(decimal_places=2, default=0, max_digits=10),
         ),
         migrations.AlterField(
-            model_name='offer',
-            name='city',
+            model_name="offer",
+            name="city",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
         migrations.AlterField(
-            model_name='offer',
-            name='discount_type',
-            field=models.CharField(choices=[('FLAT', 'Flat Amount'), ('PERCENTAGE', 'Percentage')], default='FLAT', max_length=20),
+            model_name="offer",
+            name="discount_type",
+            field=models.CharField(
+                choices=[("FLAT", "Flat Amount"), ("PERCENTAGE", "Percentage")],
+                default="FLAT",
+                max_length=20,
+            ),
         ),
         migrations.AlterField(
-            model_name='offer',
-            name='total_usage_count',
+            model_name="offer",
+            name="total_usage_count",
             field=models.PositiveIntegerField(default=0),
         ),
     ]

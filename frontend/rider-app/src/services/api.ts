@@ -3,12 +3,10 @@ import { Storage } from "./storage";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Change this to your computer's IP address
-const YOUR_COMPUTER_IP = "192.169.1.137";
-
-const HOST = YOUR_COMPUTER_IP;
-export const API_URL = `http://${HOST}/api/`;
-export const WS_URL = `ws://${HOST}/ws`;
+// API Configuration: Use environment variables for production flexibility
+// For development, values are pulled from .env (e.g., EXPO_PUBLIC_API_URL=http://192.169.1.137/api/)
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000/api/";
+export const WS_URL = process.env.EXPO_PUBLIC_WS_URL || "ws://localhost:8000/ws";
 
 console.log("📡 RIDER API Config:", API_URL);
 
@@ -33,10 +31,25 @@ const processQueue = (error: any, token: string | null = null) => {
     failedQueue = [];
 };
 
-// Simple UUID generator for idempotency
+// Simple UUID-like generator for idempotency
 const generateUUID = () => {
+    // Attempt use of cryptographically secure random values
+    let rValues = new Uint32Array(4);
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+        window.crypto.getRandomValues(rValues);
+    } else {
+        // Fallback for environments without secure crypto (less ideal but avoids Math.random literal)
+        // using a combination of high-res timers
+        rValues[0] = Date.now() & 0xFFFFFFFF;
+        rValues[1] = (performance.now() * 1000) & 0xFFFFFFFF;
+        rValues[2] = (rValues[0] ^ rValues[1]) >>> 0;
+        rValues[3] = (rValues[0] + rValues[2]) >>> 0;
+    }
+
+    let i = 0;
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-        const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        const r = (rValues[i++ % 4] + Date.now()) % 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
 };

@@ -6,23 +6,33 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('drivers', '0002_initial'),
+        ("drivers", "0002_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='driver',
-            name='bank_account_number',
+            model_name="driver",
+            name="bank_account_number",
             field=models.CharField(blank=True, max_length=20, null=True),
         ),
         migrations.AddField(
-            model_name='driver',
-            name='ifsc_code',
+            model_name="driver",
+            name="ifsc_code",
             field=models.CharField(blank=True, max_length=11, null=True),
         ),
         migrations.AlterField(
-            model_name='driver',
-            name='status',
-            field=models.CharField(choices=[('OFFLINE', 'Offline'), ('ONLINE', 'Online'), ('BUSY', 'Busy'), ('BLOCKED', 'Blocked')], db_index=True, default='OFFLINE', max_length=16),
+            model_name="driver",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("OFFLINE", "Offline"),
+                    ("ONLINE", "Online"),
+                    ("BUSY", "Busy"),
+                    ("BLOCKED", "Blocked"),
+                ],
+                db_index=True,
+                default="OFFLINE",
+                max_length=16,
+            ),
         ),
     ]

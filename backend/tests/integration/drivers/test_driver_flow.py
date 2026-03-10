@@ -1,8 +1,8 @@
 import pytest
 from rest_framework.test import APIClient
 
-from apps.users.models import User
 from apps.drivers.models import Driver
+from apps.users.models import User
 
 
 @pytest.mark.django_db
@@ -16,7 +16,10 @@ class TestDriverFlow:
             role=User.ROLE_DRIVER,
         )
 
-        # Auto-created by signal
+        # Explicitly create driver profile (no auto-signal)
+        Driver.objects.get_or_create(
+            user=self.user, defaults={"status": Driver.Status.OFFLINE}
+        )
         self.driver = Driver.objects.get(user=self.user)
 
         self.client.force_authenticate(user=self.user)

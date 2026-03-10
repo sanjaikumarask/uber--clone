@@ -32,6 +32,24 @@ export default function Alerts() {
 
     if (loading) return <div className="page-center">Fetching System Audit...</div>;
 
+    const getLogTypeStyle = (logType: string) => {
+        if (logType === "ERROR") return {
+            background: "rgba(239,68,68,0.1)",
+            color: "var(--red)",
+            border: "1px solid rgba(239,68,68,0.2)"
+        };
+        if (logType === "WARNING") return {
+            background: "rgba(245,158,11,0.1)",
+            color: "var(--yellow)",
+            border: "1px solid rgba(245,158,11,0.2)"
+        };
+        return {
+            background: "rgba(59,130,246,0.1)",
+            color: "var(--accent)",
+            border: "1px solid rgba(59,130,246,0.2)"
+        };
+    };
+
     return (
         <div className="page" style={{ padding: "36px 48px" }}>
             <header className="page-header">
@@ -64,9 +82,7 @@ export default function Alerts() {
                                     <td style={{ padding: "20px 24px" }}>
                                         <span style={{
                                             padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 800,
-                                            background: log.log_type === "ERROR" ? "rgba(239,68,68,0.1)" : log.log_type === "WARNING" ? "rgba(245,158,11,0.1)" : "rgba(59,130,246,0.1)",
-                                            color: log.log_type === "ERROR" ? "var(--red)" : log.log_type === "WARNING" ? "var(--yellow)" : "var(--accent)",
-                                            border: `1px solid ${log.log_type === "ERROR" ? "rgba(239,68,68,0.2)" : log.log_type === "WARNING" ? "rgba(245,158,11,0.2)" : "rgba(59,130,246,0.2)"}`
+                                            ...getLogTypeStyle(log.log_type)
                                         }}>
                                             {log.log_type}
                                         </span>

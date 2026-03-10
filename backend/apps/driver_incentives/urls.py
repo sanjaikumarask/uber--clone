@@ -1,6 +1,11 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from .views import DriverIncentiveViewSet, DriverIncentiveEarningViewSet, IncentiveAnalyticsView
+
+from .views import (
+    DriverIncentiveEarningViewSet,
+    DriverIncentiveViewSet,
+    IncentiveAnalyticsView,
+)
 
 router = DefaultRouter()
 router.register(r"incentives", DriverIncentiveViewSet, basename="incentive")

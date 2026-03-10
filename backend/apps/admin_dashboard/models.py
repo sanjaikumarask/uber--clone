@@ -1,6 +1,7 @@
 # apps/admin_dashboard/models.py
 from django.db import models
 
+
 class SystemLog(models.Model):
     class LogType(models.TextChoices):
         ERROR = "ERROR", "Error"

@@ -1,50 +1,48 @@
 import logging
 from decimal import Decimal
-from django.db import models
+
+from django.db import models, transaction
 from django.shortcuts import get_object_or_404
-from django.db import transaction
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import status
-from django.utils import timezone
-from datetime import timedelta
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from apps.rides.serializers import RideDetailSerializer
-
-from apps.users.permissions import IsRider, IsDriver
-from apps.rides.models import Ride
-from apps.drivers.models import Driver, DriverStats
-from apps.rides.services.matching import find_driver_and_offer_ride
-from apps.rides.services.otp import generate_and_attach_otp, verify_and_consume_otp
-from apps.rides.services.distance import get_planned_route, RoutePlanningError
-from apps.rides.services.fare import estimate_fare
-from apps.rides.services.final_fare import calculate_final_fare
-from apps.rides.services.cancellation import cancel_ride
-from apps.rides.services.complete_ride import complete_ride
-from apps.rides.services.surge_engine import (
-    cell_id_from_lat_lng, increment_demand, decrement_demand, increment_supply
-)
-from apps.common.idempotency import idempotent_request
 from apps.common.backpressure import endpoint_cooldown
+from apps.common.idempotency import idempotent_request
+from apps.drivers.models import Driver, DriverStats
+from apps.rides.models import Ride
+from apps.rides.serializers import RideDetailSerializer
+from apps.rides.services.cancellation import cancel_ride
+from apps.rides.services.distance import get_planned_route
+from apps.rides.services.fare import estimate_fare
+from apps.rides.services.matching import find_driver_and_offer_ride
+from apps.rides.services.otp import verify_and_consume_otp
+from apps.rides.services.surge_engine import cell_id_from_lat_lng, increment_demand
+from apps.users.permissions import IsDriver, IsRider
 
 logger = logging.getLogger(__name__)
+
 
 class EstimateFareView(APIView):
     """
     Rider-facing view to get price & route preview before booking.
     """
+
     permission_classes = [IsAuthenticated, IsRider]
 
     def post(self, request):
         logger.info(f"EstimateFareView received: {request.data}")
-        
+
         required_keys = ["pickup_lat", "pickup_lng", "drop_lat", "drop_lng"]
         missing_keys = [key for key in required_keys if key not in request.data]
-        
+
         if missing_keys:
-            return Response({"error": f"Missing required fields: {', '.join(missing_keys)}"}, status=400)
-            
+            return Response(
+                {"error": f"Missing required fields: {', '.join(missing_keys)}"},
+                status=400,
+            )
+
         try:
             pickup_lat = float(request.data["pickup_lat"])
             pickup_lng = float(request.data["pickup_lng"])
@@ -53,159 +51,177 @@ class EstimateFareView(APIView):
 
             fare_data = estimate_fare((pickup_lat, pickup_lng), (drop_lat, drop_lng))
             route = get_planned_route((pickup_lat, pickup_lng), (drop_lat, drop_lng))
-            
+
             # --- Support Promo Code Preview ---
             promo_code = request.data.get("promo_code")
             city = request.data.get("city", "Chennai")
             discount = 0
             if promo_code:
                 from apps.offers.services.offer_engine import OfferEngine
+
                 try:
-                    offer = OfferEngine.validate_offer(promo_code, request.user, float(fare_data["estimated_fare"]), city)
-                    discount = OfferEngine.calculate_discount(offer, float(fare_data["estimated_fare"]))
+                    offer = OfferEngine.validate_offer(
+                        promo_code,
+                        request.user,
+                        float(fare_data["estimated_fare"]),
+                        city,
+                    )
+                    discount = OfferEngine.calculate_discount(
+                        offer, float(fare_data["estimated_fare"])
+                    )
                 except Exception as e:
                     logger.warning(f"Promo estimate failed: {e}")
 
-            return Response({
-                "estimated_fare": float(fare_data["estimated_fare"]),
-                "discount_applied": float(discount),
-                "final_estimate": float(fare_data["estimated_fare"]) - float(discount),
-                "distance_km": float(fare_data["distance_km"]),
-                "duration_min": float(fare_data["duration_min"]),
-                "polyline": route["polyline"],
-            })
+            return Response(
+                {
+                    "estimated_fare": float(fare_data["estimated_fare"]),
+                    "discount_applied": float(discount),
+                    "final_estimate": float(fare_data["estimated_fare"])
+                    - float(discount),
+                    "distance_km": float(fare_data["distance_km"]),
+                    "duration_min": float(fare_data["duration_min"]),
+                    "polyline": route["polyline"],
+                }
+            )
         except Exception as e:
             logger.error(f"Fare estimation failed: {e}")
-            return Response({"error": f"Failed to estimate fare: {str(e)}"}, status=400)
+            return Response({"error": f"Failed to estimate fare: {e!s}"}, status=400)
 
-
-from apps.rides.services.complete_ride import complete_ride
 
 class CreateRideView(APIView):
     permission_classes = [IsAuthenticated, IsRider]
 
     @idempotent_request(ttl=300)
     def post(self, request):
-            # ── GLOBAL RATE LIMITING & ABUSE DETECTION ──
-        # Throttles individual users to prevent scripted abuse or unintended concurrency.
-        if not endpoint_cooldown(request.user.id, "create_ride", max_calls=3, window=60):
-            logger.warning(f"[AbuseDiscovery] User {request.user.id} hit create_ride limit", extra={"user_id": request.user.id})
+        if not self._check_rate_limit(request.user.id):
             return Response({"error": "Too many ride requests. Please wait."}, status=429)
 
-        if Ride.objects.filter(
-            rider=request.user, 
-            status__in=[
-                Ride.Status.SEARCHING, 
-                Ride.Status.OFFERED, 
-                Ride.Status.ASSIGNED, 
-                Ride.Status.ARRIVED, 
-                Ride.Status.ONGOING
-            ]
-        ).exists():
+        if self._check_active_ride(request.user):
             return Response({"error": "Active ride exists"}, status=409)
 
         try:
-            # support both snake_case and camelCase for better client compatibility
-            pickup_lat = request.data.get("pickup_lat") or request.data.get("pickupLat")
-            pickup_lng = request.data.get("pickup_lng") or request.data.get("pickupLng")
-            drop_lat   = request.data.get("drop_lat")   or request.data.get("dropLat")
-            drop_lng   = request.data.get("drop_lng")   or request.data.get("dropLng")
+            coords = self._extract_coords(request.data)
+            if "error" in coords:
+                return Response({"error": coords["error"]}, status=400)
 
-            if any(v is None for v in [pickup_lat, pickup_lng, drop_lat, drop_lng]):
-                missing = [k for k, v in {"pickup_lat": pickup_lat, "pickup_lng": pickup_lng, "drop_lat": drop_lat, "drop_lng": drop_lng}.items() if v is None]
-                return Response({"error": f"Missing required coordinates: {', '.join(missing)}"}, status=400)
+            if not self._validate_coords(coords):
+                return Response({"error": "Coordinates out of bounds"}, status=400)
 
-            pickup_lat = float(pickup_lat)
-            pickup_lng = float(pickup_lng)
-            drop_lat   = float(drop_lat)
-            drop_lng   = float(drop_lng)
-
-            pickup_address = request.data.get("pickup_address", "Pickup Point")
-            drop_address = request.data.get("drop_address", "Destination")
             vehicle_type = request.data.get("vehicle_type", "go")
-            
-            # ── Guard: Basic Coordinate Sanity ──
-            if not (-90 <= pickup_lat <= 90 and -180 <= pickup_lng <= 180 and
-                    -90 <= drop_lat <= 90 and -180 <= drop_lng <= 180):
-                return Response({"error": "Coordinates out of bounds (-90 to 90 lat, -180 to 180 lng)"}, status=400)
-            offer_id = request.data.get("offer_id")
-            if not offer_id or (isinstance(offer_id, str) and not offer_id.isdigit()):
-                offer_id = None
-            
-            # 1. Get route & fare
-            fare_data = estimate_fare((pickup_lat, pickup_lng), (drop_lat, drop_lng), vehicle_type)
-            route = get_planned_route((pickup_lat, pickup_lng), (drop_lat, drop_lng))
-            
+            fare_data = estimate_fare(
+                (coords["pickup_lat"], coords["pickup_lng"]),
+                (coords["drop_lat"], coords["drop_lng"]),
+                vehicle_type,
+            )
+            route = get_planned_route(
+                (coords["pickup_lat"], coords["pickup_lng"]),
+                (coords["drop_lat"], coords["drop_lng"]),
+            )
         except (KeyError, ValueError, TypeError) as e:
             logger.error(f"Ride creation input validation failed: {e}")
-            return Response({"error": f"Invalid coordinates or missing fields: {str(e)}"}, status=400)
+            return Response({"error": f"Invalid coordinates or missing fields: {e!s}"}, status=400)
         except Exception as e:
             logger.error(f"Unexpected error during ride prep: {e}")
             return Response({"error": "Failed to prepare ride request"}, status=500)
 
         try:
             with transaction.atomic():
-                ride = Ride.objects.create(
-                    rider=request.user,
-                    pickup_lat=pickup_lat, pickup_lng=pickup_lng,
-                    pickup_address=pickup_address,
-                    drop_lat=drop_lat, drop_lng=drop_lng,
-                    drop_address=drop_address,
-                    status=Ride.Status.SEARCHING,
-                    vehicle_type=vehicle_type,
-                    planned_route_polyline=route["polyline"],
-                    planned_distance_km=fare_data["distance_km"],
-                    planned_duration_min=fare_data["duration_min"],
-                    base_fare=fare_data["estimated_fare"],
-                    city=request.data.get("city", "Chennai"),
-                )
-                
-                # Apply Promo Code if provided
-                promo_code = request.data.get("promo_code")
-                if promo_code:
-                    from apps.offers.services.offer_engine import OfferEngine
-                    try:
-                        OfferEngine.apply_offer(ride, promo_code)
-                    except Exception as e:
-                        logger.warning(f"Failed to apply promo {promo_code} to ride {ride.id}: {e}")
-
-                increment_demand(cell_id_from_lat_lng(pickup_lat, pickup_lng))
-                
-                # 🚀 Broadcast to ADMIN that a new ride is SEARCHING
-                from channels.layers import get_channel_layer
-                from asgiref.sync import async_to_sync
-                layer = get_channel_layer()
-                _rider_name = ride.rider.get_full_name() or ride.rider.username
-                _ride_id    = ride.id
-                _pickup_lat = float(ride.pickup_lat)
-                _pickup_lng = float(ride.pickup_lng)
-                _drop_lat   = float(ride.drop_lat)
-                _drop_lng   = float(ride.drop_lng)
-                _rider_id   = ride.rider_id
-                _vtype      = ride.vehicle_type
-                transaction.on_commit(lambda: async_to_sync(layer.group_send)(
-                    "admin_live_map",
-                    {
-                        "type": "admin_generic_event",
-                        "event": "RIDE_CREATED",
-                        "data": {
-                            "ride_id":      _ride_id,
-                            "status":       "SEARCHING",
-                            "rider_id":     _rider_id,
-                            "rider_name":   _rider_name,
-                            "vehicle_type": _vtype,
-                            "pickup": {"lat": _pickup_lat, "lng": _pickup_lng},
-                            "drop":   {"lat": _drop_lat,   "lng": _drop_lng},
-                        }
-                    }
-                ))
+                ride = self._create_ride_object(request, coords, vehicle_type, fare_data, route)
+                self._apply_promo(ride, request.data.get("promo_code"))
+                increment_demand(cell_id_from_lat_lng(coords["pickup_lat"], coords["pickup_lng"]))
+                self._broadcast_ride_created(ride)
                 transaction.on_commit(lambda: find_driver_and_offer_ride(ride.id))
-            
+
             serializer = RideDetailSerializer(ride)
             return Response(serializer.data, status=201)
         except Exception as e:
             logger.error(f"Ride creation database error: {e}")
             return Response({"error": "Database error during ride creation"}, status=500)
+
+    def _check_rate_limit(self, user_id):
+        if not endpoint_cooldown(user_id, "create_ride", max_calls=3, window=60):
+            logger.warning(f"[AbuseDiscovery] User {user_id} hit create_ride limit")
+            return False
+        return True
+
+    def _check_active_ride(self, user):
+        return Ride.objects.filter(
+            rider=user,
+            status__in=[
+                Ride.Status.SEARCHING,
+                Ride.Status.OFFERED,
+                Ride.Status.ASSIGNED,
+                Ride.Status.ARRIVED,
+                Ride.Status.ONGOING,
+            ],
+        ).exists()
+
+    def _extract_coords(self, data):
+        pickup_lat = data.get("pickup_lat") or data.get("pickupLat")
+        pickup_lng = data.get("pickup_lng") or data.get("pickupLng")
+        drop_lat = data.get("drop_lat") or data.get("dropLat")
+        drop_lng = data.get("drop_lng") or data.get("dropLng")
+
+        if any(v is None for v in [pickup_lat, pickup_lng, drop_lat, drop_lng]):
+            missing = [k for k, v in {"pickup_lat": pickup_lat, "pickup_lng": pickup_lng, "drop_lat": drop_lat, "drop_lng": drop_lng}.items() if v is None]
+            return {"error": f"Missing required coordinates: {', '.join(missing)}"}
+
+        return {
+            "pickup_lat": float(pickup_lat),
+            "pickup_lng": float(pickup_lng),
+            "drop_lat": float(drop_lat),
+            "drop_lng": float(drop_lng),
+        }
+
+    def _validate_coords(self, coords):
+        return (-90 <= coords["pickup_lat"] <= 90 and
+                -180 <= coords["pickup_lng"] <= 180 and
+                -90 <= coords["drop_lat"] <= 90 and
+                -180 <= coords["drop_lng"] <= 180)
+
+    def _create_ride_object(self, request, coords, vehicle_type, fare_data, route):
+        return Ride.objects.create(
+            rider=request.user,
+            pickup_lat=coords["pickup_lat"],
+            pickup_lng=coords["pickup_lng"],
+            pickup_address=request.data.get("pickup_address", "Pickup Point"),
+            drop_lat=coords["drop_lat"],
+            drop_lng=coords["drop_lng"],
+            drop_address=request.data.get("drop_address", "Destination"),
+            status=Ride.Status.SEARCHING,
+            vehicle_type=vehicle_type,
+            planned_route_polyline=route["polyline"],
+            planned_distance_km=fare_data["distance_km"],
+            planned_duration_min=fare_data["duration_min"],
+            base_fare=fare_data["estimated_fare"],
+            city=request.data.get("city", "Chennai"),
+        )
+
+    def _apply_promo(self, ride, promo_code):
+        if promo_code:
+            from apps.offers.services.offer_engine import OfferEngine
+            try:
+                OfferEngine.apply_offer(ride, promo_code)
+            except Exception as e:
+                logger.warning(f"Failed to apply promo {promo_code} to ride {ride.id}: {e}")
+
+    def _broadcast_ride_created(self, ride):
+        from asgiref.sync import async_to_sync
+        from channels.layers import get_channel_layer
+        layer = get_channel_layer()
+        data = {
+            "ride_id": ride.id,
+            "status": "SEARCHING",
+            "rider_id": ride.rider_id,
+            "rider_name": ride.rider.get_full_name() or ride.rider.username,
+            "vehicle_type": ride.vehicle_type,
+            "pickup": {"lat": float(ride.pickup_lat), "lng": float(ride.pickup_lng)},
+            "drop": {"lat": float(ride.drop_lat), "lng": float(ride.drop_lng)},
+        }
+        transaction.on_commit(lambda: async_to_sync(layer.group_send)(
+            "admin_live_map", {"type": "admin_generic_event", "event": "RIDE_CREATED", "data": data}
+        ))
+
 
 # --- Ride Lifecycle Actions (Idempotent) ---
 class AcceptRideView(APIView):
@@ -214,24 +230,34 @@ class AcceptRideView(APIView):
     @idempotent_request(ttl=300)
     def post(self, request, ride_id):
         # ── BACKPRESSURE: API Throttling ──
-        if not endpoint_cooldown(request.user.id, "accept_ride", max_calls=10, window=30):
-            return Response({"error": "Too many attempts. Please slow down."}, status=429)
-        logger.info(f"AcceptRideView: user={request.user.id} attempting to accept ride_id={ride_id}")
-        
+        if not endpoint_cooldown(
+            request.user.id, "accept_ride", max_calls=10, window=30
+        ):
+            return Response(
+                {"error": "Too many attempts. Please slow down."}, status=429
+            )
+        logger.info(
+            f"AcceptRideView: user={request.user.id} attempting to accept ride_id={ride_id}"
+        )
+
         # DEBUG: Check ride state before selecting for update
         ride_exists = Ride.objects.filter(id=ride_id).first()
         if not ride_exists:
             logger.error(f"AcceptRideView: Ride {ride_id} does not exist.")
         else:
-            logger.info(f"AcceptRideView: Ride {ride_id} current status={ride_exists.status}, driver_id={ride_exists.driver_id}")
+            logger.info(
+                f"AcceptRideView: Ride {ride_id} current status={ride_exists.status}, driver_id={ride_exists.driver_id}"
+            )
 
         with transaction.atomic():
             # Use filter().first() instead of get_object_or_404 to provide better error messages
-            ride = Ride.objects.select_for_update().filter(
-                id=ride_id, 
-                driver__user=request.user, 
-                status=Ride.Status.OFFERED
-            ).first()
+            ride = (
+                Ride.objects.select_for_update()
+                .filter(
+                    id=ride_id, driver__user=request.user, status=Ride.Status.OFFERED
+                )
+                .first()
+            )
 
             if not ride:
                 # If we are here, it means the query above failed.
@@ -239,30 +265,37 @@ class AcceptRideView(APIView):
                 actual_ride = Ride.objects.filter(id=ride_id).first()
                 if not actual_ride:
                     return Response({"error": "Ride not found"}, status=404)
-                
+
                 error_msg = f"Cannot accept ride {ride_id}. "
                 if actual_ride.status != Ride.Status.OFFERED:
                     error_msg += f"Status is {actual_ride.status} (expected OFFERED)."
                 if not actual_ride.driver or actual_ride.driver.user != request.user:
-                    error_msg += f"Ride is NOT assigned to you (User {request.user.id})."
-                
+                    error_msg += (
+                        f"Ride is NOT assigned to you (User {request.user.id})."
+                    )
+
                 logger.warning(f"AcceptRideView: {error_msg}")
                 return Response({"error": error_msg}, status=400)
-            
+
             # Ensure driver is BUSY
             driver = ride.driver
             driver.status = Driver.Status.BUSY
             driver.save(update_fields=["status"])
-            
+
             from apps.rides.services.lifecycle import update_ride_status
+
             update_ride_status(ride, Ride.Status.ASSIGNED)
 
             # Track accepted ride for metrics
             from apps.drivers.services.metrics import update_driver_metrics
+
             update_driver_metrics(driver, "ACCEPTED")
 
-        logger.info(f"AcceptRideView: Ride {ride.id} successfully ACCEPTED by Driver {driver.id}")
+        logger.info(
+            f"AcceptRideView: Ride {ride.id} successfully ACCEPTED by Driver {driver.id}"
+        )
         return Response({"status": ride.status})
+
 
 # ... (RejectRideView is the same) ...
 class RejectRideView(APIView):
@@ -270,40 +303,53 @@ class RejectRideView(APIView):
 
     @idempotent_request(ttl=300)
     def post(self, request, ride_id):
-        logger.info(f"RejectRideView: user={request.user.id} rejecting ride_id={ride_id}")
-        
+        logger.info(
+            f"RejectRideView: user={request.user.id} rejecting ride_id={ride_id}"
+        )
+
         with transaction.atomic():
-            ride = Ride.objects.select_for_update().filter(
-                id=ride_id, 
-                driver__user=request.user, 
-                status=Ride.Status.OFFERED
-            ).first()
+            ride = (
+                Ride.objects.select_for_update()
+                .filter(
+                    id=ride_id, driver__user=request.user, status=Ride.Status.OFFERED
+                )
+                .first()
+            )
 
             if not ride:
-                logger.warning(f"RejectRideView: Ride {ride_id} not eligible for rejection by User {request.user.id}")
-                return Response({"error": "Ride not eligible for rejection"}, status=400)
+                logger.warning(
+                    f"RejectRideView: Ride {ride_id} not eligible for rejection by User {request.user.id}"
+                )
+                return Response(
+                    {"error": "Ride not eligible for rejection"}, status=400
+                )
 
             driver = ride.driver
             from apps.drivers.services.metrics import update_driver_metrics
+
             update_driver_metrics(driver, "REJECTED")
-            
+
             ride.driver = None
             ride.status = Ride.Status.SEARCHING
             rj = ride.rejected_driver_ids or []
             if driver.id not in rj:
                 rj.append(driver.id)
             ride.rejected_driver_ids = rj
-            ride.save(update_fields=["driver", "status", "rejected_driver_ids", "updated_at"])
-            
+            ride.save(
+                update_fields=["driver", "status", "rejected_driver_ids", "updated_at"]
+            )
+
             transaction.on_commit(lambda: find_driver_and_offer_ride(ride.id))
-            
+
         logger.info(f"RejectRideView: Driver {driver.id} rejected ride {ride.id}")
         return Response({"status": "REJECTED"})
+
 
 # ============================================================
 # DRIVER ARRIVED (Moved from Driver App)
 # ============================================================
 from apps.rides.services.lifecycle import update_ride_status
+
 
 class DriverArrivedView(APIView):
     permission_classes = [IsAuthenticated, IsDriver]
@@ -319,6 +365,7 @@ class DriverArrivedView(APIView):
             update_ride_status(ride, Ride.Status.ARRIVED)
         return Response({"status": ride.status})
 
+
 # ============================================================
 # START RIDE — Verify OTP + Lock start_time, start_lat, start_lng
 # POST /rides/{id}/start/
@@ -330,14 +377,20 @@ class VerifyOtpView(APIView):
     @idempotent_request(ttl=300)
     def post(self, request, ride_id):
         # ── BACKPRESSURE: API Throttling ──
-        if not endpoint_cooldown(request.user.id, "verify_otp", max_calls=15, window=60):
-            return Response({"error": "Too many OTP attempts. Please wait."}, status=429)
+        if not endpoint_cooldown(
+            request.user.id, "verify_otp", max_calls=15, window=60
+        ):
+            return Response(
+                {"error": "Too many OTP attempts. Please wait."}, status=429
+            )
         otp = request.data.get("otp")
         driver_lat = request.data.get("lat")
         driver_lng = request.data.get("lng")
 
         if not otp:
-            return Response({"error": "OTP is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "OTP is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         with transaction.atomic():
             ride = get_object_or_404(
@@ -356,12 +409,15 @@ class VerifyOtpView(APIView):
             # ── Guard 2: Only allowed from ARRIVED ──
             if ride.status != Ride.Status.ARRIVED:
                 return Response(
-                    {"error": f"Cannot start ride from status '{ride.status}'. Driver must arrive first."},
+                    {
+                        "error": f"Cannot start ride from status '{ride.status}'. Driver must arrive first."
+                    },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
             # ── OTP BRUTE FORCE PROTECTION ──
             from apps.drivers.redis import redis_client
+
             otp_attempt_key = f"otp_attempts:{ride.id}"
             attempts = int(redis_client.get(otp_attempt_key) or 0)
 
@@ -369,9 +425,13 @@ class VerifyOtpView(APIView):
                 # Flag as potential fraud and block further attempts
                 ride.is_fraud_flagged = True
                 ride.save(update_fields=["is_fraud_flagged"])
-                logger.warning(f"OTP Brute Force detected for Ride {ride.id} by User {request.user.id}")
+                logger.warning(
+                    f"OTP Brute Force detected for Ride {ride.id} by User {request.user.id}"
+                )
                 return Response(
-                    {"error": "Too many failed OTP attempts. This ride is flagged for security review. Please contact support."},
+                    {
+                        "error": "Too many failed OTP attempts. This ride is flagged for security review. Please contact support."
+                    },
                     status=status.HTTP_429_TOO_MANY_REQUESTS,
                 )
 
@@ -400,12 +460,14 @@ class VerifyOtpView(APIView):
             f"StartRide: Ride {ride.id} started by Driver {ride.driver.id}. "
             f"start_time={ride.start_time}, gps=({ride.start_lat},{ride.start_lng})"
         )
-        return Response({
-            "status": ride.status,
-            "start_time": ride.start_time,
-            "start_lat": ride.start_lat,
-            "start_lng": ride.start_lng,
-        })
+        return Response(
+            {
+                "status": ride.status,
+                "start_time": ride.start_time,
+                "start_lat": ride.start_lat,
+                "start_lng": ride.start_lng,
+            }
+        )
 
 
 # ============================================================
@@ -419,13 +481,18 @@ class CompleteRideView(APIView):
     @idempotent_request(ttl=300)
     def post(self, request, ride_id):
         # ── BACKPRESSURE: API Throttling ──
-        if not endpoint_cooldown(request.user.id, "complete_ride", max_calls=10, window=60):
-            return Response({"error": "Too many complete requests. Please wait."}, status=429)
+        if not endpoint_cooldown(
+            request.user.id, "complete_ride", max_calls=10, window=60
+        ):
+            return Response(
+                {"error": "Too many complete requests. Please wait."}, status=429
+            )
 
         # ── Complete Ride (fare calculation + status + broadcasts) ──
         # This is done OUTSIDE the above lock to let complete_ride() get its own lock
         try:
             from apps.rides.services.complete_ride import complete_ride
+
             ride = complete_ride(ride_id)
         except Exception as e:
             logger.error(f"CompleteRide: Failed for ride {ride_id}: {e}", exc_info=True)
@@ -438,13 +505,15 @@ class CompleteRideView(APIView):
             f"CompleteRide: Ride {ride.id} completed. "
             f"end_time={ride.end_time}, final_fare=₹{ride.final_fare}"
         )
-        return Response({
-            "status": ride.status,
-            "end_time": ride.end_time,
-            "start_time": ride.start_time,
-            "final_fare": str(ride.final_fare),
-            "actual_distance_km": round(ride.actual_distance_km, 2),
-        })
+        return Response(
+            {
+                "status": ride.status,
+                "end_time": ride.end_time,
+                "start_time": ride.start_time,
+                "final_fare": str(ride.final_fare),
+                "actual_distance_km": round(ride.actual_distance_km, 2),
+            }
+        )
 
 
 class MarkNoShowView(APIView):
@@ -452,8 +521,13 @@ class MarkNoShowView(APIView):
 
     def post(self, request, ride_id):
         with transaction.atomic():
-            ride = get_object_or_404(Ride.objects.select_for_update(), id=ride_id, driver__user=request.user, status=Ride.Status.ARRIVED)
-            
+            ride = get_object_or_404(
+                Ride.objects.select_for_update(),
+                id=ride_id,
+                driver__user=request.user,
+                status=Ride.Status.ARRIVED,
+            )
+
             # Simple check (uncomment for production)
             # if timezone.now() < ride.arrived_at + timedelta(minutes=5):
             #     return Response({"error": "Wait time not completed"}, status=400)
@@ -462,24 +536,30 @@ class MarkNoShowView(APIView):
             driver = ride.driver
             driver.status = Driver.Status.ONLINE
             driver.save(update_fields=["status"])
-            
+
         return Response({"status": ride.status})
+
 
 # ... (CompleteRideView, CancelRideView, UpdateDestinationView, ActiveRideView remain the same) ...
 
 
 class CancelRideView(APIView):
     permission_classes = [IsAuthenticated]
+
     @idempotent_request(ttl=300)
     def post(self, request, ride_id):
         # ── BACKPRESSURE: API Throttling ──
-        if not endpoint_cooldown(request.user.id, "cancel_ride", max_calls=10, window=60):
-            return Response({"error": "Too many cancel requests. Please wait."}, status=429)
+        if not endpoint_cooldown(
+            request.user.id, "cancel_ride", max_calls=10, window=60
+        ):
+            return Response(
+                {"error": "Too many cancel requests. Please wait."}, status=429
+            )
 
         with transaction.atomic():
             # 🔒 Lock the ride row to avoid race conditions with start_ride/complete_ride
             ride = get_object_or_404(Ride.objects.select_for_update(), id=ride_id)
-            
+
             # Already cancelled? (Idempotent success)
             if ride.status == Ride.Status.CANCELLED:
                 return Response({"status": "CANCELLED"})
@@ -492,37 +572,66 @@ class CancelRideView(APIView):
             elif ride.driver and ride.driver.user == request.user:
                 cancel_ride(ride=ride, by=Ride.CancelledBy.DRIVER)
             else:
-                return Response({"error":"No permission"}, status=403)
+                return Response({"error": "No permission"}, status=403)
 
         return Response({"status": "CANCELLED"})
 
+
 class UpdateDestinationView(APIView):
     permission_classes = [IsAuthenticated, IsRider]
+
     def post(self, request, ride_id):
-        # Implementation from previous steps
-        return Response({"status": "UPDATED"})
+        try:
+            ride = get_object_or_404(Ride, id=ride_id, rider=request.user)
+
+            if ride.status != Ride.Status.ONGOING:
+                return Response(
+                    {"error": f"Ride {ride_id} is not ONGOING. Cannot update destination."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            drop_lat = request.data.get("drop_lat") or request.data.get("dropLat")
+            drop_lng = request.data.get("drop_lng") or request.data.get("dropLng")
+
+            if not drop_lat or not drop_lng:
+                return Response(
+                    {"error": "drop_lat and drop_lng are required"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            with transaction.atomic():
+                ride.drop_lat = float(drop_lat)
+                ride.drop_lng = float(drop_lng)
+                # In a real app, we'd recalculate fare and route here
+                ride.save(update_fields=["drop_lat", "drop_lng", "updated_at"])
+
+            logger.info(f"Ride {ride.id} destination updated to ({drop_lat}, {drop_lng})")
+            return Response({"status": "UPDATED", "drop_lat": ride.drop_lat, "drop_lng": ride.drop_lng})
+        except Exception as e:
+            logger.error(f"Failed to update destination for ride {ride_id}: {e}")
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ActiveRideView(APIView):
     permission_classes = [IsAuthenticated, IsRider]
+
     def get(self, request):
         ride = Ride.objects.filter(
-            rider=request.user, 
+            rider=request.user,
             status__in=[
-                Ride.Status.SEARCHING, 
-                Ride.Status.OFFERED, 
-                Ride.Status.ASSIGNED, 
-                Ride.Status.ARRIVED, 
-                Ride.Status.ONGOING
-            ]
+                Ride.Status.SEARCHING,
+                Ride.Status.OFFERED,
+                Ride.Status.ASSIGNED,
+                Ride.Status.ARRIVED,
+                Ride.Status.ONGOING,
+            ],
         ).first()
-        
-        if not ride: 
+
+        if not ride:
             return Response({"id": None})
-            
+
         serializer = RideDetailSerializer(ride)
         return Response(serializer.data)
-
-
 
 
 class RideDetailView(APIView):
@@ -544,15 +653,20 @@ class RideDetailView(APIView):
 
 class RideHistoryView(APIView):
     """Get ride history for the authenticated user (Rider or Driver)"""
+
     permission_classes = [IsAuthenticated]
-    
+
     def get(self, request):
         user = request.user
-        rides = Ride.objects.filter(
-            models.Q(rider=user) | models.Q(driver__user=user),
-            status__in=[Ride.Status.COMPLETED, Ride.Status.CANCELLED]
-        ).select_related('driver', 'rider', 'driver__user').order_by('-created_at')[:50]
-        
+        rides = (
+            Ride.objects.filter(
+                models.Q(rider=user) | models.Q(driver__user=user),
+                status__in=[Ride.Status.COMPLETED, Ride.Status.CANCELLED],
+            )
+            .select_related("driver", "rider", "driver__user")
+            .order_by("-created_at")[:50]
+        )
+
         serializer = RideDetailSerializer(rides, many=True)
         return Response(serializer.data)
 
@@ -561,12 +675,13 @@ class SubmitFeedbackView(APIView):
     """
     Riders can rate Drivers, and Drivers can rate Riders.
     """
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request, ride_id):
         ride = get_object_or_404(Ride, id=ride_id, status=Ride.Status.COMPLETED)
         user = request.user
-        
+
         rating = request.data.get("rating")
         comment = request.data.get("comment", "")
 
@@ -574,54 +689,52 @@ class SubmitFeedbackView(APIView):
             return Response({"error": "Rating must be between 1 and 5"}, status=400)
 
         from apps.rides.models import RideFeedback
-        from apps.drivers.models import DriverStats
         from apps.users.models import RiderStats
 
         with transaction.atomic():
             if user.role == "rider":
-                # Rider rating Driver
-                if ride.rider != user and not user.is_admin:
-                    return Response({"error": "Unauthorized"}, status=403)
-                
-                if RideFeedback.objects.filter(ride=ride, giver_role=RideFeedback.GiverRole.RIDER).exists():
-                    return Response({"error": "Feedback already submitted"}, status=400)
-
-                RideFeedback.objects.create(
-                    ride=ride,
-                    rider=ride.rider,
-                    driver=ride.driver,
-                    giver_role=RideFeedback.GiverRole.RIDER,
-                    rating=int(rating),
-                    comment=comment
-                )
-                # Update Driver Stats
-                stats, _ = DriverStats.objects.get_or_create(driver=ride.driver)
-                stats.update_rating(int(rating))
-
+                resp = self._handle_rider_feedback(ride, user, rating, comment)
+                if resp: return resp
             elif user.role == "driver":
-                # Driver rating Rider
-                if (not ride.driver or ride.driver.user != user) and not user.is_admin:
-                    return Response({"error": "Unauthorized"}, status=403)
-
-                if RideFeedback.objects.filter(ride=ride, giver_role=RideFeedback.GiverRole.DRIVER).exists():
-                    return Response({"error": "Feedback already submitted"}, status=400)
-
-                RideFeedback.objects.create(
-                    ride=ride,
-                    rider=ride.rider,
-                    driver=ride.driver,
-                    giver_role=RideFeedback.GiverRole.DRIVER,
-                    rating=int(rating),
-                    comment=comment
-                )
-                # Update Rider Stats
-                stats, _ = RiderStats.objects.get_or_create(user=ride.rider)
-                stats.update_rating(int(rating))
-            
+                resp = self._handle_driver_feedback(ride, user, rating, comment)
+                if resp: return resp
             else:
                 return Response({"error": "Invalid role for feedback"}, status=400)
-            
+
         return Response({"success": True})
+
+    def _handle_rider_feedback(self, ride, user, rating, comment):
+        from apps.rides.models import RideFeedback
+        if ride.rider != user and not user.is_admin:
+            return Response({"error": "Unauthorized"}, status=403)
+
+        if RideFeedback.objects.filter(ride=ride, giver_role=RideFeedback.GiverRole.RIDER).exists():
+            return Response({"error": "Feedback already submitted"}, status=400)
+
+        RideFeedback.objects.create(
+            ride=ride, rider=ride.rider, driver=ride.driver,
+            giver_role=RideFeedback.GiverRole.RIDER, rating=int(rating), comment=comment,
+        )
+        stats, _ = DriverStats.objects.get_or_create(driver=ride.driver)
+        stats.update_rating(int(rating))
+        return None
+
+    def _handle_driver_feedback(self, ride, user, rating, comment):
+        from apps.rides.models import RideFeedback
+        from apps.users.models import RiderStats
+        if (not ride.driver or ride.driver.user != user) and not user.is_admin:
+            return Response({"error": "Unauthorized"}, status=403)
+
+        if RideFeedback.objects.filter(ride=ride, giver_role=RideFeedback.GiverRole.DRIVER).exists():
+            return Response({"error": "Feedback already submitted"}, status=400)
+
+        RideFeedback.objects.create(
+            ride=ride, rider=ride.rider, driver=ride.driver,
+            giver_role=RideFeedback.GiverRole.DRIVER, rating=int(rating), comment=comment,
+        )
+        stats, _ = RiderStats.objects.get_or_create(user=ride.rider)
+        stats.update_rating(int(rating))
+        return None
 
 
 class NearbyDriversView(APIView):
@@ -630,6 +743,7 @@ class NearbyDriversView(APIView):
     Used to show car icons on the map before booking.
     Now allows public access to improve initial app experience.
     """
+
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -643,32 +757,38 @@ class NearbyDriversView(APIView):
             return Response({"error": "Valid 'lat' and 'lng' are required"}, status=400)
 
         from apps.drivers.services.geo import get_nearby_driver_ids
-        driver_ids = get_nearby_driver_ids(lat=lat, lng=lng, radius_km=radius_km, limit=limit)
-        
+
+        driver_ids = get_nearby_driver_ids(
+            lat=lat, lng=lng, radius_km=radius_km, limit=limit
+        )
+
         # Fetch basic info for these drivers
         drivers = []
         db_drivers = Driver.objects.filter(
-            id__in=driver_ids, 
-            status=Driver.Status.ONLINE
-        ).select_related('user')
+            id__in=driver_ids, status=Driver.Status.ONLINE
+        ).select_related("user")
 
         for d in db_drivers:
-            drivers.append({
-                "id": d.id,
-                "lat": d.last_lat,
-                "lng": d.last_lng,
-                "vehicle_type": "go", # default
-                "name": d.user.get_full_name() or d.user.username
-            })
+            drivers.append(
+                {
+                    "id": d.id,
+                    "lat": d.last_lat,
+                    "lng": d.last_lng,
+                    "vehicle_type": "go",  # default
+                    "name": d.user.get_full_name() or d.user.username,
+                }
+            )
 
         # DEBUG: Return total count for troubleshooting
         total_online = Driver.objects.filter(status=Driver.Status.ONLINE).count()
-        
-        return Response({
-            "drivers": drivers,
-            "all_online_count": total_online,
-            "nearby_ids": driver_ids
-        })
+
+        return Response(
+            {
+                "drivers": drivers,
+                "all_online_count": total_online,
+                "nearby_ids": driver_ids,
+            }
+        )
 
 
 # ============================================================
@@ -681,6 +801,7 @@ class FareConfigView(APIView):
 
     def get(self, request):
         from apps.rides.fare_models import FareConfig
+
         vehicle_type = request.query_params.get("type")
 
         if vehicle_type:
@@ -699,28 +820,49 @@ class FareConfigView(APIView):
 
 def _serialize_config(c) -> dict:
     return {
-        "vehicle_type":           c.vehicle_type,
-        "base_fare":              str(c.base_fare),
-        "base_distance_km":       str(c.base_distance_km),
-        "per_km_rate":            str(c.per_km_rate),
-        "waiting_free_minutes":   c.waiting_free_minutes,
-        "waiting_per_minute":     str(c.waiting_per_minute),
-        "surge_multiplier":       str(c.surge_multiplier),
-        "minimum_fare":           str(c.minimum_fare),
+        "vehicle_type": c.vehicle_type,
+        "base_fare": str(c.base_fare),
+        "base_distance_km": str(c.base_distance_km),
+        "per_km_rate": str(c.per_km_rate),
+        "waiting_free_minutes": c.waiting_free_minutes,
+        "waiting_per_minute": str(c.waiting_per_minute),
+        "surge_multiplier": str(c.surge_multiplier),
+        "minimum_fare": str(c.minimum_fare),
         "platform_commission_pct": str(c.platform_commission_pct),
     }
 
 
 def _seed_default_fare_configs():
     """Creates default FareConfig rows for all vehicle types if none exist."""
-    from apps.rides.fare_models import FareConfig
     from decimal import Decimal
 
+    from apps.rides.fare_models import FareConfig
+
     defaults = [
-        {"vehicle_type": "moto", "base_fare": "45.00", "per_km_rate": "12.00", "minimum_fare": "45.00"},
-        {"vehicle_type": "auto", "base_fare": "50.00", "per_km_rate": "15.00", "minimum_fare": "50.00"},
-        {"vehicle_type": "go",   "base_fare": "59.00", "per_km_rate": "18.00", "minimum_fare": "60.00"},
-        {"vehicle_type": "xl",   "base_fare": "80.00", "per_km_rate": "24.00", "minimum_fare": "80.00"},
+        {
+            "vehicle_type": "moto",
+            "base_fare": "45.00",
+            "per_km_rate": "12.00",
+            "minimum_fare": "45.00",
+        },
+        {
+            "vehicle_type": "auto",
+            "base_fare": "50.00",
+            "per_km_rate": "15.00",
+            "minimum_fare": "50.00",
+        },
+        {
+            "vehicle_type": "go",
+            "base_fare": "59.00",
+            "per_km_rate": "18.00",
+            "minimum_fare": "60.00",
+        },
+        {
+            "vehicle_type": "xl",
+            "base_fare": "80.00",
+            "per_km_rate": "24.00",
+            "minimum_fare": "80.00",
+        },
     ]
     for d in defaults:
         FareConfig.objects.get_or_create(
@@ -741,9 +883,9 @@ class RideFareBreakdownView(APIView):
         ride = get_object_or_404(Ride, id=ride_id)
 
         # Only the rider or driver of this ride can view the breakdown
-        is_rider  = ride.rider == request.user
+        is_rider = ride.rider == request.user
         is_driver = ride.driver and ride.driver.user == request.user
-        is_admin  = request.user.is_staff or request.user.is_superuser
+        is_admin = request.user.is_staff or request.user.is_superuser
 
         if not (is_rider or is_driver or is_admin):
             return Response({"error": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
@@ -755,6 +897,7 @@ class RideFareBreakdownView(APIView):
             )
 
         from apps.rides.services.final_fare import get_fare_breakdown
+
         breakdown = get_fare_breakdown(ride)
 
         return Response(breakdown)
@@ -775,6 +918,7 @@ class TipView(APIView):
       - 100% of tip credited to driver earnings
       - Idempotent: calling twice replaces (does NOT stack) the tip
     """
+
     permission_classes = [IsAuthenticated, IsRider]
 
     def post(self, request, ride_id):
@@ -787,7 +931,8 @@ class TipView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        from decimal import Decimal as D, InvalidOperation
+        from decimal import Decimal as D
+
         MIN_TIP = D("1.00")
         MAX_TIP = D("1000.00")
 
@@ -804,13 +949,17 @@ class TipView(APIView):
 
         with transaction.atomic():
             ride = get_object_or_404(
-                Ride.objects.select_for_update(of=("self",)).select_related("driver", "rider"),
+                Ride.objects.select_for_update(of=("self",)).select_related(
+                    "driver", "rider"
+                ),
                 id=ride_id,
             )
 
             # ── Guard: Only the rider of this ride ────────────────────
             if ride.rider != request.user:
-                return Response({"error": "Only the rider of this trip can add a tip."}, status=403)
+                return Response(
+                    {"error": "Only the rider of this trip can add a tip."}, status=403
+                )
 
             # ── Guard: Only on COMPLETED rides ────────────────────────
             if ride.status != Ride.Status.COMPLETED:
@@ -828,6 +977,7 @@ class TipView(APIView):
 
             # ── Guard: Payment must be captured ───────────────────────
             from apps.payments.models import Payment
+
             payment = Payment.objects.filter(
                 ride_id=ride.id, status=Payment.Status.CAPTURED
             ).first()
@@ -839,7 +989,7 @@ class TipView(APIView):
 
             # ── Idempotent: adjust delta if tip already existed ───────
             previous_tip = ride.tip_amount or Decimal("0.00")
-            tip_delta    = tip_amount - previous_tip  # Can be 0 or positive
+            tip_delta = tip_amount - previous_tip  # Can be 0 or positive
 
             # Update tip on ride
             ride.tip_amount = tip_amount
@@ -848,10 +998,11 @@ class TipView(APIView):
             # ── Credit tip to driver earnings ─────────────────────────
             if tip_delta > 0:
                 from apps.payments.models import DriverEarnings, LedgerEntry
+
                 # Update or create driver earnings record
                 earning = getattr(ride, "earning", None)
                 if earning:
-                    earning.amount      += tip_delta
+                    earning.amount += tip_delta
                     earning.net_earning += tip_delta
                     earning.save(update_fields=["amount", "net_earning"])
                 else:
@@ -876,21 +1027,30 @@ class TipView(APIView):
 
                 # Notify driver of tip
                 from apps.notifications.models import Notification
-                transaction.on_commit(lambda: Notification.objects.create(
-                    user=ride.driver.user,
-                    channel="push",
-                    type="TIP_RECEIVED",
-                    payload={
-                        "title": "You received a tip! 🎉",
-                        "body":  f"Your rider tipped you ₹{tip_amount} for ride #{ride.id}.",
-                        "data":  {"ride_id": str(ride.id), "tip": str(tip_amount)},
-                    }
-                ))
 
-        logger.info(f"TipView: Ride {ride.id} — rider {request.user.id} added tip ₹{tip_amount}")
-        return Response({
-            "status":       "tip_recorded",
-            "ride_id":      ride.id,
-            "tip_amount":   str(tip_amount),
-            "total_with_tip": str((ride.final_fare + tip_amount).quantize(Decimal("0.01"))),
-        })
+                transaction.on_commit(
+                    lambda: Notification.objects.create(
+                        user=ride.driver.user,
+                        channel="push",
+                        type="TIP_RECEIVED",
+                        payload={
+                            "title": "You received a tip! 🎉",
+                            "body": f"Your rider tipped you ₹{tip_amount} for ride #{ride.id}.",
+                            "data": {"ride_id": str(ride.id), "tip": str(tip_amount)},
+                        },
+                    )
+                )
+
+        logger.info(
+            f"TipView: Ride {ride.id} — rider {request.user.id} added tip ₹{tip_amount}"
+        )
+        return Response(
+            {
+                "status": "tip_recorded",
+                "ride_id": ride.id,
+                "tip_amount": str(tip_amount),
+                "total_with_tip": str(
+                    (ride.final_fare + tip_amount).quantize(Decimal("0.01"))
+                ),
+            }
+        )

@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('payments', '0010_alter_ledgerentry_reason'),
+        ("payments", "0010_alter_ledgerentry_reason"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='payout',
-            name='updated_at',
+            model_name="payout",
+            name="updated_at",
             field=models.DateTimeField(auto_now=True),
         ),
     ]

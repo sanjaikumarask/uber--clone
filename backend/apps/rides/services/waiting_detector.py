@@ -18,17 +18,17 @@ Redis schema (per ride):
 
 import logging
 import math
-import json
-from datetime import datetime, timezone as tz
+from datetime import datetime
+
 from django.core.cache import cache
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-WAITING_SPEED_THRESHOLD_KMH = 2.0   # Below this = potential waiting
-WAITING_DEBOUNCE_SECONDS    = 60    # Must be slow for this long before counting
-CACHE_TTL                   = 3600  # 1 hour (clears after ride is done)
+WAITING_SPEED_THRESHOLD_KMH = 2.0  # Below this = potential waiting
+WAITING_DEBOUNCE_SECONDS = 60  # Must be slow for this long before counting
+CACHE_TTL = 3600  # 1 hour (clears after ride is done)
 
 
 def _cache_key(ride_id: int) -> str:
@@ -40,10 +40,10 @@ def _get_state(ride_id: int) -> dict:
     if raw:
         return raw
     return {
-        "is_waiting":       False,
-        "waiting_since":    None,
+        "is_waiting": False,
+        "waiting_since": None,
         "accumulated_secs": 0,
-        "low_speed_since":  None,
+        "low_speed_since": None,
     }
 
 
@@ -56,11 +56,18 @@ def _haversine_km(lat1, lng1, lat2, lng2) -> float:
     R = 6371.0
     dlat = math.radians(lat2 - lat1)
     dlng = math.radians(lng2 - lng1)
-    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng / 2) ** 2
+    a = (
+        math.sin(dlat / 2) ** 2
+        + math.cos(math.radians(lat1))
+        * math.cos(math.radians(lat2))
+        * math.sin(dlng / 2) ** 2
+    )
     return R * 2 * math.asin(math.sqrt(a))
 
 
-def compute_speed_kmh(lat1: float, lng1: float, lat2: float, lng2: float, elapsed_seconds: float) -> float:
+def compute_speed_kmh(
+    lat1: float, lng1: float, lat2: float, lng2: float, elapsed_seconds: float
+) -> float:
     """Compute speed between two GPS pings."""
     if elapsed_seconds <= 0:
         return 0.0
@@ -87,58 +94,29 @@ def process_location_update(
     """
     if elapsed_seconds <= 0 or elapsed_seconds > 300:
         # Ignore stale/reconnected updates (> 5 min gap)
-        return {"is_waiting": False, "accumulated_secs": 0, "speed_kmh": 0, "event": "none"}
+        return {
+            "is_waiting": False,
+            "accumulated_secs": 0,
+            "speed_kmh": 0,
+            "event": "none",
+        }
 
     speed = compute_speed_kmh(lat, lng, prev_lat, prev_lng, elapsed_seconds)
-    now   = timezone.now()
+    now = timezone.now()
     state = _get_state(ride_id)
-    event = "none"
 
     if speed < WAITING_SPEED_THRESHOLD_KMH:
-        # ── SLOW/STOPPED ─────────────────────────────────────────────
-        if not state["low_speed_since"]:
-            # Start debounce timer
-            state["low_speed_since"] = now.isoformat()
-
-        else:
-            low_since = datetime.fromisoformat(state["low_speed_since"])
-            if (now - low_since).total_seconds() >= WAITING_DEBOUNCE_SECONDS:
-                if not state["is_waiting"]:
-                    # Confirmed: driver has been idle long enough → start waiting
-                    state["is_waiting"]    = True
-                    state["waiting_since"] = low_since.isoformat()  # count from debounce start
-                    event = "waiting_started"
-                    logger.info(f"Ride {ride_id}: WAITING STARTED. Speed={speed:.2f}km/h")
-
-                # Accumulate waiting time for this tick
-                elif state["waiting_since"]:
-                    wait_start = datetime.fromisoformat(state["waiting_since"])
-                    state["accumulated_secs"] = int((now - wait_start).total_seconds())
-
+        event = _handle_slow_ping(ride_id, speed, now, state)
     else:
-        # ── MOVING ───────────────────────────────────────────────────
-        state["low_speed_since"] = None  # Reset debounce
-
-        if state["is_waiting"]:
-            # End the waiting period
-            if state["waiting_since"]:
-                wait_start = datetime.fromisoformat(state["waiting_since"])
-                state["accumulated_secs"] += int((now - wait_start).total_seconds())
-
-            state["is_waiting"]    = False
-            state["waiting_since"] = None
-            event = "waiting_ended"
-            logger.info(
-                f"Ride {ride_id}: WAITING ENDED. Total waiting={state['accumulated_secs']}s. Speed={speed:.2f}km/h"
-            )
+        event = _handle_moving_ping(ride_id, speed, now, state)
 
     _set_state(ride_id, state)
 
     return {
-        "is_waiting":       state["is_waiting"],
+        "is_waiting": state["is_waiting"],
         "accumulated_secs": state["accumulated_secs"],
-        "speed_kmh":        round(speed, 2),
-        "event":            event,
+        "speed_kmh": round(speed, 2),
+        "event": event,
     }
 
 
@@ -152,9 +130,9 @@ def get_total_waiting_seconds(ride_id: int) -> int:
 
     # If currently waiting, add in-progress time
     if state["is_waiting"] and state["waiting_since"]:
-        now        = timezone.now()
+        now = timezone.now()
         wait_start = datetime.fromisoformat(state["waiting_since"])
-        total     += int((now - wait_start).total_seconds())
+        total += int((now - wait_start).total_seconds())
 
     return max(0, total)
 
@@ -162,3 +140,37 @@ def get_total_waiting_seconds(ride_id: int) -> int:
 def clear_waiting_state(ride_id: int):
     """Call after ride is completed to clean up Redis."""
     cache.delete(_cache_key(ride_id))
+
+
+def _handle_slow_ping(ride_id, speed, now, state):
+    event = "none"
+    if not state["low_speed_since"]:
+        state["low_speed_since"] = now.isoformat()
+    else:
+        low_since = datetime.fromisoformat(state["low_speed_since"])
+        if (now - low_since).total_seconds() >= WAITING_DEBOUNCE_SECONDS:
+            if not state["is_waiting"]:
+                state["is_waiting"] = True
+                state["waiting_since"] = low_since.isoformat()
+                event = "waiting_started"
+                logger.info(f"Ride {ride_id}: WAITING STARTED. Speed={speed:.2f}km/h")
+            elif state["waiting_since"]:
+                wait_start = datetime.fromisoformat(state["waiting_since"])
+                state["accumulated_secs"] = int((now - wait_start).total_seconds())
+    return event
+
+
+def _handle_moving_ping(ride_id, speed, now, state):
+    event = "none"
+    state["low_speed_since"] = None
+    if state["is_waiting"]:
+        if state["waiting_since"]:
+            wait_start = datetime.fromisoformat(state["waiting_since"])
+            state["accumulated_secs"] += int((now - wait_start).total_seconds())
+        state["is_waiting"] = False
+        state["waiting_since"] = None
+        event = "waiting_ended"
+        logger.info(
+            f"Ride {ride_id}: WAITING ENDED. Total waiting={state['accumulated_secs']}s. Speed={speed:.2f}km/h"
+        )
+    return event
