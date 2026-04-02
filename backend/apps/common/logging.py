@@ -97,11 +97,19 @@ class RedisLogHandler(logging.Handler):
             import redis
             from django.conf import settings
 
-            # Fast raw write
-            # We use a dedicated redis client instance if possible
-            r = redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
+            # Cache the client at the class level to avoid reconnect overhead
+            if not hasattr(self.__class__, '_redis_client'):
+                self.__class__._redis_client = redis.Redis.from_url(
+                    settings.REDIS_URL, 
+                    decode_responses=True,
+                    socket_connect_timeout=0.5,
+                    socket_timeout=0.5
+                )
+            
+            r = self.__class__._redis_client
             r.lpush(self.REDIS_KEY, json_str)
             r.ltrim(self.REDIS_KEY, 0, self.MAX_LOGS - 1)
         except Exception:
-            # If Redis is dead, don't crash the application
-            self.handleError(record)
+            # If Redis is dead or DNS resolution fails temporally, silently swallow 
+            # to avoid blocking workers and throwing massive stack traces.
+            pass

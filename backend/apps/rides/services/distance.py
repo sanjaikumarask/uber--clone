@@ -66,12 +66,14 @@ def get_planned_route(origin, destination):
                     "distance_km": leg["distance"]["value"] / 1000,
                     "duration_min": leg["duration"]["value"] / 60,
                 }
+            
+            # 🔥 CRITICAL LOG: This will show you exactly what Google says is wrong
             logger.error(
-                f"⚠️ Google Maps Error: {data.get('status')} - {data.get('error_message')}"
+                f"⚠️ Google Maps Error status={data.get('status')} message={data.get('error_message', 'No message')}"
             )
 
         except Exception as e:
-            logger.error(f"⚠️ Google Maps Request Failed: {e!s}")
+            logger.error(f"⚠️ Google Maps Request Exception: {e!s}")
 
     # -------------------------------
     # 2. FALLBACK (Haversine Math)

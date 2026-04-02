@@ -18,7 +18,7 @@ class DriverProfileView(APIView):
         driver = request.user.driver
         from apps.drivers.models import DriverStats
 
-        stats, _ = DriverStats.objects.get_or_create(driver=driver)
+        stats, _ = DriverStats.objects.get_or_create(driver=driver.user)
 
         return Response(
             {
@@ -47,7 +47,7 @@ class GoOnlineView(APIView):
         # ── Guard: Suspension Check ──
         from apps.drivers.models import DriverStats
 
-        stats, _ = DriverStats.objects.get_or_create(driver=driver)
+        stats, _ = DriverStats.objects.get_or_create(driver=driver.user)
         if (
             stats.is_suspended
             and stats.suspended_until
@@ -289,7 +289,7 @@ class DriverStatusView(APIView):
         if new_status == "ONLINE":
             from apps.drivers.models import DriverStats
 
-            stats, _ = DriverStats.objects.get_or_create(driver=driver)
+            stats, _ = DriverStats.objects.get_or_create(driver=driver.user)
             if (
                 stats.is_suspended
                 and stats.suspended_until

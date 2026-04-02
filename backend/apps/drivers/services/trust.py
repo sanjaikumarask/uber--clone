@@ -76,7 +76,7 @@ def register_driver_cancellation(driver: Driver):
         update_driver_metrics(driver, "CANCELLED")
 
         # 2. Re-fetch stats to check triggers
-        stats = DriverStats.objects.select_for_update().get(driver=driver)
+        stats = DriverStats.objects.select_for_update().get(driver=driver.user)
 
         # 3. Check for penalty: > 40% cancellation rate if they have enough history
         # metrics.py calculates cancellation_rate as (cancelled / accepted) * 100
@@ -93,7 +93,7 @@ def register_no_show(driver: Driver):
         update_driver_metrics(driver, "NO_SHOW")
 
         # 2. Re-fetch stats
-        stats = DriverStats.objects.select_for_update().get(driver=driver)
+        stats = DriverStats.objects.select_for_update().get(driver=driver.user)
 
         # 3. Suspend on 3rd no-show
         if stats.no_shows >= 3:

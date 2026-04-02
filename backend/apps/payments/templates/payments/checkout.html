@@ -41,9 +41,9 @@
                 form.submit();
             },
             "prefill": {
-                "name": "{{ user.full_name }}",
-                "email": "{{ user.email }}",
-                "contact": "{{ user.phone }}"
+                "name": "{{ user.get_full_name|default:user.username|default:'Guest User' }}",
+                "email": "{{ user.email|default:'test@tripzo.com' }}",
+                "contact": "{{ user.phone|default:'9999999999' }}"
             },
             "theme": {
                 "color": "#000000"

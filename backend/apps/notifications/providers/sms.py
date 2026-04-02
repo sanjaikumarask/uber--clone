@@ -14,9 +14,9 @@ def send_sms(notification):
     if not message_body:
         raise ValueError("SMS body missing")
 
-    phone = getattr(notification.user, "phone_number", None)
+    phone = getattr(notification.user, "phone", None)
     if not phone:
-        raise ValueError("User has no phone number")
+        raise ValueError("User has no phone")
 
     client = Client(
         settings.TWILIO_ACCOUNT_SID,

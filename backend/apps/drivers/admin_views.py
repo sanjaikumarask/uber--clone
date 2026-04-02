@@ -166,7 +166,7 @@ class AdminDriverActionView(APIView):
             )
 
         driver = get_object_or_404(Driver, id=driver_id)
-        stats, _ = DriverStats.objects.get_or_create(driver=driver)
+        stats, _ = DriverStats.objects.get_or_create(driver=driver.user)
 
         with transaction.atomic():
             if action == "suspend":

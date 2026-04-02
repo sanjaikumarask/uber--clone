@@ -20,6 +20,7 @@ from .views import (
     TipView,
     UpdateDestinationView,
     VerifyOtpView,
+    SimulateActionView,
 )
 
 urlpatterns = [
@@ -40,6 +41,7 @@ urlpatterns = [
     path("<int:ride_id>/start/", VerifyOtpView.as_view(), name="ride-start"),
     path("<int:ride_id>/no-show/", MarkNoShowView.as_view(), name="ride-no-show"),
     path("<int:ride_id>/complete/", CompleteRideView.as_view(), name="ride-complete"),
+    path("<int:ride_id>/simulate-action/", SimulateActionView.as_view(), name="ride-simulate"),
     path("<int:ride_id>/", RideDetailView.as_view(), name="ride-detail"),
     # SHARED
     path("<int:ride_id>/cancel/", CancelRideView.as_view(), name="ride-cancel"),

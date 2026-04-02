@@ -58,7 +58,7 @@ def _handle_completed(ride):
         # 2. Update Stats
         from apps.drivers.models import DriverStats
 
-        stats, _ = DriverStats.objects.get_or_create(driver=ride.driver)
+        stats, _ = DriverStats.objects.get_or_create(driver=ride.driver.user)
         stats.completed_rides += 1
         stats.total_rides += 1
         stats.save()

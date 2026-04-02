@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Failed</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: -apple-system, sans-serif; text-align: center; padding: 50px; background: #fff5f5; }
+        .card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: inline-block; }
+        h1 { color: #e74c3c; }
+        p { color: #666; font-size: 18px; }
+        .btn { display: inline-block; margin-top: 20px; padding: 12px 24px; background: #e74c3c; color: #fff; text-decoration: none; border-radius: 8px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Payment Failed ❌</h1>
+        <p>Something went wrong with your payment. Please try again or use another method.</p>
+        <p id="msg"></p>
+        <a href="tripzo://home" class="btn">Try Again</a>
+    </div>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const msg = urlParams.get('msg');
+        if (msg) document.getElementById('msg').innerText = "Error: " + msg;
+    </script>
+</body>
+</html>

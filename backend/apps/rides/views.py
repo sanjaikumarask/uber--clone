@@ -49,37 +49,52 @@ class EstimateFareView(APIView):
             drop_lat = float(request.data["drop_lat"])
             drop_lng = float(request.data["drop_lng"])
 
-            fare_data = estimate_fare((pickup_lat, pickup_lng), (drop_lat, drop_lng))
+            # 1. Get distance/duration ONCE
+            from apps.rides.services.distance import get_distance_and_duration
+            try:
+                dist_km, dur_min = get_distance_and_duration((pickup_lat, pickup_lng), (drop_lat, drop_lng))
+            except:
+                dist_km, dur_min = 5.0, 15.0
+
+            # 2. Estimate for ALL active configs
+            from apps.rides.fare_models import FareConfig
+            all_configs = FareConfig.objects.filter(is_active=True)
+            
+            prices_map = {}
+            for config in all_configs:
+                data = estimate_fare(
+                    (pickup_lat, pickup_lng), (drop_lat, drop_lng),
+                    vehicle_type=config.type,
+                    distance_km=dist_km,
+                    duration_min=dur_min
+                )
+                prices_map[config.type] = float(data["estimated_fare"])
+
+            # Use 'go' or first available as the primary one for polyline/discount preview
+            primary_fare = prices_map.get("go", list(prices_map.values())[0] if prices_map else 0)
+            
             route = get_planned_route((pickup_lat, pickup_lng), (drop_lat, drop_lng))
 
-            # --- Support Promo Code Preview ---
+            # --- Support Promo Code ---
             promo_code = request.data.get("promo_code")
-            city = request.data.get("city", "Chennai")
             discount = 0
             if promo_code:
                 from apps.offers.services.offer_engine import OfferEngine
-
                 try:
-                    offer = OfferEngine.validate_offer(
-                        promo_code,
-                        request.user,
-                        float(fare_data["estimated_fare"]),
-                        city,
-                    )
-                    discount = OfferEngine.calculate_discount(
-                        offer, float(fare_data["estimated_fare"])
-                    )
-                except Exception as e:
-                    logger.warning(f"Promo estimate failed: {e}")
+                    offer = OfferEngine.validate_offer(promo_code, request.user, float(primary_fare), "Chennai")
+                    discount = OfferEngine.calculate_discount(offer, float(primary_fare))
+                except:
+                    pass
 
             return Response(
                 {
-                    "estimated_fare": float(fare_data["estimated_fare"]),
+                    "estimated_fare": float(primary_fare),
                     "discount_applied": float(discount),
-                    "final_estimate": float(fare_data["estimated_fare"])
-                    - float(discount),
-                    "distance_km": float(fare_data["distance_km"]),
-                    "duration_min": float(fare_data["duration_min"]),
+                    "final_estimate": float(primary_fare) - float(discount),
+                    "prices": prices_map, # New map for UI
+                    "distance_km": float(dist_km),
+                    "duration_min": float(dur_min),
+                    "surge_multiplier": float(estimate_fare((pickup_lat, pickup_lng), (drop_lat, drop_lng), distance_km=dist_km, duration_min=dur_min)["surge_multiplier"]),
                     "polyline": route["polyline"],
                 }
             )
@@ -96,8 +111,9 @@ class CreateRideView(APIView):
         if not self._check_rate_limit(request.user.id):
             return Response({"error": "Too many ride requests. Please wait."}, status=429)
 
-        if self._check_active_ride(request.user):
-            return Response({"error": "Active ride exists"}, status=409)
+        active_ride = self._get_active_ride(request.user)
+        if active_ride:
+            return Response({"error": "Active ride exists", "ride_id": active_ride.id}, status=409)
 
         try:
             coords = self._extract_coords(request.data)
@@ -118,11 +134,11 @@ class CreateRideView(APIView):
                 (coords["drop_lat"], coords["drop_lng"]),
             )
         except (KeyError, ValueError, TypeError) as e:
-            logger.error(f"Ride creation input validation failed: {e}")
+            logger.error(f"Ride creation input validation failed: {str(e)} | Data: {request.data}")
             return Response({"error": f"Invalid coordinates or missing fields: {e!s}"}, status=400)
         except Exception as e:
-            logger.error(f"Unexpected error during ride prep: {e}")
-            return Response({"error": "Failed to prepare ride request"}, status=500)
+            logger.error(f"Unexpected error during ride prep: {str(e)} | Type: {type(e)}")
+            return Response({"error": f"Failed to prepare ride request: {str(e)}"}, status=500)
 
         try:
             with transaction.atomic():
@@ -144,7 +160,7 @@ class CreateRideView(APIView):
             return False
         return True
 
-    def _check_active_ride(self, user):
+    def _get_active_ride(self, user):
         return Ride.objects.filter(
             rider=user,
             status__in=[
@@ -154,7 +170,7 @@ class CreateRideView(APIView):
                 Ride.Status.ARRIVED,
                 Ride.Status.ONGOING,
             ],
-        ).exists()
+        ).first()
 
     def _extract_coords(self, data):
         pickup_lat = data.get("pickup_lat") or data.get("pickupLat")
@@ -221,6 +237,131 @@ class CreateRideView(APIView):
         transaction.on_commit(lambda: async_to_sync(layer.group_send)(
             "admin_live_map", {"type": "admin_generic_event", "event": "RIDE_CREATED", "data": data}
         ))
+
+
+# --- Simulation / Testing View (BYPASS DRIVER APP) ---
+class SimulateActionView(APIView):
+    """
+    Bypass driver app for testing END-TO-END flow from the rider app.
+    Supports actions: ACCEPT, ARRIVE, START, COMPLETE
+    """
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, ride_id):
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        action = request.data.get("action")
+        ride = get_object_or_404(Ride, id=ride_id)
+
+        # Basic security: only YOUR ride (unless admin)
+        if ride.rider != request.user and not request.user.is_staff:
+             return Response({"error": "Unauthorized"}, status=403)
+
+        from apps.rides.services.lifecycle import update_ride_status
+        from apps.drivers.models import Driver
+        
+        if action == "ACCEPT":
+             # Idempotent: already assigned, return success immediately
+             if ride.status == Ride.Status.ASSIGNED:
+                 return Response({"status": ride.status, "message": "Already accepted"})
+
+             # Use the Bot Driver 70
+             try:
+                 driver = Driver.objects.get(id=70)
+                 # Auto-unblock for simulation
+                 if driver.status == Driver.Status.BLOCKED:
+                     driver.status = Driver.Status.ONLINE
+                     driver.save(update_fields=["status"])
+                     from apps.drivers.models import DriverStats
+                     stats, _ = DriverStats.objects.get_or_create(driver=driver.user)
+                     stats.is_suspended = False
+                     stats.suspended_until = None
+                     stats.save(update_fields=["is_suspended", "suspended_until"])
+             except Driver.DoesNotExist:
+                 # Fallback to first available driver if 70 is missing
+                 driver = Driver.objects.first()
+                 if not driver:
+                     return Response({"error": "No drivers available in DB"}, status=400)
+             
+             ride.driver = driver
+             ride.save(update_fields=["driver"])
+
+             # Reset surge for simulation rides to avoid inflated test fares
+             try:
+                 from apps.rides.fare_models import FareConfig
+                 from decimal import Decimal
+                 config = FareConfig.objects.filter(
+                     vehicle_type=ride.vehicle_type, is_active=True
+                 ).first()
+                 if config and config.surge_multiplier > Decimal("1.5"):
+                     config.surge_multiplier = Decimal("1.0")
+                     config.save(update_fields=["surge_multiplier"])
+             except Exception:
+                 pass
+
+             # Transition status safely (broadcasts to WS)
+             try:
+                 update_ride_status(ride, Ride.Status.ASSIGNED)
+             except (DjangoValidationError, Exception) as e:
+                 logger.warning(f"SimulateAction ACCEPT failed for ride {ride_id}: {e}")
+                 return Response({"error": str(e)}, status=400)
+
+             return Response({"status": ride.status, "message": f"Driver {driver.user.first_name} Accepted!"})
+
+        elif action == "ARRIVE":
+             if ride.status == Ride.Status.ARRIVED:
+                 return Response({"status": ride.status})
+             try:
+                 update_ride_status(ride, Ride.Status.ARRIVED)
+             except (DjangoValidationError, Exception) as e:
+                 logger.warning(f"SimulateAction ARRIVE failed for ride {ride_id}: {e}")
+                 return Response({"error": str(e)}, status=400)
+             return Response({"status": ride.status})
+
+        elif action == "START":
+             if ride.status == Ride.Status.ONGOING:
+                 return Response({"status": ride.status})
+             try:
+                 if ride.driver and ride.driver.id == 70:
+                     ride.start_lat, ride.start_lng = ride.pickup_lat, ride.pickup_lng
+                     ride.save(update_fields=["start_lat", "start_lng"])
+                 update_ride_status(ride, Ride.Status.ONGOING)
+             except (DjangoValidationError, Exception) as e:
+                 logger.warning(f"SimulateAction START failed for ride {ride_id}: {e}")
+                 return Response({"error": str(e)}, status=400)
+             return Response({"status": ride.status})
+
+        elif action == "COMPLETE":
+             if ride.status == Ride.Status.COMPLETED:
+                 return Response({"status": "COMPLETED"})
+             
+             if ride.driver and ride.driver.id == 70:
+                 if not ride.start_lat:
+                     ride.start_lat, ride.start_lng = ride.pickup_lat, ride.pickup_lng
+                 ride.save(update_fields=["start_lat", "start_lng"])
+                 
+                 # Clear any accumulated surge in Redis before calculating final fare
+                 try:
+                     import redis
+                     from django.conf import settings
+                     r = redis.Redis.from_url(settings.REDIS_URL)
+                     keys = r.keys('geo:*:surge') + r.keys('demand:*') + r.keys('surge:*')
+                     if keys:
+                         r.delete(*keys)
+                 except Exception:
+                     pass
+
+             # Force calculation call to populate final_fare
+             try:
+                 from apps.rides.services.complete_ride import complete_ride
+                 complete_ride(ride_id=ride.id)
+             except Exception as e:
+                 logger.warning(f"SimulateAction COMPLETE failed for ride {ride_id}: {e}")
+                 return Response({"error": str(e)}, status=400)
+             return Response({"status": "COMPLETED"})
+
+        return Response({"error": "Invalid action"}, status=400)
 
 
 # --- Ride Lifecycle Actions (Idempotent) ---
@@ -715,7 +856,7 @@ class SubmitFeedbackView(APIView):
             ride=ride, rider=ride.rider, driver=ride.driver,
             giver_role=RideFeedback.GiverRole.RIDER, rating=int(rating), comment=comment,
         )
-        stats, _ = DriverStats.objects.get_or_create(driver=ride.driver)
+        stats, _ = DriverStats.objects.get_or_create(driver=ride.driver.user)
         stats.update_rating(int(rating))
         return None
 
@@ -821,6 +962,7 @@ class FareConfigView(APIView):
 def _serialize_config(c) -> dict:
     return {
         "vehicle_type": c.vehicle_type,
+        "name": c.get_vehicle_type_display(),
         "base_fare": str(c.base_fare),
         "base_distance_km": str(c.base_distance_km),
         "per_km_rate": str(c.per_km_rate),

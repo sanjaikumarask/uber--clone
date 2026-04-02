@@ -1,6 +1,7 @@
+from django.shortcuts import render
 from django.urls import path
 
-from .views import CreatePaymentOrderView, SimulatedPaymentView, VerifyPaymentView
+from .views import CreatePaymentOrderView, SimulatedPaymentView, VerifyPaymentView, CreateNativeOrderView
 from .views_payout import DriverPayoutRequestView
 from .views_refund import RefundPaymentView
 from .views_wallet import WalletBalanceView, WalletTransactionsView
@@ -14,6 +15,7 @@ urlpatterns = [
     path(
         "create/<int:ride_id>/", CreatePaymentOrderView.as_view(), name="create-order"
     ),
+    path("native-order/<int:ride_id>/", CreateNativeOrderView.as_view(), name="native-order"),
     path("verify/", VerifyPaymentView.as_view(), name="verify-payment"),
     path(
         "simulate/<int:ride_id>/",
@@ -28,6 +30,7 @@ urlpatterns = [
     path("verify-web/", WebVerifyView.as_view(), name="web-verify"),
     # Webhooks
     path("status/", WalletBalanceView.as_view(), name="status"),
+    path("webhook/", razorpay_webhook), # Alias for standard Razorpay dashboard default
     path("webhook/razorpay/", razorpay_webhook, name="razorpay-webhook"),
     path("webhook/payout/", payout_webhook, name="payout-webhook"),
     # Wallet
@@ -36,4 +39,7 @@ urlpatterns = [
     # Driver
     path("payout/", DriverPayoutRequestView.as_view(), name="payout-request"),
     path("payout/instant/", DriverPayoutRequestView.as_view(), name="payout-instant"),
+    # Simple Success/Error Pages
+    path("success/page/", lambda r: render(r, "payments/success.html"), name="success-page"),
+    path("error/page/", lambda r: render(r, "payments/error.html"), name="error-page"),
 ]

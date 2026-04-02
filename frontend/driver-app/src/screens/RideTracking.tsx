@@ -14,7 +14,7 @@ import {
 } from "../services/socket";
 import { decodePolyline, LatLng } from "../services/utils";
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyD5Yq_dZsNz5fbq2DAAzjNfVKDYCn16BC8";
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 export default function RideTrackingScreen({ route, navigation }: any) {
   const { rideId } = route.params || {};

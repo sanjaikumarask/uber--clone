@@ -15,7 +15,13 @@ from .surge import get_surge
 logger = logging.getLogger(__name__)
 
 
-def estimate_fare(pickup: tuple, drop: tuple, vehicle_type: str = "go") -> dict:
+def estimate_fare(
+    pickup: tuple,
+    drop: tuple,
+    vehicle_type: str = "go",
+    distance_km: float = None,
+    duration_min: float = None,
+) -> dict:
     """
     pickup = (lat, lng)
     drop   = (lat, lng)
@@ -25,12 +31,13 @@ def estimate_fare(pickup: tuple, drop: tuple, vehicle_type: str = "go") -> dict:
     """
     config = FareConfig.get_for(vehicle_type)
 
-    try:
-        distance_km, duration_min = get_distance_and_duration(pickup, drop)
-    except Exception as e:
-        logger.warning(f"Distance API failed ({e}), using fallback 5km / 15min")
-        distance_km = 5.0
-        duration_min = 15.0
+    if distance_km is None or duration_min is None:
+        try:
+            distance_km, duration_min = get_distance_and_duration(pickup, drop)
+        except Exception as e:
+            logger.warning(f"Distance API failed ({e}), using fallback 5km / 15min")
+            distance_km = 5.0
+            duration_min = 15.0
 
     # ── Distance charge (same formula as final_fare) ─────────────────
     actual_km = Decimal(str(distance_km))

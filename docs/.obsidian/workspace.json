@@ -83,12 +83,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "1.Users_Authentication/5.Workflows/Signup.md",
+                "file": "0.Workflow_Master.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Signup"
+              "title": "0.Workflow_Master"
             }
           }
         ],
@@ -256,6 +256,10 @@
   },
   "active": "f2b631dcde17022f",
   "lastOpenFiles": [
+    "11.Common_Core/6.Workflows/Async_Tasks_Flow.md",
+    "11.Common_Core/6.Workflows/Idempotency_Flow.md",
+    "11.Common_Core/6.Workflows",
+    "1.Users_Authentication/5.Workflows/Signup.md",
     "1.Users_Authentication/5.Workflows/Login.md",
     "0.System_Design/2.Tech_Stack.md",
     "5.Notifications/5.Workflows/Notification_Flow.md",
@@ -263,7 +267,6 @@
     "5.Notifications/4.Core_Logic/Providers.md",
     "5.Notifications/4.Core_Logic/DLQ.md",
     "5.Notifications/4.Core_Logic/Dispatcher.md",
-    "1.Users_Authentication/5.Workflows/Signup.md",
     "0.System_Design/4.Setup_and_Dependencies.md",
     "9.Support/5.Workflows/Support_Flow.md",
     "4.Payments/5.Workflows/Refund_Flow.md",
@@ -280,8 +283,6 @@
     "5.Notifications/6.Edge_Cases/Delivery_Failure.md",
     "4.Payments/4.Core_Logic/Ledger_System.md",
     "3.Rides/6.Edge_Cases/Fraud.md",
-    "1.Users_Authentication/5.Workflows/Token_Refresh.md",
-    "0.System_Design/1.Architecture.md",
     "0.System_Design/Tech stack.png",
     "Sytstem Data flow.png.png",
     "Data flow.png.png",
@@ -295,7 +296,6 @@
     "15.Admin_Dashboard_Web/3.Pages",
     "15.Admin_Dashboard_Web/2.Navigation",
     "15.Admin_Dashboard_Web/1.Architecture",
-    "15.Admin_Dashboard_Web/0.Overview",
-    "15.Admin_Dashboard_Web"
+    "15.Admin_Dashboard_Web/0.Overview"
   ]
 }

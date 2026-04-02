@@ -433,6 +433,20 @@ RAZORPAY_ACCOUNT_NUMBER = os.getenv(
 
 PLATFORM_USER_ID = 1
 
+# ============================================================
+# SOCIAL OAUTH
+# ============================================================
+# GOOGLE
+GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "")
+
+# FACEBOOK
+FACEBOOK_APP_ID = os.getenv("FACEBOOK_APP_ID", "")
+FACEBOOK_APP_SECRET = os.getenv("FACEBOOK_APP_SECRET", "")
+
+# TWITTER (X)
+TWITTER_CONSUMER_KEY = os.getenv("TWITTER_CONSUMER_KEY", "")
+TWITTER_CONSUMER_SECRET = os.getenv("TWITTER_CONSUMER_SECRET", "")
+
 
 # ============================================================
 # SECURITY / DEFAULTS

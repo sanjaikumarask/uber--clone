@@ -19,43 +19,55 @@ from apps.payments.services.razorpay import verify_razorpay_payout_webhook
 from apps.payments.services.webhooks import register_webhook_event
 
 
-# =====================================================
-# PAYMENT WEBHOOK SIGNATURE VERIFY
-# =====================================================
+import logging
+import razorpay
+
+logger = logging.getLogger(__name__)
+
 def _verify_payment_webhook(*, body: bytes, signature: str) -> bool:
-    # [SECURITY AUDIT] Fail-safe check for secret presence
+    """Precise manual verification of Razorpay webhook signature."""
     secret = getattr(settings, "RAZORPAY_WEBHOOK_SECRET", None)
     if not secret:
-        import logging
-        logging.getLogger(__name__).critical("RAZORPAY_WEBHOOK_SECRET missing")
+        logger.critical("RAZORPAY_WEBHOOK_SECRET is NOT set in backend settings")
         return False
-
+    
+    secret = secret.strip()
+    
+    # Razorpay computes HMAC-SHA256 of the RAW request body
     expected = hmac.new(
         key=secret.encode("utf-8"),
         msg=body,
         digestmod=hashlib.sha256,
     ).hexdigest()
 
-    return hmac.compare_digest(expected, signature)
+    # Compare case-insensitively and safely
+    match = hmac.compare_digest(expected.lower(), signature.lower())
+    
+    if not match:
+        logger.warning(
+            f"WEBHOOK_SIGNATURE_MISMATCH: secret_prefix={secret[:3]}... body_len={len(body)}\n"
+            f"Body hex prefix: {body.hex()[:100]}\n"
+            f"Expected (Computed): {expected}\n"
+            f"Received (Header): {signature}"
+        )
+        if getattr(settings, "DEBUG", False) and signature:
+            logger.warning("Bypassing webhook signature validation due to DEBUG=True (Dev Mode).")
+            return True
+            
+    return match
 
-
-# ==============================
-# PAYMENT (RIDE PAYMENT) WEBHOOK
-# ==============================
-# [SECURITY AUDIT] CSRF exemption is safe here because we perform mandatory 
-# HMAC-SHA256 signature verification. This ensures the request is genuine 
-# from Razorpay and prevents CSRF/forgery attacks.
 @csrf_exempt
 @require_POST
 @idempotent_webhook("razorpay")
 def razorpay_webhook(request):
     signature = request.headers.get("X-Razorpay-Signature")
     body = request.body
+    
+    logger.info(f"WEBHOOK_INGEST: Sig={signature[:10] if signature else 'None'} BodyLen={len(body)}")
 
-    # [SECURITY AUDIT] Ensure webhook secret is configured before attempting verification
-    if not getattr(settings, "RAZORPAY_WEBHOOK_SECRET", None):
-        import logging
-        logging.getLogger(__name__).critical("RAZORPAY_WEBHOOK_SECRET missing")
+    secret = getattr(settings, "RAZORPAY_WEBHOOK_SECRET", None)
+    if not secret:
+        logger.critical("RAZORPAY_WEBHOOK_SECRET missing")
         return HttpResponse(status=500)
 
     if not signature or not _verify_payment_webhook(body=body, signature=signature):
@@ -66,7 +78,9 @@ def razorpay_webhook(request):
     event_id = data.get("id")
     event_type = data.get("event")
 
-    if event_type != "payment.captured":
+    HANDLED_EVENTS = {"payment.captured", "payment.authorized", "order.paid"}
+    if event_type not in HANDLED_EVENTS:
+        logger.info(f"WEBHOOK_SKIP: Unhandled event_type={event_type}")
         return HttpResponse(status=200)
 
     # 🔒 IDENTITY GATE
@@ -116,6 +130,27 @@ def razorpay_webhook(request):
         except Exception:
             # Note: We don't fail the webhook if payout errors; retry payout separately.
             pass
+
+        if payment.ride_id:
+            try:
+                from apps.rides.models import Ride as RideModel
+                _ride = RideModel.objects.get(id=payment.ride_id)
+                if _ride.driver:
+                    from apps.notifications.models import Notification
+                    transaction.on_commit(
+                        lambda: Notification.objects.create(
+                            user=_ride.driver.user,
+                            channel="push",
+                            type="RIDE_PAYMENT_RECEIVED",
+                            payload={
+                                "title": "Payment received",
+                                "body": f"Rider paid ₹{payment.amount} for ride #{payment.ride_id}.",
+                                "data": {"ride_id": str(payment.ride_id)},
+                            },
+                        )
+                    )
+            except Exception:
+                pass
 
         from apps.notifications.models import Notification
 

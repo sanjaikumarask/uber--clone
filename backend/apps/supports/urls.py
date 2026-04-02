@@ -4,6 +4,7 @@ from django.urls import path
 
 from apps.supports.views import (
     CreateSupportTicketView,
+    GeneralSupportTicketView,
     ResolveEmergencyView,
     ResolveTicketView,
     SupportTicketDetailView,
@@ -13,6 +14,7 @@ from apps.supports.views import (
 
 urlpatterns = [
     path("tickets/", SupportTicketListView.as_view(), name="ticket-list"),
+    path("tickets/general/", SupportTicketListView.as_view(), name="ticket-general"),
     path("tickets/<int:pk>/", SupportTicketDetailView.as_view(), name="ticket-detail"),
     path("rides/<int:ride_id>/ticket/", CreateSupportTicketView.as_view()),
     path("rides/<int:ride_id>/sos/", TriggerSOSView.as_view()),

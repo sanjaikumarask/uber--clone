@@ -114,3 +114,32 @@ class IncentiveAnalyticsView(APIView):
                 "daily_last_7_days": list(daily),
             }
         )
+
+
+class ReferralStatsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        # Ensure referral code exists
+        if not user.referral_code:
+            import random, string
+            user.referral_code = 'TRIPZO-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+            user.save(update_fields=['referral_code'])
+
+        referrals = user.referrals.all()
+
+        return Response({
+            "total_referrals": referrals.count(),
+            "earned_amount": 0,  # Placeholder
+            "pending_amount": 0, # Placeholder
+            "referral_code": user.referral_code,
+            "referrals": [
+                {
+                    "name": f"{r.first_name} {r.last_name}".strip() or r.phone,
+                    "joined_date": r.date_joined.strftime("%Y-%m-%d"),
+                    "status": "Completed" if r.is_active else "Pending",
+                    "reward": 50
+                } for r in referrals
+            ]
+        })

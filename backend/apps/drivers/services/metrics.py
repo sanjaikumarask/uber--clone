@@ -13,7 +13,7 @@ def update_driver_metrics(driver: Driver, event_type: str):
     Update driver metrics in real-time based on ride events.
     Synchronously triggers score and level evaluation.
     """
-    stats, _ = DriverStats.objects.get_or_create(driver=driver)
+    stats, _ = DriverStats.objects.get_or_create(driver=driver.user)
     stats.last_active_at = timezone.now()
 
     update_fields = ["last_active_at", "updated_at"]

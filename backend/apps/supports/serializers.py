@@ -12,6 +12,8 @@ class SupportTicketSerializer(serializers.ModelSerializer):
             "id",
             "ride",
             "ride_details",
+            "category",
+            "subject",
             "reason",
             "description",
             "status",
@@ -22,6 +24,8 @@ class SupportTicketSerializer(serializers.ModelSerializer):
         read_only_fields = ["status", "resolution_note", "resolved_at", "created_at"]
 
     def get_ride_details(self, obj):
+        if not obj.ride:
+            return None
         return {
             "pickup": obj.ride.pickup_address,
             "dropoff": obj.ride.drop_address,

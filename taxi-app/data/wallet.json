@@ -1,0 +1,13 @@
+{
+  "availableBalance": 500,
+  "spendingMoney": 200,
+  "transactions": [
+    { "id": "1", "name": "Raj",   "time": "Today at 09:20 am", "amount": -570.00, "type": "debit" },
+    { "id": "2", "name": "Kumar", "time": "Today at 09:20 am", "amount":  570.00, "type": "credit" },
+    { "id": "3", "name": "Kumar", "time": "Today at 09:20 am", "amount":  570.00, "type": "credit" },
+    { "id": "4", "name": "Raj",   "time": "Today at 09:20 am", "amount": -570.00, "type": "debit" },
+    { "id": "5", "name": "Kumar", "time": "Today at 09:20 am", "amount":  570.00, "type": "credit" },
+    { "id": "6", "name": "Raj",   "time": "Today at 09:20 am", "amount": -570.00, "type": "debit" },
+    { "id": "7", "name": "Kumar", "time": "Today at 09:20 am", "amount":  570.00, "type": "credit" }
+  ]
+}

@@ -34,7 +34,7 @@ class TestRideBookingIntegration:
         driver.save()
 
         # Ensure stats exist
-        DriverStats.objects.get_or_create(driver=driver)
+        DriverStats.objects.get_or_create(driver=driver.user)
         return driver
 
     @patch("apps.rides.services.distance.requests.get")

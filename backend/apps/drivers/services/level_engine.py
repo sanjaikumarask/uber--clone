@@ -15,7 +15,7 @@ def evaluate_level(driver: Driver):
     Evaluates and applies driver level changes based on performance metrics.
     Includes Promotion, Downgrade, and Inactivity rules.
     """
-    stats, _ = DriverStats.objects.get_or_create(driver=driver)
+    stats, _ = DriverStats.objects.get_or_create(driver=driver.user)
 
     # 1. Handle Admin Overrides
     if stats.is_level_overridden:

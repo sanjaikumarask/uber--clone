@@ -89,7 +89,7 @@ class TestMatchmakingService:
         driver.save()
 
         # Ensure stats exist with high trust score
-        stats, _ = DriverStats.objects.get_or_create(driver=driver)
+        stats, _ = DriverStats.objects.get_or_create(driver=driver.user)
         stats.trust_score = 100.0
         stats.save()
 

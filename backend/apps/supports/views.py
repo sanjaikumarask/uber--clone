@@ -47,7 +47,7 @@ class CreateSupportTicketView(APIView):
         )
 
 
-class SupportTicketListView(generics.ListAPIView):
+class SupportTicketListView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = SupportTicketSerializer
 
@@ -55,6 +55,9 @@ class SupportTicketListView(generics.ListAPIView):
         return SupportTicket.objects.filter(user=self.request.user).order_by(
             "-created_at"
         )
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class SupportTicketDetailView(generics.RetrieveAPIView):
@@ -185,3 +188,26 @@ class ResolveEmergencyView(APIView):
         )
 
         return Response({"status": emergency.status})
+
+
+class GeneralSupportTicketView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        category = request.data.get("category", "other")
+        subject = request.data.get("subject", "General Inquiry")
+        description = request.data.get("description", "")
+        
+        if not description:
+            return Response({"error": "Description is required"}, status=400)
+            
+        ticket = SupportTicket.objects.create(
+            user=request.user,
+            category=category,
+            subject=subject,
+            description=description,
+            status=SupportTicket.Status.OPEN,
+            ride=None
+        )
+        
+        return Response({"ticket_id": ticket.id, "status": ticket.status}, status=201)

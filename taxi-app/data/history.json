@@ -1,0 +1,32 @@
+{
+  "upcoming": [
+    { "id": "u1", "name": "kumar", "vehicle": "Maruti Suzuki Dzire", "time": "Today at 09:20 am" },
+    { "id": "u2", "name": "kumar", "vehicle": "Maruti Suzuki Dzire", "time": "Today at 10:20 am" },
+    { "id": "u3", "name": "kumar", "vehicle": "Maruti Suzuki Dzire", "time": "Tomorrow at 09:20 am" },
+    { "id": "u4", "name": "kumar", "vehicle": "Maruti Suzuki Dzire", "time": "Today at 09:20 am" },
+    { "id": "u5", "name": "kumar", "vehicle": "Maruti Suzuki Dzire", "time": "Today at 10:20 am" },
+    { "id": "u6", "name": "kumar", "vehicle": "Maruti Suzuki Dzire", "time": "Tomorrow at 09:20 am" },
+    { "id": "u7", "name": "kumar", "vehicle": "Maruti Suzuki Dzire", "time": "Today at 10:20 am" },
+    { "id": "u8", "name": "kumar", "vehicle": "Maruti Suzuki Dzire", "time": "Tomorrow at 09:20 am" }
+  ],
+  "completed": [
+    { "id": "c1", "name": "kumar", "vehicle": "Maruti Suzuki Dzire" },
+    { "id": "c2", "name": "kumar", "vehicle": "Maruti Suzuki Dzire" },
+    { "id": "c3", "name": "kumar", "vehicle": "Maruti Suzuki Dzire" },
+    { "id": "c4", "name": "kumar", "vehicle": "Maruti Suzuki Dzire" },
+    { "id": "c5", "name": "kumar", "vehicle": "Maruti Suzuki Dzire" },
+    { "id": "c6", "name": "kumar", "vehicle": "Maruti Suzuki Dzire" },
+    { "id": "c7", "name": "kumar", "vehicle": "Maruti Suzuki Dzire" },
+    { "id": "c8", "name": "kumar", "vehicle": "Maruti Suzuki Dzire" }
+  ],
+  "cancelled": [
+    { "id": "x1", "name": "kumar", "vehicle": "Maruti Suzuki Dzire" },
+    { "id": "x2", "name": "kumar", "vehicle": "Maruti Suzuki Dzire" },
+    { "id": "x3", "name": "kumar", "vehicle": "Maruti Suzuki Dzire" },
+    { "id": "x4", "name": "kumar", "vehicle": "Maruti Suzuki Dzire" },
+    { "id": "x5", "name": "kumar", "vehicle": "Maruti Suzuki Dzire" },
+    { "id": "x6", "name": "kumar", "vehicle": "Maruti Suzuki Dzire" },
+    { "id": "x7", "name": "kumar", "vehicle": "Maruti Suzuki Dzire" },
+    { "id": "x8", "name": "kumar", "vehicle": "Maruti Suzuki Dzire" }
+  ]
+}

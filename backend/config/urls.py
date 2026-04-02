@@ -4,6 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+from django.views.generic.base import RedirectView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -18,7 +19,9 @@ urlpatterns = [
     path("api/admin/", include("apps.admin_dashboard.urls")),
     path("api/offers/", include("apps.offers.urls")),
     path("api/driver-incentives/", include("apps.driver_incentives.urls")),
+    path("api/incentives/", include("apps.driver_incentives.urls")),
     path("", include("django_prometheus.urls")),  # 🔥 Expose /metrics
+    path("favicon.ico", RedirectView.as_view(url=settings.STATIC_URL + "favicon.ico")),
 ]
 
 # ============================

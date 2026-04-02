@@ -238,7 +238,7 @@ def find_driver_and_offer_ride(ride_id: int):
             logger.info(f"Ride {ride.id}: No eligible or available drivers.")
             return
 
-        stats, _ = DriverStats.objects.get_or_create(driver=driver)
+        stats, _ = DriverStats.objects.get_or_create(driver=driver.user)
         stats.check_and_reset_daily_stats()
 
         auto_assign = stats.rejection_count_today >= 3

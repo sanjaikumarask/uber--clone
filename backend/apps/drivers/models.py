@@ -191,9 +191,8 @@ class DriverDocument(models.Model):
 
 class DriverStats(models.Model):
     driver = models.OneToOneField(
-        Driver,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="stats",
     )
 
     total_rides = models.PositiveIntegerField(default=0)
@@ -253,6 +252,9 @@ class DriverStats(models.Model):
         if not self.level_override_until:
             return False
         return self.level_override_until > timezone.now()
+
+    def is_online(self):
+        return self.driver.is_online
 
     def check_and_reset_daily_stats(self):
         """Resets rejection count if the day has changed."""

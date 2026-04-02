@@ -46,7 +46,7 @@ def compute_score(stats: DriverStats, level: str) -> float:
 
 
 def recalculate_driver_score(driver: Driver) -> float:
-    stats, _ = DriverStats.objects.get_or_create(driver=driver)
+    stats, _ = DriverStats.objects.get_or_create(driver=driver.user)
     score = compute_score(stats, driver.level)
     stats.score = score
     stats.save(update_fields=["score", "updated_at"])
@@ -72,7 +72,7 @@ def admin_set_level(
 
     from django.utils import timezone
 
-    stats, _ = DriverStats.objects.get_or_create(driver=driver)
+    stats, _ = DriverStats.objects.get_or_create(driver=driver.user)
     stats.level_override_until = timezone.now() + timedelta(days=duration_days)
     stats.override_reason = reason
     stats.save(update_fields=["level_override_until", "override_reason", "updated_at"])

@@ -1,0 +1,27 @@
+[
+  {
+    "group": "Today",
+    "items": [
+      { "id": "1", "title": "Payment Successfully!", "message": "Please be ready at the pickup point to avoid delays.", "icon": "card-outline" },
+      { "id": "2", "title": "30% Special Discount!", "message": "You can track the driver's location in real time from the Tripzo app", "icon": "pricetag-outline" }
+    ]
+  },
+  {
+    "group": "Yesterday",
+    "items": [
+      { "id": "3", "title": "Payment Successfully!", "message": "He will arrive in less than 2 minutes. Please keep your phone available in case the driver needs to contact you", "icon": "card-outline" },
+      { "id": "4", "title": "Credit Card added!", "message": "He will arrive in less than 2 minutes. Please keep your phone available in case the driver needs to contact you", "icon": "card-outline" },
+      { "id": "5", "title": "Added Money wallet Successfully!", "message": "He will arrive in less than 2 minutes. Please keep your phone available in case the driver needs to contact you", "icon": "wallet-outline" },
+      { "id": "6", "title": "5% Special Discount!", "message": "He will arrive in less than 2 minutes. Please keep your phone available in case the driver needs to contact you", "icon": "pricetag-outline" }
+    ]
+  },
+  {
+    "group": "May, 27 2023",
+    "items": [
+      { "id": "3", "title": "Payment Successfully!", "message": "He will arrive in less than 2 minutes. Please keep your phone available in case the driver needs to contact you", "icon": "card-outline" },
+      { "id": "4", "title": "Credit Card added!", "message": "He will arrive in less than 2 minutes. Please keep your phone available in case the driver needs to contact you", "icon": "card-outline" },
+      { "id": "5", "title": "Added Money wallet Successfully!", "message": "He will arrive in less than 2 minutes. Please keep your phone available in case the driver needs to contact you", "icon": "wallet-outline" },
+      { "id": "6", "title": "5% Special Discount!", "message": "He will arrive in less than 2 minutes. Please keep your phone available in case the driver needs to contact you", "icon": "pricetag-outline" }
+    ]
+  }
+]

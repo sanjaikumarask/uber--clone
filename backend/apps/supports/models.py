@@ -23,6 +23,8 @@ class SupportTicket(models.Model):
         Ride,
         on_delete=models.CASCADE,
         related_name="support_tickets",
+        null=True,
+        blank=True,
     )
 
     user = models.ForeignKey(
@@ -31,9 +33,13 @@ class SupportTicket(models.Model):
         related_name="support_tickets",
     )
 
+    category = models.CharField(max_length=64, blank=True, default="other")
+    subject = models.CharField(max_length=255, blank=True, default="")
     reason = models.CharField(
         max_length=32,
         choices=Reason.choices,
+        null=True,
+        blank=True,
     )
 
     description = models.TextField(blank=True)

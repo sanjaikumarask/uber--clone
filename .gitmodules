@@ -1,0 +1,6 @@
+[submodule "frontend/taxi-app"]
+	path = frontend/taxi-app
+	url = https://github.com/Wentrite/Taxi-RN
+[submodule "frontend/single-vendor-app"]
+	path = frontend/single-vendor-app
+	url = https://github.com/Wentrite/Single-vendor-RN

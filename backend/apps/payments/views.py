@@ -92,10 +92,13 @@ class SimulatedPaymentView(APIView):
             )
 
             # 2️⃣ Platform → Driver payout + commission split
-            settle_driver_payout(
-                ride=ride,
-                payment=payment,
-            )
+            try:
+                settle_driver_payout(
+                    ride=ride,
+                    payment=payment,
+                )
+            except Exception as e:
+                logger.error(f"SIMULATE_PAYMENT: Driver payout failed: {e}")
 
             # Notify Rider of successful payment (Simulated)
             from apps.notifications.models import Notification
@@ -230,6 +233,95 @@ class CreatePaymentOrderView(APIView):
                 "key": razorpay_client.auth[0],
             }
         )
+
+class CreateNativeOrderView(APIView):
+    """
+    Called by native Razorpay SDK before opening checkout.
+    Returns order_id, key, amount for the SDK options object.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, ride_id):
+        try:
+            ride = Ride.objects.get(id=ride_id, rider=request.user)
+        except Ride.DoesNotExist:
+            return Response({"error": "Ride not found"}, status=404)
+
+        if ride.status != Ride.Status.COMPLETED:
+            return Response({"error": "Ride not completed"}, status=400)
+
+        if not razorpay_client:
+            return Response({"error": "Gateway not configured"}, status=503)
+
+        # Check already paid
+        if Payment.objects.filter(
+            ride_id=ride.id, status=Payment.Status.CAPTURED
+        ).exists():
+            return Response({"error": "already_paid"}, status=400)
+
+        with transaction.atomic():
+            ride = Ride.objects.select_for_update().get(id=ride_id)
+
+            # If already captured, return early
+            if Payment.objects.filter(
+                ride_id=ride.id, status=Payment.Status.CAPTURED
+            ).exists():
+                return Response({"error": "already_paid"}, status=400)
+
+            # ALWAYS create a fresh Razorpay order for native SDK.
+            # Invalidate any old web-checkout payment by checking if
+            # the existing order was already attempted.
+            existing = Payment.objects.filter(
+                ride_id=ride.id,
+                status=Payment.Status.CREATED,
+            ).first()
+
+            # Only reuse if gateway_order_id is set AND was never
+            # opened in web checkout (idempotent native calls only)
+            payment = existing if (existing and existing.gateway_order_id) else None
+
+            if not payment:
+                # Create fresh payment + fresh Razorpay order
+                if existing:
+                    # Nullify the old one so it doesn't confuse future calls
+                    existing.gateway_order_id = None
+                    existing.save(update_fields=["gateway_order_id"])
+                    payment = existing
+                else:
+                    payment = Payment.objects.create(
+                        user=request.user,
+                        ride_id=ride.id,
+                        amount=ride.final_fare,
+                        status=Payment.Status.CREATED,
+                    )
+
+                try:
+                    order = razorpay_client.order.create({
+                        "amount": int(ride.final_fare * 100),
+                        "currency": "INR",
+                        "receipt": f"ride_{ride.id}_{payment.id}",
+                        "payment_capture": 1,
+                    })
+                    payment.gateway_order_id = order["id"]
+                    payment.save(update_fields=["gateway_order_id"])
+                except Exception as e:
+                    logger.error(f"Razorpay native order failed: {e}")
+                    return Response({"error": f"Gateway error: {str(e)}"}, status=400)
+
+        return Response({
+            "order_id": payment.gateway_order_id,
+            "amount": int(ride.final_fare * 100),
+            "currency": "INR",
+            "key": razorpay_client.auth[0],
+            "payment_id": payment.id,
+            "name": "Tripzo",
+            "description": f"Trip #{ride.id}",
+            "prefill": {
+                "name": request.user.get_full_name() or request.user.username,
+                "email": request.user.email or "",
+                "contact": getattr(request.user, 'phone', '') or "",
+            },
+        })
 
 
 class VerifyPaymentView(APIView):
